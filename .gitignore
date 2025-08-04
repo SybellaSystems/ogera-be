@@ -1,3 +1,8 @@
+# Node.js
+node_modules/
+dist/
+.env
+
 # Logs
 logs
 *.log
@@ -29,7 +34,6 @@ bower_components
 
 build/Release
 
-node_modules/
 package-lock.json
 jspm_packages/
 
@@ -65,8 +69,6 @@ web_modules/
 out
 
 .nuxt
-dist
-
 .cache/
 
 .vuepress/dist
@@ -92,4 +94,6 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
-
+# OS
+.DS_Store
+Thumbs.db
