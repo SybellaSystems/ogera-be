@@ -159,4 +159,3 @@ authRouter.post(
   resetPassword
 );
 ```
-
