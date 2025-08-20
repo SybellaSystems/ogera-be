@@ -15,7 +15,10 @@ const hash_pwd = async (password: string): Promise<string> => {
 };
 
 // Compare password
-const decrypt_pwd = async (candidatePassword: string, password: string): Promise<boolean> => {
+const decrypt_pwd = async (
+  candidatePassword: string,
+  password: string
+): Promise<boolean> => {
   return await bcrypt.compare(candidatePassword, password);
 };
 
@@ -25,7 +28,12 @@ export const register = asyncHandler(
     const { email, mobile_number, password, role } = req.body;
 
     if (!email || !mobile_number || !password) {
-      throw new AppError("Please fill all input fields.", 400, true, "EMPTY_INPUT_FIELD");
+      throw new AppError(
+        "Please fill all input fields.",
+        400,
+        true,
+        "EMPTY_INPUT_FIELD"
+      );
     }
 
     const existingUser = await UserModel.findOne({ where: { email } });
@@ -61,7 +69,12 @@ export const login = asyncHandler(
     const { email, password, otp } = req.body;
 
     if (!email || !password) {
-      throw new AppError("Please fill in your email and password.", 400, true, "EMPTY_INPUT_FIELD");
+      throw new AppError(
+        "Please fill in your email and password.",
+        400,
+        true,
+        "EMPTY_INPUT_FIELD"
+      );
     }
 
     const user = await UserModel.findOne({ where: { email } });
@@ -112,10 +125,7 @@ export const setup2FA = asyncHandler(async (req: Request, res: Response) => {
   const { user_id, email } = req.body;
   const { secret, qrCodeUrl } = await generate2FASecret(user_id, email);
 
-  await UserModel.update(
-    { two_fa_secret: secret },
-    { where: { user_id } }
-  );
+  await UserModel.update({ two_fa_secret: secret }, { where: { user_id } });
 
   res.json({ qrCodeUrl, secret });
 });

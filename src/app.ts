@@ -9,6 +9,7 @@ import {
     setupProcessHandlers
 } from './middlewares/errorHandler.js';
 import authRouter from './modules/auth/routes/auth.route.js';
+import uploadRouter from './modules/ReportCardUpload/routes/record.route.js';
 import { authenticationMiddleware } from './middlewares/authMiddleware.js';
 
 
@@ -18,6 +19,7 @@ app.use(cors());
 
 
 app.use('/api/v1/auth/', authRouter);
+app.use('/api/v1/upload/', uploadRouter);
 app.get('/', authenticationMiddleware, (req, res) => {
     res.send('Base route.');
 });

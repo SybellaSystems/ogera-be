@@ -3,6 +3,7 @@ export interface RegisterPayload {
     mobile_number: string;
     password: string;
     role: 'student' | 'employer' | 'admin';
+    national_id: string;
 }
 
 export interface LoginPayload {
