@@ -6,7 +6,8 @@ export interface User {
   email: string;
   mobile_number: string;
   password_hash: string;
-  role: "student" | "employer" | "admin";
+  role: "Student" | "Employer" | "Admin";
+  national_id: string;
   two_fa_enabled: boolean;
   two_fa_secret?: string;
   created_at: Date;
@@ -45,9 +46,14 @@ export class UserModel extends Model<User, UserCreationAttributes> {
           allowNull: false,
         },
         role: {
-          type: DataTypes.ENUM("student", "employer", "admin"),
+          type: DataTypes.ENUM("Student", "Employer", "Admin"),
           allowNull: false,
-          defaultValue: "student",
+          defaultValue: "Student",
+        },
+        national_id: { // adding this column because I'll use it to when creating 'student_profiles' table
+          type: DataTypes.STRING(50),
+          allowNull: true,
+          unique: true
         },
         two_fa_enabled: {
           type: DataTypes.BOOLEAN,
@@ -68,5 +74,13 @@ export class UserModel extends Model<User, UserCreationAttributes> {
         timestamps: false,
       }
     );
+  }
+
+  // foreign key association(relationship between tables)
+  static associate(models: any) {
+    UserModel.hasOne(models.StudentProfile, {
+      foreignKey: "user_id",
+      as: "studentProfile"
+    });
   }
 }

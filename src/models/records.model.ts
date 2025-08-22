@@ -1,17 +1,60 @@
-import pool from "../config/db.js";
-import {v4 as uuidv4} from 'uuid';
-import { GradeEntry, Records } from "../types/records.interface.js";
+import { Sequelize, DataTypes, Model, Optional } from 'sequelize';
+import { Records } from '../types/records.interface.js';
 
 
-export const createAcademicRecordService = async(
-    student_id: string,
-    doc_url: string,
-    extracted_grades: GradeEntry[]
-): Promise<Records> => {
-    const id = uuidv4();
-    const result = await pool.query(
-        `INSERT INTO academic_records(record_id, student_id, document_url, extracted_grades, status) VALUES($1, $2, $3, $4, $5) RETURNING *`,
-        [id, student_id, doc_url, extracted_grades]
+export type RecordCreationAttributes = Optional<
+  Records,
+  "record_id" | "status" | "uploaded_at"
+>;
+
+export class RecordModel extends Model<Records, RecordCreationAttributes> {
+  static initialize(sequelize: Sequelize) {
+    RecordModel.init(
+      {
+        record_id: {
+          type: DataTypes.UUID,
+          defaultValue: DataTypes.UUIDV4,
+          primaryKey: true
+        },
+        student_id: {
+          type: DataTypes.UUID,
+          allowNull: false,
+          references: {
+            model: "student_profiles",
+            key: "student_id"
+          }
+        },
+        document_url: {
+          type: DataTypes.TEXT,
+          allowNull: false,
+        },
+        extracted_grades: {
+          type: DataTypes.JSONB,
+          allowNull: false,
+        },
+        status: {
+          type: DataTypes.ENUM("Pending", "Approved", "Rejected"),
+          defaultValue: "Pending",
+          allowNull: false
+        },
+        uploaded_at: {
+          type: DataTypes.DATE,
+          defaultValue: Sequelize.literal("NOW()")
+        }
+      },
+      {
+        tableName: "academic_records",
+        sequelize,
+        timestamps: false,
+      }
     );
-    return result.rows[0];
+  }
+
+  // foreign key association(relationship between tables)
+  static associate(models: any) {
+    RecordModel.belongsTo(models.StudentProfile, {
+      foreignKey: "student_id",
+      as: "studentProfile"
+    });
+  }
 }

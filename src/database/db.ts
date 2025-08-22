@@ -1,6 +1,8 @@
 import { Sequelize } from 'sequelize';
 import dotenv from 'dotenv';
 import { UserModel } from '../models/users.model.js';
+import { StudentProfileModel } from '../models/studentProfile.model.js';
+import { RecordModel } from '../models/records.model.js';
 
 dotenv.config();
 
@@ -23,22 +25,43 @@ const sequelize = new Sequelize(
 (async () => {
   try {
     await sequelize.authenticate();
-    console.log('✅ Database connected.');
+    console.log('Database connected.');
   } catch (err) {
-    console.error('❌ Database connection failed:', err);
+    console.error('Database connection failed:', err);
   }
 })();
 
+const models = {
+  User: UserModel,
+  StudentProfile: StudentProfileModel,
+  AcademicRecord: RecordModel
+};
+
 // Initialize models
-UserModel.initialize(sequelize);
+Object.values(models).forEach((model: any) => {
+  if(model.initialize) {
+    model.initialize(sequelize);
+  }
+});
+
+// Setup all associations after initialization
+Object.values(models).forEach((model: any) => {
+  if(model.associate) {
+    model.associate(models);
+  }
+});
 
 // Explicitly declare DB types
 const DB: {
   User: typeof UserModel;
+  StudentProfile: typeof StudentProfileModel;
+  AcademicRecord: typeof RecordModel;
   sequelize: Sequelize;
   Sequelize: typeof Sequelize;
 } = {
   User: UserModel,
+  StudentProfile: StudentProfileModel,
+  AcademicRecord: RecordModel,
   sequelize,
   Sequelize,
 };
@@ -46,7 +69,7 @@ const DB: {
 // Auto-create tables
 sequelize
   .sync({ alter: true })
-  .then(() => console.log('✅ Database synchronized.'))
-  .catch((err) => console.error('❌ Database synchronization failed:', err));
+  .then(() => console.log('Database synchronized.'))
+  .catch((err) => console.error('Database synchronization failed:', err));
 
 export default DB;

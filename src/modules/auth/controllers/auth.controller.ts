@@ -7,6 +7,7 @@ import { RegisterPayload, LoginPayload } from "../types/auth.types.js";
 import { generate2FASecret, verifyOTP, enable2FA } from "../utils/2fa.js";
 
 const UserModel = DB.User;
+const StudentModel = DB.StudentProfile;
 
 // Hash password
 const hash_pwd = async (password: string): Promise<string> => {
@@ -25,15 +26,22 @@ const decrypt_pwd = async (
 // Registration controller
 export const register = asyncHandler(
   async (req: Request<{}, {}, RegisterPayload>, res: Response): Promise<void> => {
-    const { email, mobile_number, password, role } = req.body;
+    const { email, mobile_number, password, role, national_id } = req.body;
 
     if (!email || !mobile_number || !password) {
       throw new AppError(
-        "Please fill all input fields.",
+        "Please fill all required fields.",
         400,
         true,
         "EMPTY_INPUT_FIELD"
       );
+    }
+
+    // logic to ask for National ID if user is a student 
+    // or if user's 'role' column was not set(it defaults to student)
+    const newRole = role || "Student";
+    if((role === null || role === "Student") && !national_id) {
+      throw new AppError("Please fill in your National ID", 400, true);
     }
 
     const existingUser = await UserModel.findOne({ where: { email } });
@@ -47,12 +55,20 @@ export const register = asyncHandler(
       email,
       mobile_number,
       password_hash: hashed_password,
-      role: role ?? "student",
+      role: newRole,
+      national_id: national_id
     });
+    // create student_profile if user is a student(role = student)
+    if(newRole === 'Student' || newRole === null) {
+      await StudentModel.create({
+        user_id: user.get("user_id") as string,
+        national_id: user.get("national_id") as string,
+      });
+    }
 
     const token = createJWT({
       user_id: user.get("user_id") as string,
-      role: user.get("role") as "student" | "employer" | "admin",
+      role: user.get("role") as "Student" | "Employer" | "Admin",
     });
 
     res.status(201).json({

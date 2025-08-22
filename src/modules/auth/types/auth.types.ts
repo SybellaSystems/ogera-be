@@ -2,7 +2,7 @@ export interface RegisterPayload {
     email: string
     mobile_number: string;
     password: string;
-    role: 'student' | 'employer' | 'admin';
+    role: 'Student' | 'Employer' | 'Admin';
     national_id: string;
 }
 
