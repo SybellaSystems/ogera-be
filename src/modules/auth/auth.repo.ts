@@ -5,8 +5,8 @@ const repo = {
   findUserByEmail: async (email: string): Promise<User | null> => {
     return await DB.Users.findOne({ where: { email } });
   },
-  
-   findUserById: async (user_id: string) => {
+
+  findUserById: async (user_id: string): Promise<User | null> => {
     return await DB.Users.findOne({ where: { user_id } });
   },
 

@@ -9,6 +9,8 @@ export interface User {
   full_name: string;
   national_id_number?: string;
   business_registration_id?: string;
+  reset_otp?: string | null;   
+  reset_otp_expiry?: Date | null;
   created_at: Date;
 }
 
