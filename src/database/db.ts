@@ -3,10 +3,11 @@ import dotenv from 'dotenv';
 import { UserModel } from '../models/users.model.js';
 import { StudentProfileModel } from '../models/studentProfile.model.js';
 import { RecordModel } from '../models/records.model.js';
+import { EmployerProfileModel } from '../models/employerProfile.js';
 
 dotenv.config();
 
-const sequelize = new Sequelize(
+export const sequelize = new Sequelize(
   process.env.DB_NAME!,
   process.env.DB_USER!,
   process.env.DB_PASSWORD!,
@@ -34,6 +35,7 @@ const sequelize = new Sequelize(
 const models = {
   User: UserModel,
   StudentProfile: StudentProfileModel,
+  EmployerProfile :EmployerProfileModel,
   AcademicRecord: RecordModel
 };
 
@@ -55,12 +57,14 @@ Object.values(models).forEach((model: any) => {
 const DB: {
   User: typeof UserModel;
   StudentProfile: typeof StudentProfileModel;
+  EmployerProfile: typeof EmployerProfileModel;
   AcademicRecord: typeof RecordModel;
   sequelize: Sequelize;
   Sequelize: typeof Sequelize;
 } = {
   User: UserModel,
   StudentProfile: StudentProfileModel,
+  EmployerProfile: EmployerProfileModel,
   AcademicRecord: RecordModel,
   sequelize,
   Sequelize,

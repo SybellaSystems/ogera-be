@@ -3,11 +3,14 @@ import { Sequelize, DataTypes, Model, Optional } from "sequelize";
 // Interface for User
 export interface User {
   user_id: string;
+  first_name: string;
+  last_name: string;
   email: string;
   mobile_number: string;
   password_hash: string;
   role: "Student" | "Employer" | "Admin";
   national_id: string;
+  business_id: string;
   two_fa_enabled: boolean;
   two_fa_secret?: string;
   created_at: Date;
@@ -30,6 +33,14 @@ export class UserModel extends Model<User, UserCreationAttributes> {
           defaultValue: DataTypes.UUIDV4,
           primaryKey: true,
         },
+        first_name: {
+          type: DataTypes.STRING(20),
+          allowNull: false
+        },
+        last_name: {
+          type: DataTypes.STRING(20),
+          allowNull: false
+        },
         email: {
           type: DataTypes.STRING(255),
           allowNull: false,
@@ -51,6 +62,11 @@ export class UserModel extends Model<User, UserCreationAttributes> {
           defaultValue: "Student",
         },
         national_id: { // adding this column because I'll use it to when creating 'student_profiles' table
+          type: DataTypes.STRING(50),
+          allowNull: true,
+          unique: true
+        },
+        business_id: { // adding this column because I'll use it to when creating 'employer_profiles' table
           type: DataTypes.STRING(50),
           allowNull: true,
           unique: true
@@ -81,6 +97,11 @@ export class UserModel extends Model<User, UserCreationAttributes> {
     UserModel.hasOne(models.StudentProfile, {
       foreignKey: "user_id",
       as: "studentProfile"
+    });
+
+    UserModel.hasOne(models.EmployerProfile, {
+      foreignKey: "user_id",
+      as: "employerProfile"
     });
   }
 }

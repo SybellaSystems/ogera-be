@@ -42,7 +42,7 @@ export const uploadReportCard = asyncHandler(async(req: Request, res: Response):
       throw new AppError(UploadError.UPLOAD_FAILED, 400, true);
     }
     const result = await uploadToCloudinary(file.path, {
-      folder: `users/${userID}/report-card`
+      folder: `students/${userID}/report-card`
     });
     console.log(result);
 

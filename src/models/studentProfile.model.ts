@@ -3,6 +3,8 @@ import { Sequelize, DataTypes, Model, Optional } from 'sequelize';
 export interface StudentProfile {
   student_id: string;
   user_id: string;
+  first_name: string;
+  last_name: string;
   national_id: string;
   identity_status: "Pending" | "Verified" | "Rejected";
   academic_status: "Pending" | "Verified" | "Rejected";
@@ -32,6 +34,14 @@ export class StudentProfileModel extends Model<StudentProfile, StudentProfileCre
             model: "users",
             key: "user_id"
           }
+        },
+        first_name: {
+          type: DataTypes.STRING(20),
+          allowNull: false
+        },
+        last_name: {
+          type: DataTypes.STRING(20),
+          allowNull: false
         },
         national_id: {
           type: DataTypes.STRING(50),
