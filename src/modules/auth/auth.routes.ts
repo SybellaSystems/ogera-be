@@ -6,7 +6,10 @@ import {
   verify2FA,
   forgotPassword,
   verifyResetOTP,
-  resetPassword
+  resetPassword,
+  getAllusers,
+  getAllStudents,
+  getAllEmployers
 } from "./auth.controller";
 
 const authRouter = express.Router();
@@ -20,5 +23,10 @@ authRouter.post("/2fa/verify", verify2FA);
 authRouter.post("/forgot-password", forgotPassword);
 authRouter.post("/verify-otp", verifyResetOTP);
 authRouter.post("/reset-password", resetPassword);
+
+
+authRouter.get("/get-user",getAllusers);
+authRouter.get("/get-students", getAllStudents);
+authRouter.get("/get-employers", getAllEmployers);
 
 export default authRouter;
