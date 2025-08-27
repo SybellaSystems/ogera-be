@@ -1,18 +1,23 @@
 import express from "express";
-import { 
+import {
   register,
   login,
   setup2FA,
   verify2FA,
   forgotPassword,
   verifyResetOTP,
-  resetPassword
+  resetPassword,
 } from "./auth.controller";
+
+import { loginLimiter } from "@/middlewares/rateLimiter.middleware";
+import { arcjetEmailValidator  } from "@/middlewares/arcjet.middleware";
 
 const authRouter = express.Router();
 
-authRouter.post("/register", register);
-authRouter.post("/login", login);
+authRouter.post("/register",arcjetEmailValidator, register);
+
+authRouter.post("/login", loginLimiter, login);
+
 authRouter.post("/2fa/setup", setup2FA);
 authRouter.post("/2fa/verify", verify2FA);
 
