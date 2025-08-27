@@ -10,12 +10,10 @@ import {
 } from "./auth.controller";
 
 import { loginLimiter } from "@/middlewares/rateLimiter.middleware";
-import { arcjetEmailValidator  } from "@/middlewares/arcjet.middleware";
-
+import {validateEmailMiddleware} from "@/middlewares/emailValidator.middleware";
 const authRouter = express.Router();
 
-authRouter.post("/register",arcjetEmailValidator, register);
-
+authRouter.post("/register",validateEmailMiddleware, register);
 authRouter.post("/login", loginLimiter, login);
 
 authRouter.post("/2fa/setup", setup2FA);
