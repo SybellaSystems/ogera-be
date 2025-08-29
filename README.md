@@ -113,5 +113,50 @@ Let's have a look at this structure:
 └── README.md            # Project documentation
 ```
 
+## dependency scans
+```bash
+snyk test
+```
 
+## role based access
+
+```
+authRouter.post(
+  "/2fa/setup",
+  authMiddleware,
+  authorizeRoles("employer", "admin"),
+  setup2FA
+);
+
+authRouter.post(
+  "/2fa/verify",
+  authMiddleware,
+  authorizeRoles("employer", "admin"),
+  verify2FA
+);
+
+/**
+ * Student-only (admin also has access)
+ */
+authRouter.post(
+  "/forgot-password",
+  authMiddleware,
+  authorizeRoles("student", "admin"),
+  forgotPassword
+);
+
+authRouter.post(
+  "/verify-otp",
+  authMiddleware,
+  authorizeRoles("student", "admin"),
+  verifyResetOTP
+);
+
+authRouter.post(
+  "/reset-password",
+  authMiddleware,
+  authorizeRoles("student", "admin"),
+  resetPassword
+);
+```
 
