@@ -1,6 +1,8 @@
 import logger from '@/utils/logger';
 import Sequelize from 'sequelize';
 import userModel from './models/user.model';
+import JobModel from './models/job.model';
+import { applyRelations } from '@/relation/index';   
 import {
     DB_DIALECT,
     DB_HOST,
@@ -46,15 +48,20 @@ sequelize
 
 // Initialize models
 const Users = userModel(sequelize);
+const Jobs = JobModel(sequelize);
+
+// ✅ Apply relations before sync
+applyRelations({ Users, Jobs });
 
 // Sync models with DB
 sequelize
-    .sync({ alter: true }) // 👉 creates/updates tables automatically
+    .sync({ alter: true })
     .then(() => logger.info('✅ Database synced'))
     .catch(err => logger.error('❌ Database sync error: ', err));
 
 export const DB = {
     Users,
+    Jobs,
     sequelize, // connection instance (RAW queries)
     Sequelize, // library
 };
