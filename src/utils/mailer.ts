@@ -1,24 +1,24 @@
-import nodemailer from "nodemailer";
+import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER!,
-    pass: process.env.EMAIL_PASS!,
-  },
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER!,
+        pass: process.env.EMAIL_PASS!,
+    },
 });
 
 export const sendMail = async (
-  to: string,
-  subject: string,
-  html: string,
-  text?: string
+    to: string,
+    subject: string,
+    html: string,
+    text?: string,
 ) => {
-  await transporter.sendMail({
-    from: `"Ogera Support" <${process.env.EMAIL_USER!}>`,
-    to,
-    subject,
-    html,
-    text: text ?? html.replace(/<[^>]+>/g, ""), 
-  });
+    await transporter.sendMail({
+        from: `"Ogera Support" <${process.env.EMAIL_USER!}>`,
+        to,
+        subject,
+        html,
+        text: text ?? html.replace(/<[^>]+>/g, ''),
+    });
 };

@@ -4,7 +4,7 @@ import { JWT_ACCESS_TOKEN_SECRET } from '@/config';
 
 export const generateJWT = (userObj: JWTInterface): string => {
     return jwt.sign(
-        { user_id: userObj.user_id, role: userObj.role }, 
+        { user_id: userObj.user_id, role: userObj.role },
         JWT_ACCESS_TOKEN_SECRET as string,
         { expiresIn: '1h' },
     );

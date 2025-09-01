@@ -1,10 +1,10 @@
 export const EmailTemplete = (otp: string, expiry: Date) => {
-  const expiryText = expiry.toLocaleString("en-US", {
-    dateStyle: "full",
-    timeStyle: "short",
-  });
+    const expiryText = expiry.toLocaleString('en-US', {
+        dateStyle: 'full',
+        timeStyle: 'short',
+    });
 
-  const text = `Hello,
+    const text = `Hello,
 
 We received a request to reset your password.
 
@@ -17,7 +17,7 @@ If you did not request a password reset, you can safely ignore this email.
 Thank you,
 The Ogera Team`;
 
-  const html = `
+    const html = `
   <div style="font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px;">
     <div style="max-width: 600px; margin: auto; background: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
       <h2 style="color: #333;">Hello,</h2>
@@ -46,5 +46,5 @@ The Ogera Team`;
   </div>
   `;
 
-  return { text, html };
+    return { text, html };
 };
