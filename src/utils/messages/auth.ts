@@ -7,4 +7,6 @@ export const AuthMessages = {
     LOGOUT_SUCCESS: "Successfully logged out.",
     EMAIL_ALREADY_EXISTS: "Email already exists.",
     MOBILE_NUMBER_ALREADY_EXISTS: "Mobile number already exists.",
+    MISSING_NATIONAL_ID: "Please fill in your National ID",
+    MISSING_BUSINESS_ID: "Please fill in business details.",
 };

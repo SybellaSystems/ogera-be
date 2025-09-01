@@ -8,7 +8,7 @@ jest.mock('jsonwebtoken', () => ({
 
 describe('JWT Service', () => {
     const secretKey = 'test_secret';
-    const payload = { userId: '123' };
+    const payload = { userId: '123', role: "student" };
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -17,7 +17,7 @@ describe('JWT Service', () => {
     test('generateJWT should return a valid token', async () => {
         (jwt.sign as jest.Mock).mockReturnValue('mockedToken');
 
-        const token = await generateJWT(payload, secretKey);
+        const token = await generateJWT(payload);
 
         expect(jwt.sign).toHaveBeenCalledWith(payload, secretKey);
         expect(token).toBe('Bearer mockedToken');

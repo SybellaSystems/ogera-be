@@ -13,7 +13,7 @@ export const generate2FASecret = async (userId: string, email: string) => {
 
   if (!secret.otpauth_url) throw new Error(Messages.User.TWO_FA_FAILED);
 
-  await DB.Users.update({ two_fa_secret: secret.base32 }, { where: { user_id: userId } });
+  await DB.User.update({ two_fa_secret: secret.base32 }, { where: { user_id: userId } });
 
   const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url);
 
@@ -22,7 +22,7 @@ export const generate2FASecret = async (userId: string, email: string) => {
 
 // Verify OTP
 export const verifyOTP = async (userId: string, token: string) => {
-  const userInstance = await DB.Users.findOne({ where: { user_id: userId } });
+  const userInstance = await DB.User.findOne({ where: { user_id: userId } });
   if (!userInstance) throw new Error(Messages.User.USER_NOT_FOUND);
 
   const user = userInstance.get({ plain: true });
@@ -38,5 +38,5 @@ export const verifyOTP = async (userId: string, token: string) => {
 
 // Enable 2FA flag in DB
 export const enable2FA = async (userId: string) => {
-  await DB.Users.update({ two_fa_enabled: true }, { where: { user_id: userId } });
+  await DB.User.update({ two_fa_enabled: true }, { where: { user_id: userId } });
 };

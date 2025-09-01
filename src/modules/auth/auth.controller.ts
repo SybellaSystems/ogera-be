@@ -16,7 +16,7 @@ const response = new ResponseFormat();
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const result = await registerUser(req.body);
+    const result = await registerUser(req, req.body);
     response.response(res, true, StatusCodes.CREATED, result.user, Messages.User.CREATE_USER);
   } catch (error: any) {
     response.errorResponse(res, error.status || StatusCodes.INTERNAL_SERVER_ERROR, false, error.message);

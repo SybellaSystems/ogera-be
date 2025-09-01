@@ -9,7 +9,7 @@ const logFormatter = winston.format.printf(info => {
     const { timestamp, level, stack, message } = info;
     const errorMessage = stack || message;
 
-    const symbols = Object.getOwnPropertySymbols(info);
+    const symbols: any = Object.getOwnPropertySymbols(info);
     if (info[symbols[0]] !== 'error') {
         return `[${timestamp}] - ${level}: ${message}`;
     }

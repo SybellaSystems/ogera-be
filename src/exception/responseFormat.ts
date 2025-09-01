@@ -10,10 +10,10 @@ export class ResponseFormat {
   ): Response{
     return res.status(status).send({
       errorCode: !success ? status : null,
-      status: status,
-      message: message,
-      success: success,
-      data: data,
+      status,
+      message,
+      success,
+      data,
     });
   }
 
@@ -25,8 +25,8 @@ export class ResponseFormat {
   ): Response {
     return res.status(status).send({
       errorCode: status,
-      success: success,
-      message: message,
+      success,
+      message,
     });
   }
 }

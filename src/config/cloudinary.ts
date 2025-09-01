@@ -1,6 +1,6 @@
 import { v2 as cloudinary } from 'cloudinary';
 import dotenv from 'dotenv';
-import { AppError } from '../middlewares/errorHandler.js';
+import { AppError } from '../middlewares/errorHandler';
 import fs from 'fs/promises';
 
 dotenv.config();

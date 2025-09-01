@@ -5,6 +5,13 @@ import logger from '@utils/logger';
 import { DB } from '@database/index';
 import { PORT } from './config';
 import { errorHandler } from './utils/error-handler';
+import { 
+    errorHandler as errHandler, 
+    notFoundHandler, 
+    AppError, 
+    asyncHandler,
+    setupProcessHandlers
+} from './middlewares/errorHandler';
 import { swaggerSpec, swaggerUi } from './utils/swagger';
 
 const appServer = express();
@@ -45,12 +52,21 @@ appServer.use(express.urlencoded({ extended: true }));
 appServer.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Use the router with the /api prefix
-appServer.use('/api', router);
+appServer.use('/api/v1', router);
 appServer.use(errorHandler);
+appServer.use(errHandler)
+appServer.use(notFoundHandler);
 
 appServer.all('*', (req, res) => {
     res.status(404).json({ message: 'Sorry! Page not found' });
 });
+
+appServer.use(errHandler({
+    includeStackTrace: process.env.NODE_ENV === 'development',
+    customErrorMap: new Map([
+      ['CUSTOM_ERROR', { statusCode: 422, message: 'Custom error occurred' }]
+    ])
+}));
 
 DB.sequelize
     .authenticate()

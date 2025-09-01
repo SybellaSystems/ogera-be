@@ -8,10 +8,11 @@ import {
   verifyResetOTP,
   resetPassword
 } from "./auth.controller";
+import { uploadSingle } from "@/middlewares/multer";
 
 const authRouter = express.Router();
 
-authRouter.post("/register", register);
+authRouter.post("/register", uploadSingle("file"), register);
 authRouter.post("/login", login);
 authRouter.post("/2fa/setup", setup2FA);
 authRouter.post("/2fa/verify", verify2FA);

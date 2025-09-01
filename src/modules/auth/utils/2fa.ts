@@ -1,6 +1,6 @@
 import speakeasy from "speakeasy";
 import QRCode from "qrcode";
-import DB from "../../../database/db.js";
+import { DB } from "@/database";
 const User = DB.User;
 
 // Generate a new 2FA secret and QR code

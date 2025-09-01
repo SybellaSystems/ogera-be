@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
-import { AppError } from '../../../middlewares/errorHandler.js';
+import { AppError } from '../../../middlewares/errorHandler';
 import { JWTInterface } from '../types/auth.types.js';
 dotenv.config();
 

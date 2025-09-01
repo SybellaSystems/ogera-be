@@ -1,5 +1,5 @@
 import { Sequelize, DataTypes, Model, Optional } from 'sequelize';
-import { Records } from '../types/records.interface.js';
+import { Records } from '../../types/records.interface.js';
 
 
 export type RecordCreationAttributes = Optional<

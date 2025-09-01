@@ -16,6 +16,7 @@ export const UserMessages = {
   INVALID_OTP:"Invalid OTP" ,
   LOGGED_IN: 'User logged in successfully.',
   LOGGED_OUT: 'User logged out successfully.',
+  TWO_FA_ALREADY_ENABLED: '2FA is already enabled',
   TWO_FA_NOT_FOUND: '2FA secret not found',
   TWO_FA_FAILED: 'Failed to generate otpauth URL for 2FA',  
   FIELD: 'Please fill all input fields.',
@@ -27,5 +28,6 @@ export const UserMessages = {
   PASSWORD_RESET_SUCCESS: 'Password reset successful.',
   OTP_EXPIRE:'OTP expired.',
   OTP_VERIFICATION_SUCCESS: 'OTP verification successful.',
-
+  UPLOAD_SUCCESSFUL: "File uploaded successfully",
+  UPLOAD_ONLY_FOR_STUDENT: "Student can only upload their own result.",
 };
