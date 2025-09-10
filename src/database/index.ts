@@ -74,11 +74,11 @@ Object.values(models).forEach((model: any) => {
 });
 
 // Setup associations
-Object.values(models).forEach((model: any) => {
-  if (model && typeof model.associate === 'function') {
-    model.associate(models);
-  }
-});
+// Object.values(models).forEach((model: any) => {
+//   if (model && typeof model.associate === 'function') {
+//     model.associate(models);
+//   }
+// });
 
 // Apply extra relations with DBType
 applyRelations({ ...models, sequelize, Sequelize });

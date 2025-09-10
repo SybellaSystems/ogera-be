@@ -27,6 +27,7 @@ export class UserModel extends Model<User, UserCreationAttributes> {
   public reset_otp?: string;
   public reset_otp_expiry?: Date;
   public readonly created_at!: Date;
+  public readonly updated_at!: Date;
 
   // --- Static methods ---
 
@@ -93,6 +94,10 @@ export class UserModel extends Model<User, UserCreationAttributes> {
           allowNull: true,
         },
         created_at: {
+          type: DataTypes.DATE,
+          defaultValue: Sequelize.literal('NOW()'),
+        },
+        updated_at: {
           type: DataTypes.DATE,
           defaultValue: Sequelize.literal('NOW()'),
         }

@@ -10,6 +10,7 @@ export type EmployerProfileCreationAttributes = Optional<
   | 'company_size'
   | 'contact_email'
   | 'created_at'
+  | 'updated_at'
 >;
 
 export class EmployerProfileModel
@@ -98,6 +99,10 @@ export class EmployerProfileModel
           allowNull: false,
         },
         created_at: {
+          type: DataTypes.DATE,
+          defaultValue: Sequelize.literal('NOW()'),
+        },
+        updated_at: {
           type: DataTypes.DATE,
           defaultValue: Sequelize.literal('NOW()'),
         }

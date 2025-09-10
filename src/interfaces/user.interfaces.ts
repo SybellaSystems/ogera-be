@@ -13,6 +13,7 @@ export interface User {
   reset_otp?: string | null;   
   reset_otp_expiry?: Date | null;
   created_at: Date;
+  updated_at: Date;
 }
 
 export interface JWTInterface {

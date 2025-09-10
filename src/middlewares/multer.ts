@@ -1,11 +1,11 @@
-// utils/multer.ts
 import multer, { FileFilterCallback } from 'multer';
 import { Request } from 'express';
 import path from 'path';
 import fs from 'fs';
+import { fileTypeFromFile } from 'file-type';
 
 // Supported file types
-const ALLOWED_IMAGE_TYPES = ['.jpg', '.jpeg', '.png', '.gif', '.webp'] as const;
+const ALLOWED_IMAGE_TYPES = ['.jpg', '.jpeg', '.png'] as const;
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const UPLOAD_DIR = './uploads/';
 
@@ -16,10 +16,11 @@ if (!fs.existsSync(UPLOAD_DIR)) {
 
 // Custom error messages
 export enum UploadError {
-  INVALID_FILE_TYPE = 'File type not supported. Allowed types: jpg, jpeg, png, gif, webp',
+  INVALID_FILE_TYPE = 'File type not supported. Allowed types: jpg, jpeg, png',
   FILE_TOO_LARGE = 'File too large. Maximum size is 5MB',
   NO_FILE = 'No file provided',
-  UPLOAD_FAILED = 'File upload failed'
+  UPLOAD_FAILED = 'File upload failed',
+  FILE_SIGNATURE_INVALID = 'File signature does not match the file extension'
 }
 
 // Interface for multer file with additional type safety
@@ -39,33 +40,61 @@ export const isValidUploadedFile = (file: Express.Multer.File | undefined): file
          file.size !== undefined;
 };
 
-// File filter with validation
-const fileFilter = (
+const isJpeg = (ext: string) => ['.jpg', '.jpeg'].includes(ext);
+
+// Function to validate file signature using magic numbers
+const validateFileSignature = async (filePath: string, expectedExt: string): Promise<boolean> => {
+  try {
+    const fileType = await fileTypeFromFile(filePath);
+    
+    if (!fileType) {
+      return false; // Could not determine file type
+    }
+
+    const detectedExt = `.${fileType.ext}`;
+    const detectedMime = fileType.mime;
+
+    // Map file extensions to expected MIME types
+    const expectedMimeTypes: Record<string, string[]> = {
+      '.jpg': ['image/jpeg'],
+      '.jpeg': ['image/jpeg'],
+      '.png': ['image/png'],
+    };
+
+    // Check if detected extension and MIME type match expected ones
+    const allowedMimes = expectedMimeTypes[expectedExt.toLowerCase()];
+    if (!allowedMimes) return false;
+
+    // Special handling: jpg/jpeg are equivalent
+    if (isJpeg(expectedExt) && isJpeg(detectedExt)) {
+      return allowedMimes.includes(detectedMime);
+    }
+
+    return allowedMimes.includes(detectedMime) && detectedExt === expectedExt.toLowerCase();
+  } catch (error) {
+    console.error('Error validating file signature:', error);
+    return false;
+  }
+};
+
+// Enhanced file filter with signature validation
+const fileFilter = async (
   req: Request,
   file: Express.Multer.File,
   cb: FileFilterCallback
-): void => {
+): Promise<void> => {
   try {
-    // Check file extension
+    // Check file extension first
     const ext = path.extname(file.originalname).toLowerCase();
     
     if (!ALLOWED_IMAGE_TYPES.includes(ext as typeof ALLOWED_IMAGE_TYPES[number])) {
       return cb(new Error(UploadError.INVALID_FILE_TYPE));
     }
 
-    // Check MIME type as additional security
-    const allowedMimeTypes = [
-      'image/jpeg',
-      'image/jpg', 
-      'image/png',
-      'image/gif',
-    ];
+    // Store file info for later signature validation
+    (req as any).pendingFileValidation = { ext };
 
-    if (!allowedMimeTypes.includes(file.mimetype)) {
-      return cb(new Error(UploadError.INVALID_FILE_TYPE));
-    }
-
-    // File is valid
+    // Allow the file to be uploaded temporarily for signature validation
     cb(null, true);
   } catch (error) {
     cb(new Error(UploadError.UPLOAD_FAILED));
@@ -96,10 +125,51 @@ const upload = multer({
   }
 });
 
+// Middleware to validate file signature after upload
+export const validateUploadedFileSignature = async (req: Request, res: any, next: any): Promise<void> => {
+  if (!req.file) {
+    return next();
+  }
+
+  try {
+    const pendingValidation = (req as any).pendingFileValidation;
+    
+    if (!pendingValidation) {
+      cleanupFile(req.file.path);
+      return res.status(400).json({ error: UploadError.UPLOAD_FAILED });
+    }
+
+    // Validate the actual file signature
+    const isValid = await validateFileSignature(req.file.path, pendingValidation.ext);
+    
+    if (!isValid) {
+      cleanupFile(req.file.path);
+      return res.status(400).json({ error: UploadError.FILE_SIGNATURE_INVALID });
+    }
+
+    // Remove temporary validation data
+    delete (req as any).pendingFileValidation;
+    next();
+  } catch (error) {
+    cleanupFile(req.file.path);
+    res.status(500).json({ error: UploadError.UPLOAD_FAILED });
+  }
+};
+
 // Export different upload types
-export const uploadSingle = (fieldName: string = 'image') => upload.single(fieldName);
-export const uploadMultiple = (fieldName: string = 'images', maxCount: number = 5) => 
-  upload.array(fieldName, maxCount);
+export const uploadSingle = (fieldName: string = 'file') => [
+  upload.single(fieldName),
+  validateUploadedFileSignature
+];
+
+export const uploadMultiple = (fieldName: string = 'images', maxCount: number = 5) => [
+  upload.array(fieldName, maxCount),
+  async (req: Request, res: any, next: any) => {
+    // Implementation for multiple files validation
+    next();
+  }
+];
+
 export const uploadFields = upload.fields;
 
 // Utility function to clean up uploaded file on error

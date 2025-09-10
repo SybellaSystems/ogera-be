@@ -13,4 +13,5 @@ export interface EmployerProfile {
   contact_email?: string;
   company_address: string;
   created_at: Date;
+  updated_at: Date
   }
