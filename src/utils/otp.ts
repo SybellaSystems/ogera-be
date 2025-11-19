@@ -1,4 +1,4 @@
-export const generateNumericOTP = (length = 6): string => {
+export const generateNumericOTP = (length = 4): string => {
   let otp = '';
   for (let i = 0; i < length; i++) {
     otp += Math.floor(Math.random() * 10).toString();

@@ -11,8 +11,8 @@ const appServer = express();
 const port = PORT;
 
 const corsOptions = {
-    origin: '*',
-    optionsSuccessStatus: 200,
+    origin: 'http://localhost:5173',
+    credentials: true,
 };
 
 appServer.use((req, res, next) => {
