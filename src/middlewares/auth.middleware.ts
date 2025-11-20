@@ -1,12 +1,11 @@
 import { Request, Response, NextFunction } from "express";
-import jwt, { JwtPayload } from "jsonwebtoken";
-import { JWT_ACCESS_TOKEN_SECRET } from "@/config";
+import { verifyAccessToken } from "@/middlewares/jwt.service";
 import { CustomError } from "@/utils/custom-error";
 
 declare global {
   namespace Express {
     interface Request {
-      user?: { user_id: string; role?: string };
+      user?: { user_id: string; role: string };
     }
   }
 }
@@ -25,10 +24,7 @@ export const authMiddleware = (
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = jwt.verify(
-      token,
-      JWT_ACCESS_TOKEN_SECRET as string
-    ) as JwtPayload;
+    const decoded = verifyAccessToken(token);
 
     if (!decoded.user_id || !decoded.role) {
       throw new CustomError("Invalid token payload", 401);
@@ -41,6 +37,6 @@ export const authMiddleware = (
 
     next();
   } catch (err) {
-    throw new CustomError("Invalid or expired token", 401);
+    throw new CustomError("Invalid or expired access token", 401);
   }
 };
