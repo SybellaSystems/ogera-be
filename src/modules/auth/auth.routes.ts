@@ -1,5 +1,4 @@
 import express from "express";
-
 import {
   register,
   login,
@@ -10,6 +9,14 @@ import {
   forgotPassword,
   verifyResetOTP,
   resetPassword,
+} from "./auth.controller";
+
+import { loginLimiter } from "@/middlewares/rateLimiter.middleware";
+import {validateEmailMiddleware} from "@/middlewares/emailValidator.middleware";
+const authRouter = express.Router();
+
+authRouter.post("/register",validateEmailMiddleware, register);
+authRouter.post("/login", loginLimiter, login);
   getAllusers,
   getAllStudents,
   getAllEmployers

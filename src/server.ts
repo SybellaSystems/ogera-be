@@ -7,6 +7,8 @@ import { DB } from '@database/index';
 import { PORT } from './config';
 import { errorHandler } from './utils/error-handler';
 import { swaggerSpec, swaggerUi } from './utils/swagger';
+import { apiLimiter } from './middlewares/rateLimiter.middleware';
+import { helmetMiddleware } from './middlewares/helmet.middleware';
 
 const appServer = express();
 const port = PORT;
@@ -36,6 +38,8 @@ appServer.use((req, res, next) => {
     next();
 });
 
+helmetMiddleware(appServer);
+
 // Enable CORS
 appServer.use(cors(corsOptions));
 appServer.options('*', cors(corsOptions));
@@ -49,6 +53,8 @@ appServer.use(cookieParser());
 
 // Swagger
 appServer.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+appServer.use('/api', apiLimiter);
 
 // API routes
 appServer.use('/api', router);

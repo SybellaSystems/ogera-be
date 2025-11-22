@@ -1,17 +1,15 @@
-import { Request, Response, NextFunction } from 'express';
-import { CustomError } from './custom-error';
-import { ResponseFormat } from '@/exception/responseFormat';
-
-const response = new ResponseFormat();
+import { Request, Response, NextFunction } from "express";
 
 export const errorHandler = (
-    err: Error | CustomError,
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
-    const statusCode = err instanceof CustomError ? err.statusCode : 500;
-    const message = err.message || 'Internal Server Error';
+  err: Error,
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  const statusCode = res.statusCode !== 200 ? res.statusCode : 500;
 
-    return response.errorResponse(res, statusCode, false, message);
+  res.status(statusCode).json({
+    status: "error",
+    message: err.message || "Internal Server Error",
+  });
 };
