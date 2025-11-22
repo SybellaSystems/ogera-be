@@ -1,28 +1,29 @@
-import jwt, { JwtPayload } from 'jsonwebtoken';
-import { JWTInterface } from '@/interfaces/user.interfaces';
-import { JWT_ACCESS_TOKEN_SECRET } from '@/config';
+import jwt, { JwtPayload } from "jsonwebtoken";
+import {
+  JWT_ACCESS_TOKEN_SECRET,
+  JWT_REFRESH_TOKEN_SECRET,
+} from "@/config";
 
-export const generateJWT = (userObj: JWTInterface): string => {
-    return jwt.sign(
-        { user_id: userObj.user_id, role: userObj.role }, 
-        JWT_ACCESS_TOKEN_SECRET as string,
-        { expiresIn: '1h' },
-    );
+// Generate short-lived access token (15m)
+export const generateAccessToken = (payload: any): string => {
+  return jwt.sign(payload, JWT_ACCESS_TOKEN_SECRET as string, {
+    expiresIn: "1m",
+  });
 };
 
-export const verifyJWT = async (
-    token: string,
-    secretKey: string,
-): Promise<JwtPayload> => {
-    try {
-        const data = jwt.verify(token, secretKey);
+// Generate long-lived refresh token (7 days)
+export const generateRefreshToken = (payload: any): string => {
+  return jwt.sign(payload, JWT_REFRESH_TOKEN_SECRET as string, {
+    expiresIn: "7d",
+  });
+};
 
-        if (typeof data === 'string') {
-            throw new Error('Invalid token payload');
-        }
+// Verify Access Token
+export const verifyAccessToken = (token: string): JwtPayload => {
+  return jwt.verify(token, JWT_ACCESS_TOKEN_SECRET as string) as JwtPayload;
+};
 
-        return data as JwtPayload;
-    } catch (error: any) {
-        throw new Error(error.message);
-    }
+// Verify Refresh Token (used for refresh endpoint)
+export const verifyRefreshToken = (token: string): JwtPayload => {
+  return jwt.verify(token, JWT_REFRESH_TOKEN_SECRET as string) as JwtPayload;
 };
