@@ -5,7 +5,9 @@ import { Messages } from "@/utils/messages";
 import { 
   registerUser, 
   loginUser, 
-  generate2FAUser, 
+  generate2FAUser,
+  refreshTokenService,
+  logoutUser, 
   verify2FAUser,
   forgotPasswordService,
   verifyResetOTPService,
@@ -14,21 +16,6 @@ import {
   getAllStudentsService,
   getAllEmployersService
 } from "./auth.service";
-import { Request, Response } from 'express';
-import {
-    registerUser,
-    loginUser,
-    refreshTokenService,
-    logoutUser,
-    generate2FAUser,
-    verify2FAUser,
-    forgotPasswordService,
-    verifyResetOTPService,
-    resetPasswordService,
-} from './auth.service';
-
-import { StatusCodes } from 'http-status-codes';
-import { ResponseFormat } from '@/exception/responseFormat';
 
 const response = new ResponseFormat();
 
