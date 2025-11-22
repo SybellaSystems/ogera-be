@@ -10,6 +10,9 @@ import {
   forgotPassword,
   verifyResetOTP,
   resetPassword,
+  getAllusers,
+  getAllStudents,
+  getAllEmployers
 } from "./auth.controller";
 
 import { authMiddleware } from "@/middlewares/auth.middleware";
@@ -36,5 +39,10 @@ authRouter.get("/me", authMiddleware, (req, res) => {
 authRouter.post("/forgot-password", forgotPassword);
 authRouter.post("/verify-otp", verifyResetOTP);
 authRouter.post("/reset-password", resetPassword);
+
+
+authRouter.get("/get-user",getAllusers);
+authRouter.get("/get-students", getAllStudents);
+authRouter.get("/get-employers", getAllEmployers);
 
 export default authRouter;
