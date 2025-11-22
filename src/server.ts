@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from "cookie-parser";  
 import router from '@routes/routes';
 import logger from '@utils/logger';
 import { DB } from '@database/index';
@@ -11,10 +12,11 @@ const appServer = express();
 const port = PORT;
 
 const corsOptions = {
-    origin: '*',
-    optionsSuccessStatus: 200,
+    origin: 'http://localhost:5173',
+    credentials: true,
 };
 
+// Logging middleware
 appServer.use((req, res, next) => {
     const startTime = Date.now();
 
@@ -38,14 +40,20 @@ appServer.use((req, res, next) => {
 appServer.use(cors(corsOptions));
 appServer.options('*', cors(corsOptions));
 
-// Middleware for parsing JSON and URL-encoded bodies
+// Body parsers
 appServer.use(express.json());
 appServer.use(express.urlencoded({ extended: true }));
 
+// ⭐ USE COOKIE PARSER (VERY IMPORTANT)
+appServer.use(cookieParser());
+
+// Swagger
 appServer.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Use the router with the /api prefix
+// API routes
 appServer.use('/api', router);
+
+// Error handler
 appServer.use(errorHandler);
 
 appServer.all('*', (req, res) => {
