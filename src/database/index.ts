@@ -1,8 +1,9 @@
 import logger from "@/utils/logger";
 import Sequelize from "sequelize";
 
-import userModel, { UserModel } from "./models/user.model";
-import rolesModel, { RoleModel } from "./models/roles.model";
+import userModel from "./models/user.model";
+import rolesModel from "./models/roles.model";
+import jobModel from "./models/job.model";
 import { setupAssociations } from "@/association/index";
 
 import {
@@ -14,6 +15,7 @@ import {
   DB_USERNAME,
   NODE_ENV,
 } from "@/config";
+
 
 const sequelize = new Sequelize.Sequelize(
   DB_NAME!,
@@ -45,9 +47,11 @@ sequelize
 // Initialize models
 const Users = userModel(sequelize);
 const Roles = rolesModel(sequelize);
+const Jobs = jobModel(sequelize);
 
 // Apply Associations
 setupAssociations();
+
 
 // Sync DB
 sequelize
@@ -58,6 +62,7 @@ sequelize
 export const DB = {
   Users,
   Roles,
+  Jobs,
   sequelize,
   Sequelize,
 };
