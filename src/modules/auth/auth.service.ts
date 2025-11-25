@@ -1,6 +1,5 @@
 import repo from "./auth.repo";
 import { hash, compareSync } from "bcrypt";
-import { generateJWT } from "@/middlewares/jwt.service";
 import { CustomError } from "@/utils/custom-error";
 import { StatusCodes } from "http-status-codes";
 import { Messages } from "@/utils/messages";
@@ -11,27 +10,14 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import { JWT_ACCESS_TOKEN_SECRET as JWT_SECRET } from "@/config";
 import { EmailTemplete } from "@/templete/emailTemplete";
 import { PaginationQuery } from "@/interfaces/pagination.interfaces";
-
-// Strongly type reset token payload
-import repo from './auth.repo';
-import { hash, compareSync } from 'bcrypt';
-import { CustomError } from '@/utils/custom-error';
-import { StatusCodes } from 'http-status-codes';
 import { DB } from '@/database';
-
 import {
     generateAccessToken,
     generateRefreshToken,
     verifyRefreshToken,
 } from '@/middlewares/jwt.service';
 
-import { generate2FASecret, verifyOTP, enable2FA } from '@/utils/2fa';
 
-import { generateNumericOTP } from '@/utils/otp';
-import { sendMail } from '@/utils/mailer';
-import jwt, { JwtPayload } from 'jsonwebtoken';
-import { JWT_ACCESS_TOKEN_SECRET as JWT_SECRET } from '@/config';
-import { EmailTemplete } from '@/templete/emailTemplete';
 
 interface ResetTokenPayload extends JwtPayload {
     email: string;

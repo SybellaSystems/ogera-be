@@ -9,23 +9,20 @@ import {
   forgotPassword,
   verifyResetOTP,
   resetPassword,
-} from "./auth.controller";
-
-import { loginLimiter } from "@/middlewares/rateLimiter.middleware";
-import {validateEmailMiddleware} from "@/middlewares/emailValidator.middleware";
-const authRouter = express.Router();
-
-authRouter.post("/register",validateEmailMiddleware, register);
-authRouter.post("/login", loginLimiter, login);
   getAllusers,
   getAllStudents,
   getAllEmployers
 } from "./auth.controller";
 
+import { loginLimiter } from "@/middlewares/rateLimiter.middleware";
+import {validateEmailMiddleware} from "@/middlewares/emailValidator.middleware";
 import { authMiddleware } from "@/middlewares/auth.middleware";
 import { PermissionChecker } from "@/middlewares/role.middleware";
 
 const authRouter = express.Router();
+
+// authRouter.post("/register",validateEmailMiddleware, register);
+// authRouter.post("/login", loginLimiter, login);
 
 authRouter.post("/register", register);
 authRouter.post("/login", login);
