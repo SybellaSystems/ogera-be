@@ -1,23 +1,61 @@
 components: 
     schemas:
-        signup:
+        Register:
             type: object
             required: 
-                - name
+                - full_name
                 - email
+                - mobile_number
                 - password
+                - role_id
+                - terms
+                - privacy
             properties: 
-                name: 
+                full_name: 
                     type: string
-                    example: Full Name                    
+                    maxLength: 255
+                    description: Full name of the user
+                    example: "John Doe"
                 email:
                     type: string
-                    example: email@example.com
+                    format: email
+                    maxLength: 255
+                    description: User's email address
+                    example: "john.doe@example.com"
+                mobile_number:
+                    type: string
+                    maxLength: 15
+                    description: User's mobile number
+                    example: "+1234567890"
                 password:
                     type: string
-                    example: password
+                    description: User's password (will be hashed)
+                    example: "SecurePass123!"
+                role_id:
+                    type: string
+                    format: uuid
+                    description: UUID of the role to assign to the user
+                    example: "123e4567-e89b-12d3-a456-426614174000"
+                national_id_number:
+                    type: string
+                    maxLength: 50
+                    description: National ID number (optional)
+                    example: "1234567890"
+                business_registration_id:
+                    type: string
+                    maxLength: 50
+                    description: Business registration ID (optional, for employers)
+                    example: "BRN123456"
+                terms:
+                    type: boolean
+                    description: User must accept terms of service
+                    example: true
+                privacy:
+                    type: boolean
+                    description: User must accept privacy policy
+                    example: true
 
-        signin:
+        Login:
             type: object
             required:
                 - email
@@ -25,7 +63,263 @@ components:
             properties:
                 email:
                     type: string
-                    example: email@example.com
+                    format: email
+                    description: User's email address
+                    example: "john.doe@example.com"
                 password:
                     type: string
-                    example: password
+                    description: User's password
+                    example: "SecurePass123!"
+
+        Setup2FA:
+            type: object
+            required:
+                - user_id
+                - email
+            properties:
+                user_id:
+                    type: string
+                    format: uuid
+                    description: User's ID
+                    example: "123e4567-e89b-12d3-a456-426614174000"
+                email:
+                    type: string
+                    format: email
+                    description: User's email address
+                    example: "john.doe@example.com"
+
+        Verify2FA:
+            type: object
+            required:
+                - user_id
+                - token
+            properties:
+                user_id:
+                    type: string
+                    format: uuid
+                    description: User's ID
+                    example: "123e4567-e89b-12d3-a456-426614174000"
+                token:
+                    type: string
+                    description: 6-digit 2FA token
+                    example: "123456"
+
+        ForgotPassword:
+            type: object
+            required:
+                - email
+            properties:
+                email:
+                    type: string
+                    format: email
+                    description: User's email address
+                    example: "john.doe@example.com"
+
+        VerifyOTP:
+            type: object
+            required:
+                - otp
+                - resetToken
+            properties:
+                otp:
+                    type: string
+                    description: OTP sent to user's email
+                    example: "123456"
+                resetToken:
+                    type: string
+                    description: Reset token received from forgot-password endpoint
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+        ResetPassword:
+            type: object
+            required:
+                - newPassword
+                - resetToken
+            properties:
+                newPassword:
+                    type: string
+                    description: New password for the user
+                    example: "NewSecurePass123!"
+                resetToken:
+                    type: string
+                    description: Reset token verified from verify-otp endpoint
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+        UserData:
+            type: object
+            properties:
+                user_id:
+                    type: string
+                    format: uuid
+                    example: "123e4567-e89b-12d3-a456-426614174000"
+                email:
+                    type: string
+                    example: "john.doe@example.com"
+                full_name:
+                    type: string
+                    example: "John Doe"
+                mobile_number:
+                    type: string
+                    example: "+1234567890"
+                role_id:
+                    type: string
+                    format: uuid
+                    example: "123e4567-e89b-12d3-a456-426614174001"
+                two_fa_enabled:
+                    type: boolean
+                    example: false
+                national_id_number:
+                    type: string
+                    example: "1234567890"
+                business_registration_id:
+                    type: string
+                    example: "BRN123456"
+                terms_accepted:
+                    type: boolean
+                    example: true
+                privacy_accepted:
+                    type: boolean
+                    example: true
+                terms_accepted_at:
+                    type: string
+                    format: date-time
+                    example: "2025-11-27T10:30:00Z"
+                privacy_accepted_at:
+                    type: string
+                    format: date-time
+                    example: "2025-11-27T10:30:00Z"
+                created_at:
+                    type: string
+                    format: date-time
+                    example: "2025-11-27T10:30:00Z"
+                updated_at:
+                    type: string
+                    format: date-time
+                    example: "2025-11-27T10:30:00Z"
+
+        AuthSuccessResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                    example: true
+                status:
+                    type: integer
+                    example: 201
+                data:
+                    $ref: '#/components/schemas/UserData'
+                message:
+                    type: string
+                    example: "User registered successfully"
+
+        LoginResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                    example: true
+                status:
+                    type: integer
+                    example: 200
+                data:
+                    type: object
+                    properties:
+                        user:
+                            $ref: '#/components/schemas/UserData'
+                        accessToken:
+                            type: string
+                            description: JWT access token (expires in 15 minutes)
+                            example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                        two_fa_enabled:
+                            type: boolean
+                            example: false
+                message:
+                    type: string
+                    example: "User logged in successfully"
+
+        Setup2FAResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                    example: true
+                status:
+                    type: integer
+                    example: 200
+                data:
+                    type: object
+                    properties:
+                        qrCode:
+                            type: string
+                            description: QR code data URL for 2FA setup
+                            example: "data:image/png;base64,iVBORw0KGgoAAAANS..."
+                        secret:
+                            type: string
+                            description: 2FA secret key
+                            example: "JBSWY3DPEHPK3PXP"
+                message:
+                    type: string
+                    example: "2FA setup successful"
+
+        UserProfileResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                    example: true
+                status:
+                    type: integer
+                    example: 200
+                data:
+                    $ref: '#/components/schemas/UserData'
+                message:
+                    type: string
+                    example: "User profile retrieved successfully"
+
+        PaginationData:
+            type: object
+            properties:
+                currentPage:
+                    type: integer
+                    example: 1
+                totalPages:
+                    type: integer
+                    example: 5
+                totalItems:
+                    type: integer
+                    example: 47
+                itemsPerPage:
+                    type: integer
+                    example: 10
+
+        UsersPaginatedResponse:
+            type: object
+            properties:
+                status:
+                    type: integer
+                    example: 200
+                message:
+                    type: string
+                    example: "Users fetched successfully"
+                success:
+                    type: boolean
+                    example: true
+                pagination:
+                    $ref: '#/components/schemas/PaginationData'
+                data:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/UserData'
+
+        ErrorResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                    example: false
+                status:
+                    type: integer
+                    example: 400
+                message:
+                    type: string
+                    example: "Error message"
