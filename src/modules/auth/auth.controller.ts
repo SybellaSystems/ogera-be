@@ -14,7 +14,8 @@ import {
   resetPasswordService,
   getAllUsersService,
   getAllStudentsService,
-  getAllEmployersService
+  getAllEmployersService,
+  getUserProfileService
 } from "./auth.service";
 
 const response = new ResponseFormat();
@@ -332,5 +333,40 @@ export const getAllEmployers = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     response.errorResponse(res, error.status || StatusCodes.INTERNAL_SERVER_ERROR, false, error.message);
+  }
+};
+
+// -------------------- GET USER PROFILE --------------------
+export const getUserProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Get user_id from authenticated request (from auth middleware)
+    const userId = req.user?.user_id;
+
+    if (!userId) {
+      response.errorResponse(
+        res,
+        StatusCodes.UNAUTHORIZED,
+        false,
+        'User not authenticated'
+      );
+      return;
+    }
+
+    const user = await getUserProfileService(userId);
+
+    response.response(
+      res,
+      true,
+      StatusCodes.OK,
+      user,
+      'User profile retrieved successfully'
+    );
+  } catch (error: any) {
+    response.errorResponse(
+      res,
+      error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+      false,
+      error.message
+    );
   }
 };

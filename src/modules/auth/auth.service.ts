@@ -267,3 +267,11 @@ export const getAllEmployersService = async ({ page, limit }: PaginationQuery) =
     },
   };
 };
+
+// -------------------- GET USER PROFILE --------------------
+export const getUserProfileService = async (user_id: string) => {
+  const user = await repo.findUserProfileById(user_id);
+  if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+
+  return user;
+};

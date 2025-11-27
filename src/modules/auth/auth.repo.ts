@@ -71,6 +71,23 @@ const repo = {
             where: { user_id: id },
         });
     },
+
+    // Find user profile by user_id with role information
+    findUserProfileById: async (user_id: string): Promise<any> => {
+        return await DB.Users.findOne({
+            where: { user_id },
+            attributes: {
+                exclude: ['password_hash', 'reset_otp', 'reset_otp_expiry', 'two_fa_secret']
+            },
+            include: [
+                {
+                    model: DB.Roles,
+                    as: 'role',
+                    attributes: ['id', 'roleName'],
+                },
+            ],
+        });
+    },
 };
 
 export default repo;

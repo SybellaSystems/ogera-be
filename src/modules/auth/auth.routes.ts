@@ -11,7 +11,8 @@ import {
   resetPassword,
   getAllusers,
   getAllStudents,
-  getAllEmployers
+  getAllEmployers,
+  getUserProfile
 } from "./auth.controller";
 
 import { loginLimiter } from "@/middlewares/rateLimiter.middleware";
@@ -28,7 +29,8 @@ authRouter.post("/register", register);
 authRouter.post("/login", login);
 
 authRouter.get("/refresh", refreshAccessToken);
-authRouter.post("/logout", logout);
+// Optional: Add authMiddleware for secure logout (recommended)
+authRouter.post("/logout", authMiddleware, logout);
 
 authRouter.post("/2fa/setup", setup2FA);
 authRouter.post("/2fa/verify",verify2FA);
@@ -48,5 +50,8 @@ authRouter.post("/reset-password", resetPassword);
 authRouter.get("/get-user",getAllusers);
 authRouter.get("/get-students", getAllStudents);
 authRouter.get("/get-employers", getAllEmployers);
+
+// Get user profile - requires authentication
+authRouter.get("/profile", authMiddleware, getUserProfile);
 
 export default authRouter;

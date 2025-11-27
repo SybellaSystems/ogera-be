@@ -45,3 +45,34 @@
                 description: 'Conflict'
             500:
                 description: 'Internal server error'
+
+# [GET] profile
+/auth/profile:
+    get:
+        tags:
+            - Auth
+        summary: Get User Profile
+        security:
+            - bearerAuth: []
+        responses: 
+            200:
+                description: 'OK'
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                success:
+                                    type: boolean
+                                status:
+                                    type: integer
+                                data:
+                                    type: object
+                                message:
+                                    type: string
+            401:
+                description: 'Unauthorized'
+            404: 
+                description: 'User not found'
+            500:
+                description: 'Internal server error'
