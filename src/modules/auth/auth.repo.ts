@@ -1,6 +1,7 @@
 import { DB } from '@/database';
 import { User } from '@/interfaces/user.interfaces';
 import { PaginationQuery } from '@/interfaces/pagination.interfaces';
+import { Op } from 'sequelize';
 
 const repo = {
     // Find user by email
@@ -65,6 +66,41 @@ const repo = {
         });
     },
 
+    findAllSubAdmins: async ({ page, limit }: PaginationQuery) => {
+        return await DB.Users.findAndCountAll({
+            include: [
+                {
+                    model: DB.Roles,
+                    as: 'role',
+                    attributes: ['id', 'roleName'],
+                    where: {
+                        roleName: {
+                            [Op.in]: ['subadmin', 'admin'],
+                        },
+                    },
+                },
+            ],
+            offset: (page - 1) * limit,
+            limit,
+            order: [['created_at', 'DESC']],
+            attributes: {
+                exclude: [
+                    'password_hash',
+                    'reset_otp',
+                    'reset_otp_expiry',
+                    'two_fa_secret',
+                ],
+            },
+        });
+    },
+
+    // Delete user by UUID
+    deleteUser: async (id: string): Promise<void> => {
+        await DB.Users.destroy({
+            where: { user_id: id },
+        });
+    },
+
     // Update user by UUID
     updateUser: async (id: string, updates: Partial<User>): Promise<void> => {
         await DB.Users.update(updates, {
@@ -77,7 +113,12 @@ const repo = {
         return await DB.Users.findOne({
             where: { user_id },
             attributes: {
-                exclude: ['password_hash', 'reset_otp', 'reset_otp_expiry', 'two_fa_secret']
+                exclude: [
+                    'password_hash',
+                    'reset_otp',
+                    'reset_otp_expiry',
+                    'two_fa_secret',
+                ],
             },
             include: [
                 {
