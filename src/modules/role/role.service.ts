@@ -1,39 +1,131 @@
-import { RoleRepository } from "./role.repo";
+import { RoleRepository } from './role.repo';
+import { CreateRoleDTO, RoutePermission } from '@/interfaces/role.interfaces';
 
 export class RoleService {
-  private repo = new RoleRepository();
+    private repo = new RoleRepository();
 
-  async createRole(payload: any) {
-    // Convert permission_json array → string
-    if (Array.isArray(payload.permission_json)) {
-      payload.permission_json = JSON.stringify(payload.permission_json);
+    // Create a role with roleName and permission_json
+    async createRole(payload: {
+        roleName: string;
+        permission_json?: RoutePermission[];
+    }) {
+        // Validate roleName
+        if (!payload.roleName || payload.roleName.trim() === '') {
+            throw new Error('Role name is required');
+        }
+
+        // Check if role already exists
+        const existingRole = await this.repo.getRoleByName(payload.roleName);
+        if (existingRole) {
+            throw new Error(`Role '${payload.roleName}' already exists`);
+        }
+
+        // If permission_json is not provided, initialize with empty array
+        if (!payload.permission_json) {
+            payload.permission_json = [];
+        }
+
+        // Validate permission_json structure if provided
+        if (
+            Array.isArray(payload.permission_json) &&
+            payload.permission_json.length > 0
+        ) {
+            for (const perm of payload.permission_json) {
+                if (!perm.route || typeof perm.route !== 'string') {
+                    throw new Error('Each permission must have a valid route');
+                }
+                if (!perm.permission || typeof perm.permission !== 'object') {
+                    throw new Error(
+                        'Each permission must have a permission object',
+                    );
+                }
+                const { edit, view, create, delete: del } = perm.permission;
+                if (
+                    typeof edit !== 'boolean' ||
+                    typeof view !== 'boolean' ||
+                    typeof create !== 'boolean' ||
+                    typeof del !== 'boolean'
+                ) {
+                    throw new Error(
+                        'Permission must have boolean values for edit, view, create, and delete',
+                    );
+                }
+            }
+        }
+
+        // Convert permission_json array to JSON string for storage
+        const roleData = {
+            roleName: payload.roleName,
+            permission_json: JSON.stringify(payload.permission_json),
+        };
+
+        return this.repo.createRole(roleData);
     }
-    return this.repo.createRole(payload);
-  }
 
-  async getAllRoles() {
-    return this.repo.getAllRoles();
-  }
-
-  async getRoleById(id: string) {
-    const role = await this.repo.getRoleById(id);
-    if (!role) throw new Error("Role not found");
-    return role;
-  }
-
-  async updateRole(id: string, payload: any) {
-    await this.getRoleById(id);
-
-    if (Array.isArray(payload.permission_json)) {
-      payload.permission_json = JSON.stringify(payload.permission_json);
+    // Get all roles
+    async getAllRoles() {
+        const roles = await this.repo.getAllRoles();
+        return roles.map(role => ({
+            ...role.toJSON(),
+            permission_json:
+                typeof role.permission_json === 'string'
+                    ? JSON.parse(role.permission_json)
+                    : role.permission_json,
+        }));
     }
 
-    await this.repo.updateRole(id, payload);
-    return this.repo.getRoleById(id);
-  }
+    // Get role by ID
+    async getRoleById(id: string) {
+        const role = await this.repo.getRoleById(id);
+        if (!role) throw new Error('Role not found');
 
-  async deleteRole(id: string) {
-    await this.getRoleById(id);
-    return this.repo.deleteRole(id);
-  }
+        return {
+            ...role.toJSON(),
+            permission_json:
+                typeof role.permission_json === 'string'
+                    ? JSON.parse(role.permission_json)
+                    : role.permission_json,
+        };
+    }
+
+    // Update role
+    async updateRole(
+        id: string,
+        payload: Partial<{
+            roleName: string;
+            permission_json: RoutePermission[];
+        }>,
+    ) {
+        await this.getRoleById(id);
+
+        if (payload.permission_json) {
+            if (!Array.isArray(payload.permission_json)) {
+                throw new Error('permission_json must be an array');
+            }
+
+            for (const perm of payload.permission_json) {
+                if (!perm.route || typeof perm.route !== 'string') {
+                    throw new Error('Each permission must have a valid route');
+                }
+                if (!perm.permission || typeof perm.permission !== 'object') {
+                    throw new Error(
+                        'Each permission must have a permission object',
+                    );
+                }
+            }
+
+            payload.permission_json = JSON.stringify(
+                payload.permission_json,
+            ) as any;
+        }
+
+        await this.repo.updateRole(id, payload);
+        return this.getRoleById(id);
+    }
+
+    // Delete role
+    async deleteRole(id: string) {
+        await this.getRoleById(id);
+        return this.repo.deleteRole(id);
+    }
 }

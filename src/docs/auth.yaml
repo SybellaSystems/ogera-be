@@ -1,47 +1,362 @@
-# [POST] signup
-/auth/signup:
+# [POST] Register
+/auth/register:
     post:
         tags:
             - Auth
-        summary: Sign Up
+        summary: Register a new user
+        description: Creates a new user account. Requires acceptance of terms and privacy policy.
         requestBody:
-            description: Sign Up
+            description: User registration data
             required: true
             content: 
                 application/json:
                     schema:
-                        $ref: '#/components/schemas/signup'
+                        $ref: '#/components/schemas/Register'
         responses: 
             201:
-                description: 'OK'
+                description: User registered successfully
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AuthSuccessResponse'
             400: 
-                description: 'Bad Request'
+                description: Bad Request - Missing required fields or terms not accepted
             409: 
-                description: 'Conflict'
+                description: Conflict - User already exists
             500:
-                description: 'Internal server error'
+                description: Internal server error
 
-# [POST] signin
-/auth/signin:
+# [POST] Login
+/auth/login:
     post:
         tags:
             - Auth
-        summary: Sign In
+        summary: Login user
+        description: Authenticates a user and returns access token and refresh token
         requestBody:
-            description: Sign In
+            description: User login credentials
             required: true
             content: 
                 application/json:
                     schema:
-                        $ref: '#/components/schemas/signin'
+                        $ref: '#/components/schemas/Login'
         responses: 
-            201:
-                description: 'OK'
+            200:
+                description: User logged in successfully
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/LoginResponse'
             400: 
-                description: 'Bad Request'
+                description: Bad Request
             401:
-                description: 'Unauthorized'
-            409: 
-                description: 'Conflict'
+                description: Unauthorized - Invalid credentials
             500:
-                description: 'Internal server error'
+                description: Internal server error
+
+# [GET] Refresh Token
+/auth/refresh:
+    get:
+        tags:
+            - Auth
+        summary: Refresh access token
+        description: Gets a new access token using the refresh token from cookies
+        responses: 
+            200:
+                description: Token refreshed successfully
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                success:
+                                    type: boolean
+                                status:
+                                    type: integer
+                                data:
+                                    type: object
+                                    properties:
+                                        accessToken:
+                                            type: string
+                                message:
+                                    type: string
+            401:
+                description: Unauthorized - Invalid or missing refresh token
+            500:
+                description: Internal server error
+
+# [POST] Logout
+/auth/logout:
+    post:
+        tags:
+            - Auth
+        summary: Logout user
+        description: Logs out the user and clears refresh token cookie
+        security:
+            - bearerAuth: []
+        responses: 
+            200:
+                description: Logged out successfully
+            401:
+                description: Unauthorized
+            500:
+                description: Internal server error
+
+# [POST] Setup 2FA
+/auth/2fa/setup:
+    post:
+        tags:
+            - Auth
+            - Two-Factor Authentication
+        summary: Setup two-factor authentication
+        description: Generates a QR code and secret for 2FA setup
+        requestBody:
+            required: true
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Setup2FA'
+        responses:
+            200:
+                description: 2FA setup successful
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Setup2FAResponse'
+            400:
+                description: Bad Request
+            500:
+                description: Internal server error
+
+# [POST] Verify 2FA
+/auth/2fa/verify:
+    post:
+        tags:
+            - Auth
+            - Two-Factor Authentication
+        summary: Verify two-factor authentication token
+        description: Verifies the 2FA token provided by the user
+        requestBody:
+            required: true
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Verify2FA'
+        responses:
+            200:
+                description: 2FA verified successfully
+            400:
+                description: Bad Request - Invalid token
+            500:
+                description: Internal server error
+
+# [POST] Forgot Password
+/auth/forgot-password:
+    post:
+        tags:
+            - Auth
+            - Password Reset
+        summary: Request password reset
+        description: Sends an OTP to the user's email for password reset
+        requestBody:
+            required: true
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ForgotPassword'
+        responses:
+            200:
+                description: OTP sent successfully
+            400:
+                description: Bad Request
+            404:
+                description: User not found
+            500:
+                description: Internal server error
+
+# [POST] Verify Reset OTP
+/auth/verify-otp:
+    post:
+        tags:
+            - Auth
+            - Password Reset
+        summary: Verify password reset OTP
+        description: Verifies the OTP sent to user's email
+        requestBody:
+            required: true
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/VerifyOTP'
+        responses:
+            200:
+                description: OTP verification successful
+            400:
+                description: Bad Request - Invalid OTP
+            500:
+                description: Internal server error
+
+# [POST] Reset Password
+/auth/reset-password:
+    post:
+        tags:
+            - Auth
+            - Password Reset
+        summary: Reset password
+        description: Resets the user's password using the reset token
+        requestBody:
+            required: true
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ResetPassword'
+        responses:
+            200:
+                description: Password reset successful
+            400:
+                description: Bad Request
+            500:
+                description: Internal server error
+
+# [GET] Get All Users
+/auth/get-user:
+    get:
+        tags:
+            - Auth
+            - Users
+        summary: Get all users
+        description: Retrieves a paginated list of all users
+        parameters:
+            - in: query
+              name: page
+              schema:
+                  type: integer
+                  default: 1
+              description: Page number
+            - in: query
+              name: limit
+              schema:
+                  type: integer
+                  default: 10
+              description: Number of items per page
+        responses:
+            200:
+                description: Users retrieved successfully
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UsersPaginatedResponse'
+            500:
+                description: Internal server error
+
+# [GET] Get All Students
+/auth/get-students:
+    get:
+        tags:
+            - Auth
+            - Users
+        summary: Get all students
+        description: Retrieves a paginated list of all students
+        parameters:
+            - in: query
+              name: page
+              schema:
+                  type: integer
+                  default: 1
+              description: Page number
+            - in: query
+              name: limit
+              schema:
+                  type: integer
+                  default: 10
+              description: Number of items per page
+        responses:
+            200:
+                description: Students retrieved successfully
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UsersPaginatedResponse'
+            500:
+                description: Internal server error
+
+# [GET] Get All Employers
+/auth/get-employers:
+    get:
+        tags:
+            - Auth
+            - Users
+        summary: Get all employers
+        description: Retrieves a paginated list of all employers
+        parameters:
+            - in: query
+              name: page
+              schema:
+                  type: integer
+                  default: 1
+              description: Page number
+            - in: query
+              name: limit
+              schema:
+                  type: integer
+                  default: 10
+              description: Number of items per page
+        responses:
+            200:
+                description: Employers retrieved successfully
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UsersPaginatedResponse'
+            500:
+                description: Internal server error
+
+# [GET] Get User Profile
+/auth/profile:
+    get:
+        tags:
+            - Auth
+            - Profile
+        summary: Get authenticated user profile
+        description: Retrieves the profile of the currently authenticated user
+        security:
+            - bearerAuth: []
+        responses: 
+            200:
+                description: Profile retrieved successfully
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UserProfileResponse'
+            401:
+                description: Unauthorized
+            404: 
+                description: User not found
+            500:
+                description: Internal server error
+
+# [GET] Protected Test Route
+/auth/me:
+    get:
+        tags:
+            - Auth
+        summary: Test protected route
+        description: A test endpoint to verify authentication is working
+        security:
+            - bearerAuth: []
+        responses:
+            200:
+                description: Protected API working
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                message:
+                                    type: string
+                                user:
+                                    type: object
+            401:
+                description: Unauthorized
+            500:
+                description: Internal server error

@@ -1,9 +1,18 @@
+## 🚀 Quick Start
+
+**New to Ogera API?** Check out the [**Quick Start Guide**](./QUICK_START.md) for a step-by-step tutorial!
+
+**Looking for documentation?** See the [**Documentation Index**](./DOCUMENTATION_INDEX.md) for all available resources.
+
+---
+
 ## 🚀 Prerequisite
 
 Make sure you have installed the following tools:
 
 - **Node.js** >= v18.x.x  
 - **npm**
+- **PostgreSQL** >= v12.x
 
 ---
 
@@ -29,19 +38,36 @@ Make sure you have installed the following tools:
 
 4. Fill the `.env.development` file based on your requirements:
 
+   ```env
+    # Server Configuration
+    PORT = 5000
+    NODE_ENV = development
+    BASE_URL = http://localhost:5000
+    
+    # Database Configuration
+    DB_PORT = 5432
+    DB_USERNAME = your_db_username
+    DB_PASSWORD = your_db_password
+    DB_NAME = ogera_db
+    DB_HOST = localhost
+    DB_DIALECT = postgres
+    
+    # JWT Configuration
+    JWT_ACCESS_TOKEN_SECRET = your_access_token_secret
+    JWT_REFRESH_TOKEN_SECRET = your_refresh_token_secret
+    
+    # Email Configuration (for OTP)
+    MAIL_HOST = smtp.gmail.com
+    MAIL_PORT = 587
+    MAIL_USER = your_email@gmail.com
+    MAIL_PASSWORD = your_app_password
+    MAIL_FROM = noreply@ogera.com
    ```
-    PORT = port number
-    NODE_ENV = env
-    BASE_URL = base url
-    
-    DB_PORT = db port
-    DB_USERNAME = db username
-    DB_PASSWORD = db password
-    DB_NAME = db name
-    DB_HOST = host
-    DB_DIALECT = dialect
-    
-    JWT_ACCESS_TOKEN_SECRET = JWT secret
+
+5. Run database migrations:
+
+   ```bash
+   npm run migration
    ```
 
 ## 🏃 Run the server and the test
@@ -55,6 +81,7 @@ npm run dev
 Or in the production mode
 
 ```bash
+npm run build
 npm start
 ```
 
@@ -76,9 +103,28 @@ npm start
 
 ## 📚 API Documentation
 
-Access swagger documentations: [http://localhost:5000/api-docs](http://localhost:5000/api-docs)
+### Interactive Documentation (Swagger)
+Access interactive API documentation at: [http://localhost:5000/api-docs](http://localhost:5000/api-docs)
 
-Swagger will automatically return the documentations based on route file annotation.
+### Comprehensive Documentation
+For detailed API documentation including request/response examples, authentication guide, and more, see:
+- **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)** - Complete API reference guide
+
+### Postman Collection
+Import the Postman collection to test all API endpoints:
+- **[Ogera_API.postman_collection.json](./Ogera_API.postman_collection.json)** - Ready-to-use Postman collection
+
+To use the Postman collection:
+1. Import `Ogera_API.postman_collection.json` into Postman
+2. The collection includes environment variables for easy testing
+3. Login request automatically saves the access token for authenticated requests
+
+### Quick Overview
+
+The API includes the following modules:
+- **Authentication** (`/api/auth`) - User registration, login, 2FA, password reset
+- **Jobs** (`/api/jobs`) - Job posting management with CRUD operations
+- **Roles** (`/api/roles`) - Role and permission management
 
 ---
 
