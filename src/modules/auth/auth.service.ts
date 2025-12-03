@@ -1,23 +1,22 @@
-import repo from "./auth.repo";
-import { hash, compareSync } from "bcrypt";
-import { CustomError } from "@/utils/custom-error";
-import { StatusCodes } from "http-status-codes";
-import { Messages } from "@/utils/messages";
-import { generate2FASecret, verifyOTP, enable2FA } from "@/utils/2fa";
-import { generateNumericOTP } from "@/utils/otp";
-import { sendMail } from "@/utils/mailer";
-import jwt, { JwtPayload } from "jsonwebtoken";
-import { JWT_ACCESS_TOKEN_SECRET as JWT_SECRET } from "@/config";
-import { EmailTemplete } from "@/templete/emailTemplete";
-import { PaginationQuery } from "@/interfaces/pagination.interfaces";
+import repo from './auth.repo';
+import { hash, compareSync } from 'bcrypt';
+import { CustomError } from '@/utils/custom-error';
+import { StatusCodes } from 'http-status-codes';
+import { Messages } from '@/utils/messages';
+import { generate2FASecret, verifyOTP, enable2FA } from '@/utils/2fa';
+import { generateNumericOTP } from '@/utils/otp';
+import { sendMail } from '@/utils/mailer';
+import jwt, { JwtPayload } from 'jsonwebtoken';
+import { JWT_ACCESS_TOKEN_SECRET as JWT_SECRET, FRONTEND_URL } from '@/config';
+import { EmailTemplete, EmailVerificationTemplate } from '@/templete/emailTemplete';
+import { PaginationQuery } from '@/interfaces/pagination.interfaces';
+import { User } from '@/interfaces/user.interfaces';
 import { DB } from '@/database';
 import {
     generateAccessToken,
     generateRefreshToken,
     verifyRefreshToken,
 } from '@/middlewares/jwt.service';
-
-
 
 interface ResetTokenPayload extends JwtPayload {
     email: string;
@@ -46,14 +45,25 @@ export const registerUser = async (data: any) => {
 
     if (!role) throw new CustomError('Invalid role', StatusCodes.BAD_REQUEST);
 
+    // Generate email verification token
+    const verificationToken = jwt.sign(
+        { email: data.email, type: 'email_verification' },
+        JWT_SECRET as string,
+        { expiresIn: '24h' },
+    );
+    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
     const user = await repo.createUser({
-        full_name: data.full_name,
+        full_name: data.full_name?.trim() || '', // Use provided name as-is, trimmed (never add "Doe" or default last name)
         email: data.email,
         mobile_number: data.mobile_number,
         national_id_number: data.national_id_number,
         business_registration_id: data.business_registration_id || null,
         password_hash: hashedPassword,
         role_id: role.id,
+        email_verified: false,
+        email_verification_token: verificationToken,
+        email_verification_token_expiry: verificationTokenExpiry,
 
         /* ⭐ LEGAL */
         terms_accepted: true,
@@ -61,6 +71,21 @@ export const registerUser = async (data: any) => {
         terms_accepted_at: new Date(),
         privacy_accepted_at: new Date(),
     });
+
+    // Send verification email
+    const frontendUrl = FRONTEND_URL || 'http://localhost:5173';
+    const verificationLink = `${frontendUrl}/auth/verify-email?token=${verificationToken}`;
+    const { html, text } = EmailVerificationTemplate(
+        verificationLink,
+        verificationTokenExpiry,
+    );
+
+    try {
+        await sendMail(data.email, 'Verify Your Email Address', text, html);
+    } catch (error) {
+        // Log error but don't fail registration
+        console.error('Failed to send verification email:', error);
+    }
 
     return { user };
 };
@@ -224,54 +249,485 @@ export const resetPasswordService = async (
 };
 
 export const getAllUsersService = async ({ page, limit }: PaginationQuery) => {
-  const { rows, count } = await repo.findAllUsers({ page, limit });
-  if (!rows.length) throw new CustomError(Messages.User.NO_USERS_FOUND, StatusCodes.NOT_FOUND);
+    const { rows, count } = await repo.findAllUsers({ page, limit });
+    if (!rows.length)
+        throw new CustomError(
+            Messages.User.NO_USERS_FOUND,
+            StatusCodes.NOT_FOUND,
+        );
 
-  return {
-    data: rows,
-    pagination: {
-      total: count,
-      page,
-      limit,
-      totalPages: Math.ceil(count / limit),
-    },
-  };
+    return {
+        data: rows,
+        pagination: {
+            total: count,
+            page,
+            limit,
+            totalPages: Math.ceil(count / limit),
+        },
+    };
 };
 
-export const getAllStudentsService = async ({ page, limit }: PaginationQuery) => {
-  const { rows, count } = await repo.findAllStudents({ page, limit });
-  if (!rows.length) throw new CustomError(Messages.User.NO_STUDENTS_FOUND, StatusCodes.NOT_FOUND);
+export const getAllStudentsService = async ({
+    page,
+    limit,
+}: PaginationQuery) => {
+    const { rows, count } = await repo.findAllStudents({ page, limit });
+    if (!rows.length)
+        throw new CustomError(
+            Messages.User.NO_STUDENTS_FOUND,
+            StatusCodes.NOT_FOUND,
+        );
 
-  return {
-    data: rows,
-    pagination: {
-      total: count,
-      page,
-      limit,
-      totalPages: Math.ceil(count / limit),
-    },
-  };
+    return {
+        data: rows,
+        pagination: {
+            total: count,
+            page,
+            limit,
+            totalPages: Math.ceil(count / limit),
+        },
+    };
 };
 
-export const getAllEmployersService = async ({ page, limit }: PaginationQuery) => {
-  const { rows, count } = await repo.findAllEmployers({ page, limit });
-  if (!rows.length) throw new CustomError(Messages.User.NO_EMPLOYERS_FOUND, StatusCodes.NOT_FOUND);
+export const getAllEmployersService = async ({
+    page,
+    limit,
+}: PaginationQuery) => {
+    const { rows, count } = await repo.findAllEmployers({ page, limit });
+    if (!rows.length)
+        throw new CustomError(
+            Messages.User.NO_EMPLOYERS_FOUND,
+            StatusCodes.NOT_FOUND,
+        );
 
-  return {
-    data: rows,
-    pagination: {
-      total: count,
-      page,
-      limit,
-      totalPages: Math.ceil(count / limit),
-    },
-  };
+    return {
+        data: rows,
+        pagination: {
+            total: count,
+            page,
+            limit,
+            totalPages: Math.ceil(count / limit),
+        },
+    };
 };
 
 // -------------------- GET USER PROFILE --------------------
 export const getUserProfileService = async (user_id: string) => {
-  const user = await repo.findUserProfileById(user_id);
-  if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+    const user = await repo.findUserProfileById(user_id);
+    if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
 
-  return user;
+    return user;
+};
+
+// -------------------- VERIFY EMAIL --------------------
+export const verifyEmailService = async (token: string) => {
+    try {
+        const decoded = jwt.verify(
+            token,
+            JWT_SECRET as string,
+        ) as { email: string; type: string };
+
+        if (decoded.type !== 'email_verification') {
+            throw new CustomError('Invalid token type', StatusCodes.BAD_REQUEST);
+        }
+
+        const user = await repo.findUserByEmail(decoded.email);
+        if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+
+        // Check if token matches and is not expired
+        if (user.email_verification_token !== token) {
+            throw new CustomError('Invalid verification token', StatusCodes.BAD_REQUEST);
+        }
+
+        if (
+            !user.email_verification_token_expiry ||
+            Date.now() > user.email_verification_token_expiry.getTime()
+        ) {
+            throw new CustomError('Verification token expired', StatusCodes.BAD_REQUEST);
+        }
+
+        // Verify the email
+        await repo.updateUser(user.user_id, {
+            email_verified: true,
+            email_verification_token: null,
+            email_verification_token_expiry: null,
+        });
+
+        return { success: true };
+    } catch (error: any) {
+        if (error instanceof jwt.JsonWebTokenError) {
+            throw new CustomError('Invalid or expired token', StatusCodes.BAD_REQUEST);
+        }
+        throw error;
+    }
+};
+
+// -------------------- RESEND VERIFICATION EMAIL --------------------
+export const resendVerificationEmailService = async (email: string) => {
+    const user = await repo.findUserByEmail(email);
+    if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+
+    if (user.email_verified) {
+        throw new CustomError('Email already verified', StatusCodes.BAD_REQUEST);
+    }
+
+    // Generate new verification token
+    const verificationToken = jwt.sign(
+        { email: user.email, type: 'email_verification' },
+        JWT_SECRET as string,
+        { expiresIn: '24h' },
+    );
+    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Update user with new token
+    await repo.updateUser(user.user_id, {
+        email_verification_token: verificationToken,
+        email_verification_token_expiry: verificationTokenExpiry,
+    });
+
+    // Send verification email
+    const frontendUrl = FRONTEND_URL || 'http://localhost:5173';
+    const verificationLink = `${frontendUrl}/auth/verify-email?token=${verificationToken}`;
+    const { html, text } = EmailVerificationTemplate(
+        verificationLink,
+        verificationTokenExpiry,
+    );
+
+    await sendMail(user.email, 'Verify Your Email Address', text, html);
+
+    return { success: true, message: 'Verification email sent successfully' };
+};
+
+// -------------------- UPDATE USER PROFILE --------------------
+export const updateProfileService = async (
+    user_id: string,
+    data: {
+        full_name?: string;
+        email?: string;
+        mobile_number?: string;
+        national_id_number?: string;
+        business_registration_id?: string;
+    },
+) => {
+    // Check if user exists
+    const user = await repo.findUserById(user_id);
+    if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+
+    // If email is being updated, check if it's already taken by another user
+    const emailChanged = data.email && data.email !== user.email;
+    if (emailChanged) {
+        const emailExists = await repo.findUserByEmail(data.email);
+        if (emailExists && emailExists.user_id !== user_id) {
+            throw new CustomError('Email already exists', StatusCodes.CONFLICT);
+        }
+    }
+
+    // Prepare update data (only include fields that are provided)
+    const updateData: Partial<User> = {};
+
+    // Use full_name exactly as provided, trimmed but no modifications (never add "Doe" or default last name)
+    if (data.full_name !== undefined) {
+        updateData.full_name = data.full_name.trim();
+    }
+    if (data.mobile_number !== undefined)
+        updateData.mobile_number = data.mobile_number;
+    if (data.national_id_number !== undefined)
+        updateData.national_id_number = data.national_id_number;
+    if (data.business_registration_id !== undefined)
+        updateData.business_registration_id = data.business_registration_id;
+
+    // If email is being changed, generate verification token and mark as unverified
+    if (emailChanged) {
+        const verificationToken = jwt.sign(
+            { email: data.email, type: 'email_verification' },
+            JWT_SECRET as string,
+            { expiresIn: '24h' },
+        );
+        const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+        updateData.email = data.email;
+        updateData.email_verified = false;
+        updateData.email_verification_token = verificationToken;
+        updateData.email_verification_token_expiry = verificationTokenExpiry;
+
+        // Send verification email to new email
+        const frontendUrl = FRONTEND_URL || 'http://localhost:5173';
+        const verificationLink = `${frontendUrl}/auth/verify-email?token=${verificationToken}`;
+        const { html, text } = EmailVerificationTemplate(
+            verificationLink,
+            verificationTokenExpiry,
+        );
+
+        try {
+            await sendMail(data.email!, 'Verify Your New Email Address', text, html);
+        } catch (error) {
+            // Log error but don't fail update
+            console.error('Failed to send verification email:', error);
+        }
+    }
+
+    // Update the user
+    await repo.updateUser(user_id, updateData);
+
+    // Return updated profile
+    const updatedUser = await repo.findUserProfileById(user_id);
+    if (!updatedUser)
+        throw new CustomError(
+            'User not found after update',
+            StatusCodes.INTERNAL_SERVER_ERROR,
+        );
+
+    return updatedUser;
+};
+
+// -------------------- CREATE SUPERADMIN/ADMIN --------------------
+export const createSuperAdmin = async (data: {
+    email: string;
+    password: string;
+    role: string;
+}) => {
+    // Check if email exists
+    const exists = await repo.findUserByEmail(data.email);
+    if (exists)
+        throw new CustomError('Email already exists', StatusCodes.CONFLICT);
+
+    // Validate role is either superadmin or admin
+    if (data.role !== 'superadmin' && data.role !== 'admin') {
+        throw new CustomError(
+            'Role must be either superadmin or admin',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+
+    const hashedPassword = await hash(data.password, 10);
+
+    // Find or create the role
+    let role = await DB.Roles.findOne({
+        where: { roleName: data.role },
+    });
+
+    if (!role) {
+        // Create the role if it doesn't exist
+        role = await DB.Roles.create({
+            roleName: data.role,
+            permission_json: JSON.stringify([]),
+        });
+    }
+
+    // Use provided full_name, or email prefix if not provided (never add "Doe" or default last name)
+    const fullName = data.email.split('@')[0]; // Use email prefix only, never add "Doe"
+
+    // Create admin/superadmin user with default values for required fields
+    const user = await repo.createUser({
+        email: data.email,
+        password_hash: hashedPassword,
+        role_id: role.id,
+        full_name: fullName, // Use email prefix only, never add "Doe"
+        mobile_number: '0000000000', // Placeholder for required field
+        terms_accepted: true,
+        privacy_accepted: true,
+        terms_accepted_at: new Date(),
+        privacy_accepted_at: new Date(),
+    });
+
+    return { user };
+};
+
+// -------------------- CREATE SUBADMIN (SUPERADMIN ONLY) --------------------
+export const createSubAdmin = async (data: {
+    email: string;
+    password: string;
+    role: string;
+    full_name?: string;
+}) => {
+    // Check if email exists
+    const exists = await repo.findUserByEmail(data.email);
+    if (exists)
+        throw new CustomError('Email already exists', StatusCodes.CONFLICT);
+
+    // Validate role is either subadmin or admin
+    if (data.role !== 'subadmin' && data.role !== 'admin') {
+        throw new CustomError(
+            'Role must be either subadmin or admin',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+
+    const hashedPassword = await hash(data.password, 10);
+
+    // Find or create the role
+    let role = await DB.Roles.findOne({
+        where: { roleName: data.role },
+    });
+
+    if (!role) {
+        // Create the role if it doesn't exist
+        role = await DB.Roles.create({
+            roleName: data.role,
+            permission_json: JSON.stringify([]),
+        });
+    }
+
+    // Use provided full_name, or email prefix if not provided (never add "Doe" or default last name)
+    const fullName = data.full_name
+        ? data.full_name.trim() // Use provided name as-is, no modifications
+        : data.email.split('@')[0]; // Use email prefix only if no name provided
+
+    // Create subadmin user with default values for required fields
+    const user = await repo.createUser({
+        email: data.email,
+        password_hash: hashedPassword,
+        role_id: role.id,
+        full_name: fullName, // Use provided name or email prefix, never add "Doe"
+        mobile_number: '0000000000', // Placeholder for required field
+        terms_accepted: true,
+        privacy_accepted: true,
+        terms_accepted_at: new Date(),
+        privacy_accepted_at: new Date(),
+    });
+
+    return { user };
+};
+
+// -------------------- GET ALL SUBADMINS (SUPERADMIN ONLY) --------------------
+export const getAllSubAdminsService = async ({
+    page,
+    limit,
+}: PaginationQuery) => {
+    const { rows, count } = await repo.findAllSubAdmins({ page, limit });
+    if (!rows.length)
+        throw new CustomError('No subadmins found', StatusCodes.NOT_FOUND);
+
+    return {
+        data: rows,
+        pagination: {
+            total: count,
+            page,
+            limit,
+            totalPages: Math.ceil(count / limit),
+        },
+    };
+};
+
+// -------------------- GET SUBADMIN BY ID (SUPERADMIN ONLY) --------------------
+export const getSubAdminByIdService = async (user_id: string) => {
+    const user = await repo.findUserProfileById(user_id);
+    if (!user)
+        throw new CustomError('Subadmin not found', StatusCodes.NOT_FOUND);
+
+    // Check if user is subadmin or admin
+    const roleName = user.role?.roleName;
+    if (roleName !== 'subadmin' && roleName !== 'admin') {
+        throw new CustomError(
+            'User is not a subadmin',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+
+    return user;
+};
+
+// -------------------- UPDATE SUBADMIN (SUPERADMIN ONLY) --------------------
+export const updateSubAdminService = async (
+    user_id: string,
+    data: {
+        full_name?: string;
+        email?: string;
+        mobile_number?: string;
+        password?: string;
+        role?: string;
+    },
+) => {
+    // Check if user exists and is a subadmin
+    const user = await repo.findUserById(user_id);
+    if (!user)
+        throw new CustomError('Subadmin not found', StatusCodes.NOT_FOUND);
+
+    // Verify user is subadmin or admin
+    const role = await DB.Roles.findOne({ where: { id: user.role_id } });
+    if (!role || (role.roleName !== 'subadmin' && role.roleName !== 'admin')) {
+        throw new CustomError(
+            'User is not a subadmin',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+
+    // If email is being updated, check if it's already taken by another user
+    if (data.email && data.email !== user.email) {
+        const emailExists = await repo.findUserByEmail(data.email);
+        if (emailExists && emailExists.user_id !== user_id) {
+            throw new CustomError('Email already exists', StatusCodes.CONFLICT);
+        }
+    }
+
+    // Prepare update data
+    const updateData: Partial<User> = {};
+
+    if (data.full_name !== undefined) {
+        updateData.full_name = data.full_name.trim();
+    }
+    if (data.email !== undefined) updateData.email = data.email;
+    if (data.mobile_number !== undefined)
+        updateData.mobile_number = data.mobile_number;
+    if (data.password !== undefined) {
+        updateData.password_hash = await hash(data.password, 10);
+    }
+
+    // If role is being updated, validate and update role_id
+    if (data.role !== undefined) {
+        if (data.role !== 'subadmin' && data.role !== 'admin') {
+            throw new CustomError(
+                'Role must be either subadmin or admin',
+                StatusCodes.BAD_REQUEST,
+            );
+        }
+
+        let newRole = await DB.Roles.findOne({
+            where: { roleName: data.role },
+        });
+
+        if (!newRole) {
+            newRole = await DB.Roles.create({
+                roleName: data.role,
+                permission_json: JSON.stringify([]),
+            });
+        }
+
+        updateData.role_id = newRole.id;
+    }
+
+    // Update the subadmin
+    await repo.updateUser(user_id, updateData);
+
+    // Return updated profile
+    const updatedUser = await repo.findUserProfileById(user_id);
+    if (!updatedUser)
+        throw new CustomError(
+            'Subadmin not found after update',
+            StatusCodes.INTERNAL_SERVER_ERROR,
+        );
+
+    return updatedUser;
+};
+
+// -------------------- DELETE SUBADMIN (SUPERADMIN ONLY) --------------------
+export const deleteSubAdminService = async (user_id: string) => {
+    // Check if user exists and is a subadmin
+    const user = await repo.findUserById(user_id);
+    if (!user)
+        throw new CustomError('Subadmin not found', StatusCodes.NOT_FOUND);
+
+    // Verify user is subadmin or admin
+    const role = await DB.Roles.findOne({ where: { id: user.role_id } });
+    if (!role || (role.roleName !== 'subadmin' && role.roleName !== 'admin')) {
+        throw new CustomError(
+            'User is not a subadmin',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+
+    // Delete the subadmin
+    await repo.deleteUser(user_id);
+
+    return { message: 'Subadmin deleted successfully' };
 };

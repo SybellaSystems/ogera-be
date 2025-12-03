@@ -18,7 +18,11 @@ export interface User {
   privacy_accepted_at: Date | null;
 
   reset_otp?: string | null;
-  reset_otp_expiry?: Date | null;
+  reset_otp_expiry?: Date | null; 
+
+  email_verified?: boolean;
+  email_verification_token?: string | null;
+  email_verification_token_expiry?: Date | null;
 
   created_at: Date;
   updated_at: Date;

@@ -7,6 +7,7 @@ export const {
     PORT,
     NODE_ENV,
     BASE_URL,
+    FRONTEND_URL,
     JWT_ACCESS_TOKEN_SECRET,
     JWT_REFRESH_TOKEN_SECRET,
 } = process.env;

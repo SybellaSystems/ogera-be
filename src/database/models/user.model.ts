@@ -15,6 +15,9 @@ export type UserCreationAttributes = Optional<
   | "privacy_accepted"
   | "terms_accepted_at"
   | "privacy_accepted_at"
+  | "email_verified"
+  | "email_verification_token"
+  | "email_verification_token_expiry"
 >;
 
 export class UserModel
@@ -41,6 +44,10 @@ export class UserModel
 
   public reset_otp?: string | null;
   public reset_otp_expiry?: Date | null;
+
+  public email_verified!: boolean;
+  public email_verification_token?: string | null;
+  public email_verification_token_expiry?: Date | null;
 
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
@@ -135,6 +142,22 @@ export default function (sequelize: Sequelize): typeof UserModel {
       },
 
       reset_otp_expiry: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+
+      email_verified: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        allowNull: false,
+      },
+
+      email_verification_token: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+      },
+
+      email_verification_token_expiry: {
         type: DataTypes.DATE,
         allowNull: true,
       },

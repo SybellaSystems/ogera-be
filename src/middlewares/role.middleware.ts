@@ -62,3 +62,32 @@ export const PermissionChecker = (route: string, action: string) => {
         }
     };
 };
+
+// -------------------- SUPERADMIN ONLY MIDDLEWARE --------------------
+export const superadminOnly = async (
+    req: any,
+    _res: Response,
+    next: NextFunction,
+) => {
+    try {
+        if (!req.user) {
+            return next(new CustomError('Unauthorized', 401));
+        }
+
+        const roleName = req.user.role;
+
+        // Check if user is superadmin (case-insensitive check)
+        if (roleName?.toLowerCase() !== 'superadmin') {
+            return next(
+                new CustomError(
+                    'Forbidden: Only superadmin can perform this action',
+                    403,
+                ),
+            );
+        }
+
+        next();
+    } catch (error) {
+        next(error);
+    }
+};
