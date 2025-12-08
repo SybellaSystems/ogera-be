@@ -26,60 +26,127 @@ const repo = {
     findAllUsers: async ({
         page,
         limit,
-    }: PaginationQuery): Promise<{ rows: User[]; count: number }> => {
+        roleWhere,
+    }: PaginationQuery & { roleWhere?: any }): Promise<{
+        rows: User[];
+        count: number;
+    }> => {
+        const includeOptions: any = {
+            model: DB.Roles,
+            as: 'role',
+            attributes: ['id', 'roleName', 'roleType'],
+        };
+
+        // Apply where condition if provided
+        if (roleWhere) {
+            includeOptions.where = roleWhere;
+        }
+
         return await DB.Users.findAndCountAll({
+            include: includeOptions,
             offset: (page - 1) * limit,
             limit,
             order: [['created_at', 'DESC']],
+            attributes: {
+                exclude: [
+                    'password_hash',
+                    'reset_otp',
+                    'reset_otp_expiry',
+                    'two_fa_secret',
+                ],
+            },
         });
     },
 
-    findAllStudents: async ({ page, limit }: PaginationQuery) => {
+    findAllStudents: async ({
+        page,
+        limit,
+        roleWhere,
+    }: PaginationQuery & { roleWhere?: any }) => {
+        const includeOptions: any = {
+            model: DB.Roles,
+            as: 'role',
+            attributes: ['id', 'roleName', 'roleType'],
+        };
+
+        // Use provided where condition or default to student roleType
+        includeOptions.where = roleWhere || { roleType: 'student' };
+
         return await DB.Users.findAndCountAll({
-            include: [
-                {
-                    model: DB.Roles,
-                    as: 'role',
-                    attributes: ['id', 'roleName'],
-                    where: { roleName: 'student' },
-                },
-            ],
+            include: [includeOptions],
             offset: (page - 1) * limit,
             limit,
             order: [['created_at', 'DESC']],
+            attributes: {
+                exclude: [
+                    'password_hash',
+                    'reset_otp',
+                    'reset_otp_expiry',
+                    'two_fa_secret',
+                ],
+            },
         });
     },
 
-    findAllEmployers: async ({ page, limit }: PaginationQuery) => {
+    findAllEmployers: async ({
+        page,
+        limit,
+        roleWhere,
+    }: PaginationQuery & { roleWhere?: any }) => {
+        const includeOptions: any = {
+            model: DB.Roles,
+            as: 'role',
+            attributes: ['id', 'roleName', 'roleType'],
+        };
+
+        // Use provided where condition or default to employer roleType
+        includeOptions.where = roleWhere || { roleType: 'employer' };
+
         return await DB.Users.findAndCountAll({
-            include: [
-                {
-                    model: DB.Roles,
-                    as: 'role',
-                    attributes: ['id', 'roleName'],
-                    where: { roleName: 'employer' },
-                },
-            ],
+            include: [includeOptions],
             offset: (page - 1) * limit,
             limit,
             order: [['created_at', 'DESC']],
+            attributes: {
+                exclude: [
+                    'password_hash',
+                    'reset_otp',
+                    'reset_otp_expiry',
+                    'two_fa_secret',
+                ],
+            },
         });
     },
 
-    findAllSubAdmins: async ({ page, limit }: PaginationQuery) => {
+    // findAndCount: async ({include,offset,order, limit }: PaginationQuery) => {
+    //   return await DB.Users.findAndCountAll({
+    //         include: include,
+    //         offset: (page - 1) * limit,
+    //         limit,
+    //         order: [['created_at', 'DESC']],
+    //     });
+    // },
+
+    findAllSubAdmins: async ({
+        page,
+        limit,
+        roleWhere,
+    }: PaginationQuery & { roleWhere?: any }) => {
+        const includeOptions: any = {
+            model: DB.Roles,
+            as: 'role',
+            attributes: ['id', 'roleName', 'roleType'],
+        };
+
+        // Use provided where condition or default to admin roleType
+        includeOptions.where = roleWhere || {
+            roleType: {
+                [Op.in]: ['admin', 'superAdmin'],
+            },
+        };
+
         return await DB.Users.findAndCountAll({
-            include: [
-                {
-                    model: DB.Roles,
-                    as: 'role',
-                    attributes: ['id', 'roleName'],
-                    where: {
-                        roleName: {
-                            [Op.in]: ['subadmin', 'admin'],
-                        },
-                    },
-                },
-            ],
+            include: [includeOptions],
             offset: (page - 1) * limit,
             limit,
             order: [['created_at', 'DESC']],
@@ -124,7 +191,7 @@ const repo = {
                 {
                     model: DB.Roles,
                     as: 'role',
-                    attributes: ['id', 'roleName'],
+                    attributes: ['id', 'roleName', 'roleType'],
                 },
             ],
         });

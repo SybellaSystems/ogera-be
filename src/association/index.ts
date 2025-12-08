@@ -1,6 +1,7 @@
 import { UserModel } from "@/database/models/user.model";
 import { RoleModel } from "@/database/models/roles.model";
 import { JobModel } from "@/database/models/job.model";
+import { AcademicVerificationModel } from "@/database/models/academicVerification.model";
 
 export const setupAssociations = () => {
 
@@ -30,5 +31,36 @@ export const setupAssociations = () => {
   JobModel.belongsTo(UserModel, {
     foreignKey: "employer_id",
     as: "employer",
+  });
+
+  // ====================== USER ↔ ACADEMIC VERIFICATION ======================
+  // One user (student) can have many academic verifications
+  UserModel.hasMany(AcademicVerificationModel, {
+    foreignKey: "user_id",
+    as: "academicVerifications",
+  });
+
+  // An academic verification belongs to one user (student)
+  AcademicVerificationModel.belongsTo(UserModel, {
+    foreignKey: "user_id",
+    as: "user",
+    onUpdate: "CASCADE",
+    onDelete: "CASCADE",
+  });
+
+  // An academic verification is reviewed by one admin (User)
+  AcademicVerificationModel.belongsTo(UserModel, {
+    foreignKey: "reviewed_by",
+    as: "reviewer",
+    onUpdate: "CASCADE",
+    onDelete: "SET NULL",
+  });
+
+  // An academic verification is assigned to one admin (User) for review
+  AcademicVerificationModel.belongsTo(UserModel, {
+    foreignKey: "assigned_to",
+    as: "assignedAdmin",
+    onUpdate: "CASCADE",
+    onDelete: "SET NULL",
   });
 };

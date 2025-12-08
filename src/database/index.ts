@@ -4,6 +4,7 @@ import Sequelize from "sequelize";
 import userModel from "./models/user.model";
 import rolesModel from "./models/roles.model";
 import jobModel from "./models/job.model";
+import academicVerificationModel from "./models/academicVerification.model";
 import { setupAssociations } from "@/association/index";
 
 import {
@@ -48,6 +49,7 @@ sequelize
 const Users = userModel(sequelize);
 const Roles = rolesModel(sequelize);
 const Jobs = jobModel(sequelize);
+const AcademicVerifications = academicVerificationModel(sequelize);
 
 // Apply Associations
 setupAssociations();
@@ -63,6 +65,7 @@ export const DB = {
   Users,
   Roles,
   Jobs,
+  AcademicVerifications,
   sequelize,
   Sequelize,
 };

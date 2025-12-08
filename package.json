@@ -17,6 +17,9 @@
     "author": "Prashant",
     "license": "MIT",
     "dependencies": {
+        "@aws-sdk/client-s3": "^3.943.0",
+        "@aws-sdk/s3-request-presigner": "^3.943.0",
+        "@types/multer": "^2.0.0",
         "bcrypt": "^5.1.1",
         "cookie-parser": "^1.4.7",
         "cors": "^2.8.5",
@@ -28,6 +31,7 @@
         "http-status-codes": "^2.3.0",
         "joi": "^17.13.3",
         "jsonwebtoken": "^9.0.2",
+        "multer": "^2.0.2",
         "nodemailer": "^7.0.5",
         "pg": "^8.13.0",
         "pg-hstore": "^2.3.4",

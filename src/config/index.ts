@@ -20,3 +20,23 @@ export const {
     DB_HOST,
     DB_DIALECT,
 } = process.env;
+
+export const {
+    USE_LOCAL_STORAGE,
+    AWS_ACCESS_KEY_ID,
+    AWS_SECRET_ACCESS_KEY,
+    AWS_REGION,
+    AWS_S3_BUCKET_NAME,
+} = process.env;
+
+// Storage configuration
+export const STORAGE_CONFIG = {
+    useLocalStorage: USE_LOCAL_STORAGE === 'true',
+    localStoragePath: process.env.LOCAL_STORAGE_PATH || './uploads',
+    s3: {
+        accessKeyId: AWS_ACCESS_KEY_ID,
+        secretAccessKey: AWS_SECRET_ACCESS_KEY,
+        region: AWS_REGION || 'us-east-1',
+        bucketName: AWS_S3_BUCKET_NAME,
+    },
+};
