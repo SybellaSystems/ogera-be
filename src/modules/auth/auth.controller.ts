@@ -291,7 +291,14 @@ export const getAllusers = async (req: Request, res: Response) => {
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || 10;
 
-        const { data, pagination } = await getAllUsersService({ page, limit });
+        // Get current user's role to determine if admin roles should be excluded
+        // req.user.role is already a string (roleName), not an object
+        const currentUserRole = req.user?.role;
+
+        const { data, pagination } = await getAllUsersService(
+            { page, limit },
+            currentUserRole,
+        );
 
         res.status(StatusCodes.OK).json({
             status: StatusCodes.OK,
@@ -405,6 +412,8 @@ export const getUserProfile = async (
 };
 
 // -------------------- CREATE SUPERADMIN --------------------
+// This endpoint allows creating superadmin without authentication (for initial setup)
+// If authentication is provided, it will verify the user is superadmin
 export const createSuperAdminController = async (
     req: Request,
     res: Response,
@@ -423,7 +432,15 @@ export const createSuperAdminController = async (
             return;
         }
 
-        const result = await createSuperAdmin({ email, password, role });
+        // Get current user role if authenticated (optional - allows creation without auth)
+        // If user is authenticated, they must be superadmin
+        // If not authenticated, allow creation (for initial setup)
+        const currentUserRole = req.user?.role;
+
+        const result = await createSuperAdmin(
+            { email, password, role },
+            currentUserRole,
+        );
 
         const successMessage =
             role === 'superadmin'
@@ -609,12 +626,16 @@ export const createSubAdminController = async (
             return;
         }
 
-        const result = await createSubAdmin({
-            email,
-            password,
-            role,
-            full_name,
-        });
+        const currentUserRole = req.user?.role;
+        const result = await createSubAdmin(
+            {
+                email,
+                password,
+                role,
+                full_name,
+            },
+            currentUserRole,
+        );
 
         const successMessage =
             role === 'subadmin'
@@ -733,13 +754,18 @@ export const updateSubAdmin = async (
             return;
         }
 
-        const updatedSubAdmin = await updateSubAdminService(id, {
-            full_name,
-            email,
-            mobile_number,
-            password,
-            role,
-        });
+        const currentUserRole = req.user?.role;
+        const updatedSubAdmin = await updateSubAdminService(
+            id,
+            {
+                full_name,
+                email,
+                mobile_number,
+                password,
+                role,
+            },
+            currentUserRole,
+        );
 
         response.response(
             res,

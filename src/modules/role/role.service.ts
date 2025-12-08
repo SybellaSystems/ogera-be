@@ -4,14 +4,23 @@ import { CreateRoleDTO, RoutePermission } from '@/interfaces/role.interfaces';
 export class RoleService {
     private repo = new RoleRepository();
 
-    // Create a role with roleName and permission_json
+    // Create a role with roleName, roleType, and permission_json
     async createRole(payload: {
         roleName: string;
+        roleType: 'student' | 'employer' | 'superAdmin' | 'admin';
         permission_json?: RoutePermission[];
     }) {
         // Validate roleName
         if (!payload.roleName || payload.roleName.trim() === '') {
             throw new Error('Role name is required');
+        }
+
+        // Validate roleType
+        const validRoleTypes = ['student', 'employer', 'superAdmin', 'admin'];
+        if (!payload.roleType || !validRoleTypes.includes(payload.roleType)) {
+            throw new Error(
+                `Role type must be one of: ${validRoleTypes.join(', ')}`,
+            );
         }
 
         // Check if role already exists
@@ -56,6 +65,7 @@ export class RoleService {
         // Convert permission_json array to JSON string for storage
         const roleData = {
             roleName: payload.roleName,
+            roleType: payload.roleType,
             permission_json: JSON.stringify(payload.permission_json),
         };
 

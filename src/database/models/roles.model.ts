@@ -17,6 +17,7 @@ export class RoleModel
         | 'admin'
         | 'superadmin'
         | 'subadmin';
+    public roleType!: 'student' | 'employer' | 'superAdmin' | 'admin';
     public permission_json!: string;
 
     public readonly created_at!: Date;
@@ -36,6 +37,16 @@ export default function (sequelize: Sequelize): typeof RoleModel {
                 type: DataTypes.STRING,
                 allowNull: false,
                 unique: true,
+            },
+
+            roleType: {
+                type: DataTypes.ENUM(
+                    'student',
+                    'employer',
+                    'superAdmin',
+                    'admin',
+                ),
+                allowNull: false,
             },
 
             permission_json: {

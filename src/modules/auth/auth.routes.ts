@@ -39,6 +39,8 @@ const authRouter = express.Router();
 
 authRouter.post('/register', register);
 authRouter.post('/login', login);
+// Allow creating superadmin without authentication (for initial setup)
+// The controller will handle authentication checks if needed
 authRouter.post('/create-superadmin', createSuperAdminController);
 
 authRouter.get('/refresh', refreshAccessToken);
