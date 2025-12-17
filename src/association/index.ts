@@ -1,66 +1,175 @@
-import { UserModel } from "@/database/models/user.model";
-import { RoleModel } from "@/database/models/roles.model";
-import { JobModel } from "@/database/models/job.model";
-import { AcademicVerificationModel } from "@/database/models/academicVerification.model";
+import { UserModel } from '@/database/models/user.model';
+import { RoleModel } from '@/database/models/roles.model';
+import { JobModel } from '@/database/models/job.model';
+import { JobApplicationModel } from '@/database/models/jobApplication.model';
+import { AcademicVerificationModel } from '@/database/models/academicVerification.model';
+import { NotificationModel } from '@/database/models/notification.model';
+import { JobQuestionModel } from '@/database/models/jobQuestion.model';
+import { JobApplicationAnswerModel } from '@/database/models/jobApplicationAnswer.model';
 
 export const setupAssociations = () => {
+    // ====================== USER ↔ ROLE ======================
+    UserModel.belongsTo(RoleModel, {
+        foreignKey: 'role_id',
+        as: 'role',
+        onUpdate: 'CASCADE',
+        onDelete: 'RESTRICT',
+    });
 
-  // ====================== USER ↔ ROLE ======================
-  UserModel.belongsTo(RoleModel, {
-    foreignKey: "role_id",
-    as: "role",
-    onUpdate: "CASCADE",
-    onDelete: "RESTRICT",
-  });
+    RoleModel.hasMany(UserModel, {
+        foreignKey: 'role_id',
+        as: 'users',
+        onUpdate: 'CASCADE',
+        onDelete: 'RESTRICT',
+    });
 
-  RoleModel.hasMany(UserModel, {
-    foreignKey: "role_id",
-    as: "users",
-    onUpdate: "CASCADE",
-    onDelete: "RESTRICT",
-  });
+    // ====================== USER (Employer) ↔ JOB ======================
+    // One employer (User) can have many jobs
+    UserModel.hasMany(JobModel, {
+        foreignKey: 'employer_id',
+        as: 'jobs',
+    });
 
-  // ====================== USER (Employer) ↔ JOB ======================
-  // One employer (User) can have many jobs
-  UserModel.hasMany(JobModel, {
-    foreignKey: "employer_id",
-    as: "jobs",
-  });
+    // A job belongs to one employer (User)
+    JobModel.belongsTo(UserModel, {
+        foreignKey: 'employer_id',
+        as: 'employer',
+    });
 
-  // A job belongs to one employer (User)
-  JobModel.belongsTo(UserModel, {
-    foreignKey: "employer_id",
-    as: "employer",
-  });
+    // ====================== JOB APPLICATION ↔ JOB ======================
+    // A job can have many applications
+    JobModel.hasMany(JobApplicationModel, {
+        foreignKey: 'job_id',
+        as: 'jobApplications',
+    });
 
-  // ====================== USER ↔ ACADEMIC VERIFICATION ======================
-  // One user (student) can have many academic verifications
-  UserModel.hasMany(AcademicVerificationModel, {
-    foreignKey: "user_id",
-    as: "academicVerifications",
-  });
+    // An application belongs to one job
+    JobApplicationModel.belongsTo(JobModel, {
+        foreignKey: 'job_id',
+        as: 'job',
+    });
 
-  // An academic verification belongs to one user (student)
-  AcademicVerificationModel.belongsTo(UserModel, {
-    foreignKey: "user_id",
-    as: "user",
-    onUpdate: "CASCADE",
-    onDelete: "CASCADE",
-  });
+    // ====================== JOB APPLICATION ↔ USER (Student) ======================
+    // A student (User) can have many job applications
+    UserModel.hasMany(JobApplicationModel, {
+        foreignKey: 'student_id',
+        as: 'jobApplications',
+    });
 
-  // An academic verification is reviewed by one admin (User)
-  AcademicVerificationModel.belongsTo(UserModel, {
-    foreignKey: "reviewed_by",
-    as: "reviewer",
-    onUpdate: "CASCADE",
-    onDelete: "SET NULL",
-  });
+    // An application belongs to one student (User)
+    JobApplicationModel.belongsTo(UserModel, {
+        foreignKey: 'student_id',
+        as: 'student',
+    });
 
-  // An academic verification is assigned to one admin (User) for review
-  AcademicVerificationModel.belongsTo(UserModel, {
-    foreignKey: "assigned_to",
-    as: "assignedAdmin",
-    onUpdate: "CASCADE",
-    onDelete: "SET NULL",
-  });
+    // ====================== JOB APPLICATION ↔ USER (Reviewer) ======================
+    // An application is reviewed by one user (employer/admin)
+    JobApplicationModel.belongsTo(UserModel, {
+        foreignKey: 'reviewed_by',
+        as: 'reviewer',
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
+    });
+
+    // ====================== USER ↔ ACADEMIC VERIFICATION ======================
+    // One user (student) can have many academic verifications
+    UserModel.hasMany(AcademicVerificationModel, {
+        foreignKey: 'user_id',
+        as: 'academicVerifications',
+    });
+
+    // An academic verification belongs to one user (student)
+    AcademicVerificationModel.belongsTo(UserModel, {
+        foreignKey: 'user_id',
+        as: 'user',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // An academic verification is reviewed by one admin (User)
+    AcademicVerificationModel.belongsTo(UserModel, {
+        foreignKey: 'reviewed_by',
+        as: 'reviewer',
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
+    });
+
+    // An academic verification is assigned to one admin (User) for review
+    AcademicVerificationModel.belongsTo(UserModel, {
+        foreignKey: 'assigned_to',
+        as: 'assignedAdmin',
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
+    });
+
+    // ====================== USER ↔ NOTIFICATION ======================
+    // A user can have many notifications
+    UserModel.hasMany(NotificationModel, {
+        foreignKey: 'user_id',
+        as: 'notifications',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // A notification belongs to one user
+    NotificationModel.belongsTo(UserModel, {
+        foreignKey: 'user_id',
+        as: 'user',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // Note: Notification related_id can reference different entities (applications, jobs, etc.)
+    // So we fetch related data manually in the notification service rather than using associations
+
+    // ====================== JOB ↔ JOB QUESTION ======================
+    // A job can have many questions
+    JobModel.hasMany(JobQuestionModel, {
+        foreignKey: 'job_id',
+        as: 'questions',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // A question belongs to one job
+    JobQuestionModel.belongsTo(JobModel, {
+        foreignKey: 'job_id',
+        as: 'job',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // ====================== JOB APPLICATION ↔ JOB APPLICATION ANSWER ======================
+    // An application can have many answers
+    JobApplicationModel.hasMany(JobApplicationAnswerModel, {
+        foreignKey: 'application_id',
+        as: 'answers',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // An answer belongs to one application
+    JobApplicationAnswerModel.belongsTo(JobApplicationModel, {
+        foreignKey: 'application_id',
+        as: 'application',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // ====================== JOB QUESTION ↔ JOB APPLICATION ANSWER ======================
+    // A question can have many answers (from different applications)
+    JobQuestionModel.hasMany(JobApplicationAnswerModel, {
+        foreignKey: 'question_id',
+        as: 'answers',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // An answer belongs to one question
+    JobApplicationAnswerModel.belongsTo(JobQuestionModel, {
+        foreignKey: 'question_id',
+        as: 'question',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
 };

@@ -563,6 +563,9 @@ export const updateProfile = async (
             mobile_number,
             national_id_number,
             business_registration_id,
+            resume_url,
+            cover_letter,
+            preferred_location,
         } = req.body;
 
         // Validate that at least one field is provided
@@ -571,7 +574,10 @@ export const updateProfile = async (
             !email &&
             !mobile_number &&
             national_id_number === undefined &&
-            business_registration_id === undefined
+            business_registration_id === undefined &&
+            resume_url === undefined &&
+            cover_letter === undefined &&
+            preferred_location === undefined
         ) {
             response.errorResponse(
                 res,
@@ -588,6 +594,9 @@ export const updateProfile = async (
             mobile_number,
             national_id_number,
             business_registration_id,
+            resume_url,
+            cover_letter,
+            preferred_location,
         });
 
         response.response(

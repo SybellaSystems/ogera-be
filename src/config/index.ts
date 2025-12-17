@@ -40,3 +40,26 @@ export const STORAGE_CONFIG = {
         bucketName: AWS_S3_BUCKET_NAME,
     },
 };
+
+// SMTP/Email configuration
+export const EMAIL_CONFIG = {
+    // SMTP Configuration
+    smtp: {
+        host: process.env.SMTP_HOST || process.env.EMAIL_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.SMTP_PORT || process.env.EMAIL_PORT || '587', 10),
+        secure: process.env.SMTP_SECURE === 'true' || process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
+        auth: {
+            user: process.env.SMTP_USER || process.env.EMAIL_USER || '',
+            pass: process.env.SMTP_PASS || process.env.EMAIL_PASS || '',
+        },
+        // Optional: Service name (gmail, outlook, etc.) - if provided, nodemailer will use default settings
+        service: process.env.SMTP_SERVICE || process.env.EMAIL_SERVICE || undefined,
+    },
+    // Email sender information
+    from: {
+        name: process.env.EMAIL_FROM_NAME || 'Ogera Support',
+        email: process.env.EMAIL_FROM || process.env.EMAIL_USER || '',
+    },
+    // Frontend URL for email links
+    frontendUrl: FRONTEND_URL || 'http://localhost:5173',
+};

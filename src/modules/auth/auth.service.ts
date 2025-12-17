@@ -67,6 +67,17 @@ export const registerUser = async (data: any) => {
 
     if (!role) throw new CustomError('Invalid role', StatusCodes.BAD_REQUEST);
 
+    // Validate roleType - must be one of the allowed values
+    const allowedRoleTypes = ['student', 'employer', 'superAdmin', 'admin'];
+    if (!allowedRoleTypes.includes(role.roleType)) {
+        throw new CustomError(
+            `Invalid roleType: ${
+                role.roleType
+            }. Must be one of: ${allowedRoleTypes.join(', ')}`,
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+
     // Generate email verification token
     const verificationToken = jwt.sign(
         { email: data.email, type: 'email_verification' },
@@ -83,6 +94,7 @@ export const registerUser = async (data: any) => {
         business_registration_id: data.business_registration_id || null,
         password_hash: hashedPassword,
         role_id: role.id,
+        role_type: role.roleType, // Save role_type from the role's roleType
         email_verified: false,
         email_verification_token: verificationToken,
         email_verification_token_expiry: verificationTokenExpiry,
@@ -479,6 +491,9 @@ export const updateProfileService = async (
         mobile_number?: string;
         national_id_number?: string;
         business_registration_id?: string;
+        resume_url?: string;
+        cover_letter?: string;
+        preferred_location?: string;
     },
 ) => {
     // Check if user exists
@@ -507,6 +522,12 @@ export const updateProfileService = async (
         updateData.national_id_number = data.national_id_number;
     if (data.business_registration_id !== undefined)
         updateData.business_registration_id = data.business_registration_id;
+    if (data.resume_url !== undefined)
+        updateData.resume_url = data.resume_url;
+    if (data.cover_letter !== undefined)
+        updateData.cover_letter = data.cover_letter;
+    if (data.preferred_location !== undefined)
+        updateData.preferred_location = data.preferred_location;
 
     // If email is being changed, generate verification token and mark as unverified
     if (emailChanged && data.email) {
@@ -620,6 +641,7 @@ export const createSuperAdmin = async (
         email: data.email,
         password_hash: hashedPassword,
         role_id: role.id,
+        role_type: role.roleType, // Save role_type from the role's roleType
         full_name: fullName, // Use email prefix only, never add "Doe"
         mobile_number: '0000000000', // Placeholder for required field
         terms_accepted: true,
@@ -717,6 +739,7 @@ export const createSubAdmin = async (
         email: data.email,
         password_hash: hashedPassword,
         role_id: role.id,
+        role_type: role.roleType, // Save role_type from the role's roleType
         full_name: fullName, // Use provided name or email prefix, never add "Doe"
         mobile_number: '0000000000', // Placeholder for required field
         terms_accepted: true,

@@ -5,8 +5,11 @@ const repo = {
     return await DB.Jobs.create(jobData);
   },
 
-  findAllJobs: async () => {
+  findAllJobs: async (status?: string) => {
+    // Filter by status if provided, ensuring case-sensitive match
+    const whereClause = status ? { status: status as 'Pending' | 'Active' | 'Inactive' | 'Completed' } : {};
     return await DB.Jobs.findAll({
+      where: whereClause,
       include: [
         {
           model: DB.Users,
@@ -16,11 +19,18 @@ const repo = {
             {
               model: DB.Roles,
               as: "role",
-              attributes: ["roleName"],  // ✔ Load employer’s role name
+              attributes: ["roleName"],  // ✔ Load employer's role name
             },
           ],
         },
+        {
+          model: DB.JobQuestions,
+          as: "questions",
+          order: [['display_order', 'ASC']],
+          required: false,
+        },
       ],
+      order: [['created_at', 'DESC']],
     });
   },
 
@@ -40,6 +50,11 @@ const repo = {
             },
           ],
         },
+        {
+          model: DB.JobQuestions,
+          as: "questions",
+          order: [['display_order', 'ASC']],
+        },
       ],
     });
   },
@@ -47,7 +62,45 @@ const repo = {
   updateJob: async (job_id: string, updates: any) => {
     const [rows] = await DB.Jobs.update(updates, { where: { job_id } });
     if (rows === 0) return null;
-    return await DB.Jobs.findOne({ where: { job_id } });
+    return await DB.Jobs.findOne({ 
+      where: { job_id },
+      include: [
+        {
+          model: DB.Users,
+          as: "employer",
+          attributes: ["user_id", "full_name", "role_id"],
+          include: [
+            {
+              model: DB.Roles,
+              as: "role",
+              attributes: ["roleName"],
+            },
+          ],
+        },
+        {
+          model: DB.JobQuestions,
+          as: "questions",
+          order: [['display_order', 'ASC']],
+        },
+      ],
+    });
+  },
+
+  createJobQuestions: async (job_id: string, questions: any[]) => {
+    // Delete existing questions first
+    await DB.JobQuestions.destroy({ where: { job_id } });
+    // Create new questions
+    const questionPromises = questions.map((q, index) =>
+      DB.JobQuestions.create({
+        job_id,
+        question_text: q.question_text,
+        question_type: q.question_type || 'text',
+        is_required: q.is_required !== undefined ? q.is_required : false,
+        options: q.options ? (typeof q.options === 'string' ? q.options : JSON.stringify(q.options)) : null,
+        display_order: q.display_order !== undefined ? q.display_order : index,
+      })
+    );
+    return await Promise.all(questionPromises);
   },
 
   deleteJob: async (job_id: string) => {

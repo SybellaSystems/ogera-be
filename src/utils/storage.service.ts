@@ -117,7 +117,7 @@ const getS3FileUrl = async (key: string): Promise<string> => {
 /**
  * Get file from local storage
  */
-const getLocalFile = (filePath: string): Buffer | null => {
+export const getLocalFile = (filePath: string): Buffer | null => {
     if (!fs.existsSync(filePath)) {
         return null;
     }
