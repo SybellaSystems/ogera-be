@@ -9,6 +9,7 @@ import { errorHandler } from './utils/error-handler';
 import { swaggerSpec, swaggerUi } from './utils/swagger';
 import { apiLimiter } from './middlewares/rateLimiter.middleware';
 import { helmetMiddleware } from './middlewares/helmet.middleware';
+import { requestLoggerMiddleware } from './middlewares/requestLogger.middleware';
 
 const appServer = express();
 const port = PORT;
@@ -18,35 +19,19 @@ const corsOptions = {
     credentials: true,
 };
 
-// Logging middleware
-appServer.use((req, res, next) => {
-    const startTime = Date.now();
-
-    res.on('finish', () => {
-        const duration = Date.now() - startTime;
-        const message = `${req.method} ${req.originalUrl} ${res.statusCode} - ${duration}ms`;
-
-        if (res.statusCode >= 500) {
-            logger.error(message);
-        } else if (res.statusCode >= 400) {
-            logger.warn(message);
-        } else {
-            logger.info(message);
-        }
-    });
-
-    next();
-});
-
 helmetMiddleware(appServer);
 
 // Enable CORS
 appServer.use(cors(corsOptions));
 appServer.options('*', cors(corsOptions));
 
-// Body parsers
+// Body parsers (must be before logging middleware to capture request body)
 appServer.use(express.json());
 appServer.use(express.urlencoded({ extended: true }));
+
+// Comprehensive API Request/Response Logging Middleware
+// Must be placed after body parsers to capture parsed request data
+appServer.use(requestLoggerMiddleware);
 
 // ⭐ USE COOKIE PARSER (VERY IMPORTANT)
 appServer.use(cookieParser());

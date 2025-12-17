@@ -7,7 +7,12 @@ export interface Job {
   budget: number;
   duration: string;
   location: string;
-  status: "Pending" | "Active" | "Completed";
+  description?: string;
+  requirements?: string;
+  skills?: string;
+  employment_type?: string;
+  experience_level?: string;
+  status: "Pending" | "Active" | "Inactive" | "Completed";
   created_at: Date;
   updated_at: Date;
 }
