@@ -37,11 +37,18 @@ const sequelize = new Sequelize.Sequelize(DB_NAME!, DB_USERNAME!, DB_PASSWORD, {
     benchmark: true,
 });
 
-// Test DB connection
+// Test DB connection with improved error handling
 sequelize
     .authenticate()
-    .then(() => logger.info('✅ Database connected'))
-    .catch(err => logger.error('❌ Database connection error:', err));
+    .then(() => {
+        logger.info('✅ Database connected successfully');
+        logger.info(`📊 Database: ${DB_NAME} | Host: ${DB_HOST}:${DB_PORT}`);
+    })
+    .catch((err: Error) => {
+        logger.error('❌ Database connection error:', err.message);
+        logger.error('Please check your database configuration and ensure the database server is running');
+        // Don't exit process - let the app continue and handle errors gracefully
+    });
 
 // Initialize models
 const Users = userModel(sequelize);
