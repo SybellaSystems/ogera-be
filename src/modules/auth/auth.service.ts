@@ -6,6 +6,7 @@ import { Messages } from '@/utils/messages';
 import { generate2FASecret, verifyOTP, enable2FA } from '@/utils/2fa';
 import { generateNumericOTP } from '@/utils/otp';
 import { sendMail } from '@/utils/mailer';
+import { sendOTPSMS } from '@/utils/sms';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { JWT_ACCESS_TOKEN_SECRET as JWT_SECRET, FRONTEND_URL } from '@/config';
 import {
@@ -115,7 +116,12 @@ export const registerUser = async (data: any) => {
     );
 
     try {
-        await sendMail(data.email, 'Verify Your Email Address', text, html);
+        await sendMail({
+            to: data.email,
+            subject: 'Verify Your Email Address',
+            text,
+            html,
+        });
     } catch (error) {
         // Log error but don't fail registration
         console.error('Failed to send verification email:', error);
@@ -231,7 +237,12 @@ export const forgotPasswordService = async (email: string) => {
 
     const { html, text } = EmailTemplete(otp, otpExpiry);
 
-    await sendMail(email, 'Password Reset OTP', text, html);
+    await sendMail({
+        to: email,
+        subject: 'Password Reset OTP',
+        text,
+        html,
+    });
 
     return { resetToken };
 };
@@ -477,7 +488,12 @@ export const resendVerificationEmailService = async (email: string) => {
         verificationTokenExpiry,
     );
 
-    await sendMail(user.email, 'Verify Your Email Address', text, html);
+    await sendMail({
+        to: user.email,
+        subject: 'Verify Your Email Address',
+        text,
+        html,
+    });
 
     return { success: true, message: 'Verification email sent successfully' };
 };
@@ -516,8 +532,16 @@ export const updateProfileService = async (
     if (data.full_name !== undefined) {
         updateData.full_name = data.full_name.trim();
     }
-    if (data.mobile_number !== undefined)
+    // If mobile number is being updated, reset phone verification
+    const phoneChanged = data.mobile_number && data.mobile_number !== user.mobile_number;
+    if (phoneChanged) {
         updateData.mobile_number = data.mobile_number;
+        updateData.phone_verified = false;
+        updateData.phone_verification_otp = null;
+        updateData.phone_verification_otp_expiry = null;
+    } else if (data.mobile_number !== undefined) {
+        updateData.mobile_number = data.mobile_number;
+    }
     if (data.national_id_number !== undefined)
         updateData.national_id_number = data.national_id_number;
     if (data.business_registration_id !== undefined)
@@ -554,12 +578,12 @@ export const updateProfileService = async (
         );
 
         try {
-            await sendMail(
-                data.email!,
-                'Verify Your New Email Address',
+            await sendMail({
+                to: data.email!,
+                subject: 'Verify Your New Email Address',
                 text,
                 html,
-            );
+            });
         } catch (error) {
             // Log error but don't fail update
             console.error('Failed to send verification email:', error);
@@ -904,4 +928,95 @@ export const deleteSubAdminService = async (user_id: string) => {
     await repo.deleteUser(user_id);
 
     return { message: 'Subadmin deleted successfully' };
+};
+
+// -------------------- SEND PHONE VERIFICATION OTP --------------------
+export const sendPhoneVerificationOTPService = async (user_id: string) => {
+    const user = await repo.findUserById(user_id);
+    if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+
+    if (user.phone_verified) {
+        throw new CustomError(
+            'Phone number already verified',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+
+    // Generate OTP
+    const otp = generateNumericOTP(6);
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Store OTP in user record
+    await repo.updateUser(user_id, {
+        phone_verification_otp: otp,
+        phone_verification_otp_expiry: otpExpiry,
+    });
+
+    // Send OTP via SMS
+    try {
+        await sendOTPSMS(user.mobile_number, otp);
+    } catch (smsError: any) {
+        // Log error but don't fail the request - OTP is still stored
+        console.error('Failed to send SMS:', smsError.message);
+        // In development, return OTP in response if SMS fails
+        if (process.env.NODE_ENV === 'development') {
+            return {
+                success: true,
+                message: 'Verification OTP generated successfully (SMS send failed - check console)',
+                otp: otp,
+            };
+        }
+        // In production, still return success but don't expose OTP
+        // The OTP is stored and user can request a new one if SMS fails
+    }
+
+    return {
+        success: true,
+        message: 'Verification OTP sent to your phone number successfully',
+        // Only return OTP in development mode for testing
+        otp: process.env.NODE_ENV === 'development' ? otp : undefined,
+    };
+};
+
+// -------------------- VERIFY PHONE NUMBER --------------------
+export const verifyPhoneService = async (
+    user_id: string,
+    otp: string,
+) => {
+    const user = await repo.findUserById(user_id);
+    if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+
+    if (user.phone_verified) {
+        throw new CustomError(
+            'Phone number already verified',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+
+    if (!user.phone_verification_otp) {
+        throw new CustomError(
+            'No verification OTP found. Please request a new OTP.',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+
+    if (user.phone_verification_otp !== otp) {
+        throw new CustomError('Invalid OTP', StatusCodes.BAD_REQUEST);
+    }
+
+    if (
+        !user.phone_verification_otp_expiry ||
+        Date.now() > user.phone_verification_otp_expiry.getTime()
+    ) {
+        throw new CustomError('OTP expired', StatusCodes.BAD_REQUEST);
+    }
+
+    // Verify the phone number
+    await repo.updateUser(user_id, {
+        phone_verified: true,
+        phone_verification_otp: null,
+        phone_verification_otp_expiry: null,
+    });
+
+    return { success: true, message: 'Phone number verified successfully' };
 };

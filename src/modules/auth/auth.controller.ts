@@ -20,6 +20,8 @@ import {
     updateProfileService,
     verifyEmailService,
     resendVerificationEmailService,
+    sendPhoneVerificationOTPService,
+    verifyPhoneService,
     createSubAdmin,
     getAllSubAdminsService,
     getSubAdminByIdService,
@@ -819,6 +821,90 @@ export const deleteSubAdmin = async (
             StatusCodes.OK,
             result,
             'Subadmin deleted successfully',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// -------------------- SEND PHONE VERIFICATION OTP --------------------
+export const sendPhoneVerificationOTP = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const user_id = req.user?.user_id;
+        if (!user_id) {
+            response.errorResponse(
+                res,
+                StatusCodes.UNAUTHORIZED,
+                false,
+                'User not authenticated',
+            );
+            return;
+        }
+
+        const result = await sendPhoneVerificationOTPService(user_id);
+
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            result,
+            'Phone verification OTP sent successfully',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// -------------------- VERIFY PHONE NUMBER --------------------
+export const verifyPhone = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const user_id = req.user?.user_id;
+        if (!user_id) {
+            response.errorResponse(
+                res,
+                StatusCodes.UNAUTHORIZED,
+                false,
+                'User not authenticated',
+            );
+            return;
+        }
+
+        const { otp } = req.body;
+
+        if (!otp) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'OTP is required',
+            );
+            return;
+        }
+
+        const result = await verifyPhoneService(user_id, otp);
+
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            result,
+            'Phone number verified successfully',
         );
     } catch (error: any) {
         response.errorResponse(

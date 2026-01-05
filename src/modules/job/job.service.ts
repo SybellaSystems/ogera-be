@@ -6,7 +6,7 @@ import { Job } from '@/interfaces/job.interfaces';
 import { DB } from '@/database';
 
 export const createJobService = async (
-    jobData: Partial<Job>,
+    jobData: Partial<Job> & { questions?: any[] },
     user_id: string,
     userRole: string,
 ) => {
@@ -92,7 +92,14 @@ export const createJobService = async (
     }
 
     // Return job with questions
-    return await repo.findJobById(job.job_id);
+    const createdJob = await repo.findJobById(job.job_id);
+    if (!createdJob) {
+        throw new CustomError(
+            'Failed to retrieve created job',
+            StatusCodes.INTERNAL_SERVER_ERROR,
+        );
+    }
+    return createdJob;
 };
 
 export const getAllJobsService = async (status?: string) => {
@@ -152,7 +159,14 @@ export const updateJobService = async (
             }
         }
         // Return updated job with questions
-        return await repo.findJobById(job_id);
+        const updatedJob = await repo.findJobById(job_id);
+        if (!updatedJob) {
+            throw new CustomError(
+                'Failed to retrieve updated job',
+                StatusCodes.INTERNAL_SERVER_ERROR,
+            );
+        }
+        return updatedJob;
     }
 
     return updated;

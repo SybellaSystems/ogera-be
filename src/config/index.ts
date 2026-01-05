@@ -63,3 +63,13 @@ export const EMAIL_CONFIG = {
     // Frontend URL for email links
     frontendUrl: FRONTEND_URL || 'http://localhost:5173',
 };
+
+// SMS Configuration
+export const SMS_CONFIG = {
+    provider: (process.env.SMS_PROVIDER || 'console') as 'twilio' | 'console' | 'none',
+    twilio: {
+        accountSid: process.env.TWILIO_ACCOUNT_SID || '',
+        authToken: process.env.TWILIO_AUTH_TOKEN || '',
+        fromNumber: process.env.TWILIO_FROM_NUMBER || '',
+    },
+};

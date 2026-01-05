@@ -4,6 +4,7 @@ import jobRouter from '@/modules/job/job.routes';
 import jobApplicationRouter from '@/modules/jobApplication/jobApplication.routes';
 import academicVerificationRouter from '@/modules/academicVerification/academicVerification.routes';
 import notificationRouter from '@/modules/notification/notification.routes';
+import trustScoreRouter from '@/modules/trustScore/trustScore.routes';
 import express from 'express';
 
 const router = express.Router();
@@ -14,5 +15,6 @@ router.use('/jobs', jobRouter);
 router.use('/', jobApplicationRouter);
 router.use('/academic-verifications', academicVerificationRouter);
 router.use('/notifications', notificationRouter);
+router.use('/trust-score', trustScoreRouter);
 
 export default router;

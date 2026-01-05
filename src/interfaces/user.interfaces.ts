@@ -28,6 +28,10 @@ export interface User {
     email_verification_token?: string | null;
     email_verification_token_expiry?: Date | null;
 
+    phone_verified?: boolean;
+    phone_verification_otp?: string | null;
+    phone_verification_otp_expiry?: Date | null;
+
     created_at: Date;
     updated_at: Date;
 }
