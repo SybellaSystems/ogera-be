@@ -9,6 +9,7 @@ import {
     getApplicationById,
     uploadResume,
     downloadResume,
+    checkStudentApplication,
 } from './jobApplication.controller';
 import { authMiddleware } from '@/middlewares/auth.middleware';
 import { PermissionChecker } from '@/middlewares/role.middleware';
@@ -54,6 +55,14 @@ jobApplicationRouter.get(
     authMiddleware,
     PermissionChecker('/job-applications', 'view'),
     downloadResume,
+);
+
+// Check if student has applied to a job (student only)
+jobApplicationRouter.get(
+    '/jobs/:job_id/check-application',
+    authMiddleware,
+    PermissionChecker('/job-applications', 'view'),
+    checkStudentApplication,
 );
 
 // Apply for a job (student only)

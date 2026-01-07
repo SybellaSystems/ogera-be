@@ -9,6 +9,12 @@ import academicVerificationModel from './models/academicVerification.model';
 import notificationModel from './models/notification.model';
 import jobQuestionModel from './models/jobQuestion.model';
 import jobApplicationAnswerModel from './models/jobApplicationAnswer.model';
+import userSkillModel from './models/userSkill.model';
+import userEmploymentModel from './models/userEmployment.model';
+import userEducationModel from './models/userEducation.model';
+import userProjectModel from './models/userProject.model';
+import userAccomplishmentModel from './models/userAccomplishment.model';
+import userExtendedProfileModel from './models/userExtendedProfile.model';
 import { setupAssociations } from '@/association/index';
 
 import {
@@ -52,6 +58,12 @@ const AcademicVerifications = academicVerificationModel(sequelize);
 const Notifications = notificationModel(sequelize);
 const JobQuestions = jobQuestionModel(sequelize);
 const JobApplicationAnswers = jobApplicationAnswerModel(sequelize);
+const UserSkills = userSkillModel(sequelize);
+const UserEmployments = userEmploymentModel(sequelize);
+const UserEducations = userEducationModel(sequelize);
+const UserProjects = userProjectModel(sequelize);
+const UserAccomplishments = userAccomplishmentModel(sequelize);
+const UserExtendedProfiles = userExtendedProfileModel(sequelize);
 
 // Apply Associations
 setupAssociations();
@@ -676,6 +688,12 @@ export const DB = {
     Notifications,
     JobQuestions,
     JobApplicationAnswers,
+    UserSkills,
+    UserEmployments,
+    UserEducations,
+    UserProjects,
+    UserAccomplishments,
+    UserExtendedProfiles,
     sequelize,
     Sequelize,
 };

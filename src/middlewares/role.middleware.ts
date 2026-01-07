@@ -11,8 +11,14 @@ export const PermissionChecker = (route: string, action: string) => {
 
             const roleName = req.user.role;
 
-            // ⭐ Admin and SuperAdmin bypass all permissions
-            if (roleName === 'admin' || roleName === 'superAdmin') {
+            // ⭐ Superadmin bypasses all permissions (case-insensitive)
+            // Superadmin has full access to everything
+            if (roleName?.toLowerCase() === 'superadmin') {
+                return next();
+            }
+
+            // ⭐ Admin also bypasses all permissions
+            if (roleName === 'admin' || roleName === 'subadmin') {
                 return next();
             }
 

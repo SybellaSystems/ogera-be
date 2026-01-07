@@ -10,6 +10,7 @@ import {
     getApplicationByIdService,
     uploadResumeService,
     downloadResumeService,
+    checkStudentApplicationService,
 } from './jobApplication.service';
 
 const response = new ResponseFormat();
@@ -294,6 +295,43 @@ export const uploadResume = async (
             StatusCodes.CREATED,
             result,
             'Resume uploaded successfully',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// Check if student has applied to a job
+export const checkStudentApplication = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+): Promise<void> => {
+    try {
+        if (!req.user) {
+            response.errorResponse(
+                res,
+                StatusCodes.UNAUTHORIZED,
+                false,
+                'User not authenticated',
+            );
+            return;
+        }
+        const result = await checkStudentApplicationService(
+            req.params.job_id,
+            req.user.user_id,
+        );
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            result,
+            'Application status checked successfully',
         );
     } catch (error: any) {
         response.errorResponse(
