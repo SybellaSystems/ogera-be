@@ -53,6 +53,8 @@ const repo = {
                     'reset_otp',
                     'reset_otp_expiry',
                     'two_fa_secret',
+                    'phone_verification_otp',
+                    'phone_verification_otp_expiry',
                 ],
             },
         });
@@ -83,6 +85,8 @@ const repo = {
                     'reset_otp',
                     'reset_otp_expiry',
                     'two_fa_secret',
+                    'phone_verification_otp',
+                    'phone_verification_otp_expiry',
                 ],
             },
         });
@@ -113,6 +117,8 @@ const repo = {
                     'reset_otp',
                     'reset_otp_expiry',
                     'two_fa_secret',
+                    'phone_verification_otp',
+                    'phone_verification_otp_expiry',
                 ],
             },
         });
@@ -156,6 +162,8 @@ const repo = {
                     'reset_otp',
                     'reset_otp_expiry',
                     'two_fa_secret',
+                    'phone_verification_otp',
+                    'phone_verification_otp_expiry',
                 ],
             },
         });
@@ -185,6 +193,8 @@ const repo = {
                     'reset_otp',
                     'reset_otp_expiry',
                     'two_fa_secret',
+                    'phone_verification_otp',
+                    'phone_verification_otp_expiry',
                 ],
             },
             include: [

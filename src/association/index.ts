@@ -6,6 +6,12 @@ import { AcademicVerificationModel } from '@/database/models/academicVerificatio
 import { NotificationModel } from '@/database/models/notification.model';
 import { JobQuestionModel } from '@/database/models/jobQuestion.model';
 import { JobApplicationAnswerModel } from '@/database/models/jobApplicationAnswer.model';
+import { UserSkillModel } from '@/database/models/userSkill.model';
+import { UserEmploymentModel } from '@/database/models/userEmployment.model';
+import { UserEducationModel } from '@/database/models/userEducation.model';
+import { UserProjectModel } from '@/database/models/userProject.model';
+import { UserAccomplishmentModel } from '@/database/models/userAccomplishment.model';
+import { UserExtendedProfileModel } from '@/database/models/userExtendedProfile.model';
 
 export const setupAssociations = () => {
     // ====================== USER ↔ ROLE ======================
@@ -169,6 +175,96 @@ export const setupAssociations = () => {
     JobApplicationAnswerModel.belongsTo(JobQuestionModel, {
         foreignKey: 'question_id',
         as: 'question',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // ====================== USER ↔ USER SKILLS ======================
+    UserModel.hasMany(UserSkillModel, {
+        foreignKey: 'user_id',
+        as: 'skills',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    UserSkillModel.belongsTo(UserModel, {
+        foreignKey: 'user_id',
+        as: 'user',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // ====================== USER ↔ USER EMPLOYMENT ======================
+    UserModel.hasMany(UserEmploymentModel, {
+        foreignKey: 'user_id',
+        as: 'employments',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    UserEmploymentModel.belongsTo(UserModel, {
+        foreignKey: 'user_id',
+        as: 'user',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // ====================== USER ↔ USER EDUCATION ======================
+    UserModel.hasMany(UserEducationModel, {
+        foreignKey: 'user_id',
+        as: 'educations',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    UserEducationModel.belongsTo(UserModel, {
+        foreignKey: 'user_id',
+        as: 'user',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // ====================== USER ↔ USER PROJECTS ======================
+    UserModel.hasMany(UserProjectModel, {
+        foreignKey: 'user_id',
+        as: 'projects',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    UserProjectModel.belongsTo(UserModel, {
+        foreignKey: 'user_id',
+        as: 'user',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // ====================== USER ↔ USER ACCOMPLISHMENTS ======================
+    UserModel.hasMany(UserAccomplishmentModel, {
+        foreignKey: 'user_id',
+        as: 'accomplishments',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    UserAccomplishmentModel.belongsTo(UserModel, {
+        foreignKey: 'user_id',
+        as: 'user',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // ====================== USER ↔ USER EXTENDED PROFILE ======================
+    UserModel.hasOne(UserExtendedProfileModel, {
+        foreignKey: 'user_id',
+        as: 'extendedProfile',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    UserExtendedProfileModel.belongsTo(UserModel, {
+        foreignKey: 'user_id',
+        as: 'user',
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
     });

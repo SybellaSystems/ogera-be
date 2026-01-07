@@ -1,5 +1,6 @@
 import { Sequelize, DataTypes, Model, Optional } from 'sequelize';
 import { Job } from '@/interfaces/job.interfaces';
+import { JobQuestionModel } from './jobQuestion.model';
 
 export type JobCreationAttributes = Optional<
     Job,
@@ -32,6 +33,9 @@ export class JobModel extends Model<Job, JobCreationAttributes> implements Job {
     public status!: 'Pending' | 'Active' | 'Inactive' | 'Completed';
     public readonly created_at!: Date;
     public readonly updated_at!: Date;
+
+    // Sequelize associations
+    public questions?: JobQuestionModel[];
 }
 
 export default function (sequelize: Sequelize): typeof JobModel {

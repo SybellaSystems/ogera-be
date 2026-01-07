@@ -24,6 +24,9 @@ export type UserCreationAttributes = Optional<
     | 'email_verified'
     | 'email_verification_token'
     | 'email_verification_token_expiry'
+    | 'phone_verified'
+    | 'phone_verification_otp'
+    | 'phone_verification_otp_expiry'
     | 'role_type'
 >;
 
@@ -59,6 +62,10 @@ export class UserModel
     public email_verified!: boolean;
     public email_verification_token?: string | null;
     public email_verification_token_expiry?: Date | null;
+
+    public phone_verified!: boolean;
+    public phone_verification_otp?: string | null;
+    public phone_verification_otp_expiry?: Date | null;
 
     public readonly created_at!: Date;
     public readonly updated_at!: Date;
@@ -202,6 +209,22 @@ export default function (sequelize: Sequelize): typeof UserModel {
             },
 
             email_verification_token_expiry: {
+                type: DataTypes.DATE,
+                allowNull: true,
+            },
+
+            phone_verified: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: false,
+                allowNull: false,
+            },
+
+            phone_verification_otp: {
+                type: DataTypes.STRING(10),
+                allowNull: true,
+            },
+
+            phone_verification_otp_expiry: {
                 type: DataTypes.DATE,
                 allowNull: true,
             },

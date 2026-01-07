@@ -4,12 +4,13 @@ import cookieParser from "cookie-parser";
 import router from '@routes/routes';
 import logger from '@utils/logger';
 import { DB } from '@database/index';
-import { PORT } from './config';
+import { PORT, SMS_CONFIG } from './config';
 import { errorHandler } from './utils/error-handler';
 import { swaggerSpec, swaggerUi } from './utils/swagger';
 import { apiLimiter } from './middlewares/rateLimiter.middleware';
 import { helmetMiddleware } from './middlewares/helmet.middleware';
 import { requestLoggerMiddleware } from './middlewares/requestLogger.middleware';
+import { initializeSMSProvider } from './utils/sms';
 
 const appServer = express();
 const port = PORT;
@@ -20,6 +21,13 @@ const corsOptions = {
 };
 
 helmetMiddleware(appServer);
+
+// Initialize SMS Provider
+initializeSMSProvider(SMS_CONFIG.provider, {
+    accountSid: SMS_CONFIG.twilio.accountSid,
+    authToken: SMS_CONFIG.twilio.authToken,
+    fromNumber: SMS_CONFIG.twilio.fromNumber,
+});
 
 // Enable CORS
 appServer.use(cors(corsOptions));

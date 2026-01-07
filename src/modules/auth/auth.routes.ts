@@ -17,6 +17,8 @@ import {
     updateProfile,
     verifyEmail,
     resendVerificationEmail,
+    sendPhoneVerificationOTP,
+    verifyPhone,
     createSubAdminController,
     getAllSubAdmins,
     getSubAdminById,
@@ -64,6 +66,10 @@ authRouter.post('/reset-password', resetPassword);
 // Email verification routes
 authRouter.get('/verify-email', verifyEmail);
 authRouter.post('/resend-verification-email', resendVerificationEmail);
+
+// Phone verification routes
+authRouter.post('/send-phone-verification-otp', authMiddleware, sendPhoneVerificationOTP);
+authRouter.post('/verify-phone', authMiddleware, verifyPhone);
 
 authRouter.get('/get-user', getAllusers);
 authRouter.get('/get-students', getAllStudents);
