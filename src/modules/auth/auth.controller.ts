@@ -16,7 +16,6 @@ import {
     getAllStudentsService,
     getAllEmployersService,
     getUserProfileService,
-    createSuperAdmin,
     updateProfileService,
     verifyEmailService,
     resendVerificationEmailService,
@@ -402,59 +401,6 @@ export const getUserProfile = async (
             StatusCodes.OK,
             user,
             'User profile retrieved successfully',
-        );
-    } catch (error: any) {
-        response.errorResponse(
-            res,
-            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
-            false,
-            error.message,
-        );
-    }
-};
-
-// -------------------- CREATE SUPERADMIN --------------------
-// This endpoint allows creating superadmin without authentication (for initial setup)
-// If authentication is provided, it will verify the user is superadmin
-export const createSuperAdminController = async (
-    req: Request,
-    res: Response,
-): Promise<void> => {
-    try {
-        const { email, password, role } = req.body;
-
-        // Validate required fields
-        if (!email || !password || !role) {
-            response.errorResponse(
-                res,
-                StatusCodes.BAD_REQUEST,
-                false,
-                'Email, password, and role are required',
-            );
-            return;
-        }
-
-        // Get current user role if authenticated (optional - allows creation without auth)
-        // If user is authenticated, they must be superadmin
-        // If not authenticated, allow creation (for initial setup)
-        const currentUserRole = req.user?.role;
-
-        const result = await createSuperAdmin(
-            { email, password, role },
-            currentUserRole,
-        );
-
-        const successMessage =
-            role === 'superadmin'
-                ? 'Superadmin created successfully'
-                : 'Admin created successfully';
-
-        response.response(
-            res,
-            true,
-            StatusCodes.CREATED,
-            result.user,
-            successMessage,
         );
     } catch (error: any) {
         response.errorResponse(
