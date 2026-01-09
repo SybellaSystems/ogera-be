@@ -12,7 +12,10 @@
         "lint": "eslint --ignore-path .gitignore --ext .ts src/",
         "lint:fix": "npm run lint -- --fix",
         "migration:generate": "sequelize migration:generate --name",
-        "migration": "sequelize db:migrate"
+        "migration": "sequelize db:migrate",
+        "seed": "sequelize db:seed:all",
+        "seed:undo": "sequelize db:seed:undo:all",
+        "seed:undo:all": "sequelize db:seed:undo:all"
     },
     "author": "Prashant",
     "license": "MIT",
