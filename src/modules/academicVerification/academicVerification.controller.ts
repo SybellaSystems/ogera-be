@@ -295,6 +295,7 @@ export const getMyAcademicVerification = async (req: any, res: Response): Promis
 export const getAllAcademicVerifications = async (req: any, res: Response): Promise<void> => {
   try {
     const userId = req.user?.user_id;
+    const roleName = req.user?.role;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const status = req.query.status as 'pending' | 'accepted' | 'rejected' | undefined;
@@ -319,8 +320,67 @@ export const getAllAcademicVerifications = async (req: any, res: Response): Prom
       return;
     }
 
-    // Check if user has admin or superAdmin roleType
     const roleType = user.role.roleType;
+
+    // If student, return only their own verification (filtered by status if provided)
+    if (roleName === 'student' || roleType === 'student') {
+      try {
+        const myVerification = await getAcademicVerificationByUserIdService(userId);
+        
+        // Filter by status if provided and matches
+        if (status && myVerification.status !== status) {
+          // If status filter doesn't match, return empty result
+          res.status(StatusCodes.OK).json({
+            status: StatusCodes.OK,
+            message: 'Academic verification retrieved successfully',
+            success: true,
+            pagination: {
+              total: 0,
+              page,
+              limit,
+              totalPages: 0,
+            },
+            data: [],
+          });
+          return;
+        }
+
+        // Return student's own verification
+        res.status(StatusCodes.OK).json({
+          status: StatusCodes.OK,
+          message: 'Academic verification retrieved successfully',
+          success: true,
+          pagination: {
+            total: 1,
+            page,
+            limit,
+            totalPages: 1,
+          },
+          data: [myVerification],
+        });
+        return;
+      } catch (error: any) {
+        // If no verification found, return empty result
+        if (error.status === StatusCodes.NOT_FOUND) {
+          res.status(StatusCodes.OK).json({
+            status: StatusCodes.OK,
+            message: 'Academic verification retrieved successfully',
+            success: true,
+            pagination: {
+              total: 0,
+              page,
+              limit,
+              totalPages: 0,
+            },
+            data: [],
+          });
+          return;
+        }
+        throw error;
+      }
+    }
+
+    // Check if user has admin or superAdmin roleType
     if (roleType !== 'admin' && roleType !== 'superAdmin') {
       response.errorResponse(
         res,
