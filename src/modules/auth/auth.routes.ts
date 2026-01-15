@@ -23,6 +23,7 @@ import {
     getSubAdminById,
     updateSubAdmin,
     deleteSubAdmin,
+    deleteUser,
 } from './auth.controller';
 
 import { loginLimiter } from '@/middlewares/rateLimiter.middleware';
@@ -31,6 +32,7 @@ import { authMiddleware } from '@/middlewares/auth.middleware';
 import {
     PermissionChecker,
     superadminOnly,
+    adminOrSuperadminOnly,
 } from '@/middlewares/role.middleware';
 
 const authRouter = express.Router();
@@ -48,11 +50,58 @@ authRouter.post('/logout', authMiddleware, logout);
 authRouter.post('/2fa/setup', setup2FA);
 authRouter.post('/2fa/verify', verify2FA);
 
-authRouter.get('/me', authMiddleware, (req, res) => {
-    res.json({
-        message: 'Protected API working',
-        user: req.user,
-    });
+authRouter.get('/me', authMiddleware, async (req, res) => {
+    try {
+        const { DB } = await import('@/database');
+        const roleName = req.user?.role;
+        
+        console.log('🔍 [AUTH/ME] Request received for user:', req.user?.user_id);
+        console.log('🔍 [AUTH/ME] User role:', roleName);
+        
+        let permissions = null;
+        
+        // Fetch role permissions if role exists and is not superadmin/admin/subadmin
+        if (roleName && 
+            roleName.toLowerCase() !== 'superadmin' && 
+            roleName !== 'admin' && 
+            roleName !== 'subadmin') {
+            console.log('🔍 [AUTH/ME] Fetching permissions for role:', roleName);
+            const role = await DB.Roles.findOne({ where: { roleName } });
+            if (role) {
+                console.log('🔍 [AUTH/ME] Role found. permission_json type:', typeof role.permission_json);
+                console.log('🔍 [AUTH/ME] permission_json raw:', role.permission_json);
+                
+                // Parse permission_json if it's a string, otherwise use it as-is
+                permissions = typeof role.permission_json === 'string'
+                    ? JSON.parse(role.permission_json)
+                    : role.permission_json || [];
+                
+                console.log('🔍 [AUTH/ME] Parsed permissions:', JSON.stringify(permissions, null, 2));
+            } else {
+                console.log('⚠️ [AUTH/ME] Role not found in database for roleName:', roleName);
+            }
+        } else {
+            console.log('🔍 [AUTH/ME] Skipping permission fetch (superadmin/admin/subadmin bypass)');
+        }
+        
+        const responseData = {
+            ...req.user,
+            permissions, // Include permissions in user object
+        };
+        
+        console.log('🔍 [AUTH/ME] Sending response with permissions:', JSON.stringify(responseData.permissions, null, 2));
+        
+        res.json({
+            message: 'Protected API working',
+            user: responseData,
+        });
+    } catch (error: any) {
+        console.error('❌ [AUTH/ME] Error:', error);
+        res.status(500).json({
+            message: 'Error fetching user data',
+            error: error.message,
+        });
+    }
 });
 
 authRouter.post('/forgot-password', forgotPassword);
@@ -110,6 +159,14 @@ authRouter.delete(
     authMiddleware,
     superadminOnly,
     deleteSubAdmin,
+);
+
+// Delete user - requires admin or superadmin authentication
+authRouter.delete(
+    '/users/:id',
+    authMiddleware,
+    adminOrSuperadminOnly,
+    deleteUser,
 );
 
 export default authRouter;

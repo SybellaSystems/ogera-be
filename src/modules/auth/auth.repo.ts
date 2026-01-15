@@ -206,6 +206,34 @@ const repo = {
             ],
         });
     },
+
+    // Get counts for students and employers
+    getRoleCounts: async (): Promise<{ studentCount: number; employerCount: number }> => {
+        const [studentCount, employerCount] = await Promise.all([
+            DB.Users.count({
+                include: [
+                    {
+                        model: DB.Roles,
+                        as: 'role',
+                        where: { roleType: 'student' },
+                        attributes: [],
+                    },
+                ],
+            }),
+            DB.Users.count({
+                include: [
+                    {
+                        model: DB.Roles,
+                        as: 'role',
+                        where: { roleType: 'employer' },
+                        attributes: [],
+                    },
+                ],
+            }),
+        ]);
+
+        return { studentCount, employerCount };
+    },
 };
 
 export default repo;
