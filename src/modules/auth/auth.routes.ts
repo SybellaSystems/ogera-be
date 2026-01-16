@@ -23,6 +23,8 @@ import {
     getSubAdminById,
     updateSubAdmin,
     deleteSubAdmin,
+    getUserById,
+    updateUserById,
     deleteUser,
 } from './auth.controller';
 
@@ -159,6 +161,22 @@ authRouter.delete(
     authMiddleware,
     superadminOnly,
     deleteSubAdmin,
+);
+
+// Get user by ID - requires admin or superadmin authentication
+authRouter.get(
+    '/users/:id',
+    authMiddleware,
+    adminOrSuperadminOnly,
+    getUserById,
+);
+
+// Update user by ID - requires admin or superadmin authentication
+authRouter.put(
+    '/users/:id',
+    authMiddleware,
+    adminOrSuperadminOnly,
+    updateUserById,
 );
 
 // Delete user - requires admin or superadmin authentication

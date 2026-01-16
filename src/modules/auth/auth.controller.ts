@@ -786,6 +786,100 @@ export const deleteSubAdmin = async (
 };
 
 // -------------------- DELETE USER (ADMIN/SUPERADMIN ONLY) --------------------
+// Get user by ID - requires admin or superadmin authentication
+export const getUserById = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        if (!id) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'User ID is required',
+            );
+            return;
+        }
+
+        const user = await getUserProfileService(id);
+
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            user,
+            'User retrieved successfully',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// Update user by ID - requires admin or superadmin authentication
+export const updateUserById = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        if (!id) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'User ID is required',
+            );
+            return;
+        }
+
+        const {
+            full_name,
+            email,
+            mobile_number,
+            national_id_number,
+            business_registration_id,
+            resume_url,
+            cover_letter,
+            preferred_location,
+        } = req.body;
+
+        const updatedUser = await updateProfileService(id, {
+            full_name,
+            email,
+            mobile_number,
+            national_id_number,
+            business_registration_id,
+            resume_url,
+            cover_letter,
+            preferred_location,
+        });
+
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            updatedUser,
+            'User updated successfully',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
 export const deleteUser = async (
     req: Request,
     res: Response,
