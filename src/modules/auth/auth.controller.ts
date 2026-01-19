@@ -26,10 +26,11 @@ import {
     getSubAdminByIdService,
     updateSubAdminService,
     deleteSubAdminService,
+    deleteUserService,
 } from './auth.service';
 
 const response = new ResponseFormat();
-
+console.log("hello this is console log");
 // -------------------- REGISTER --------------------
 export const register = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -296,7 +297,7 @@ export const getAllusers = async (req: Request, res: Response) => {
         // req.user.role is already a string (roleName), not an object
         const currentUserRole = req.user?.role;
 
-        const { data, pagination } = await getAllUsersService(
+        const { data, pagination, counts } = await getAllUsersService(
             { page, limit },
             currentUserRole,
         );
@@ -307,6 +308,7 @@ export const getAllusers = async (req: Request, res: Response) => {
             success: true,
             pagination,
             data,
+            counts,
         });
     } catch (error: any) {
         response.errorResponse(
@@ -335,7 +337,9 @@ export const getAllStudents = async (req: Request, res: Response) => {
             success: true,
             pagination,
             data,
-        });
+        }); 
+        console.log('data', data);
+        console.log("hello this is console log");
     } catch (error: any) {
         response.errorResponse(
             res,
@@ -364,7 +368,10 @@ export const getAllEmployers = async (req: Request, res: Response) => {
             pagination,
             data,
         });
+        console.log('data', data);
+        console.log("hello this is console log");
     } catch (error: any) {
+        console.log(error);
         response.errorResponse(
             res,
             error.status || StatusCodes.INTERNAL_SERVER_ERROR,
@@ -767,6 +774,137 @@ export const deleteSubAdmin = async (
             StatusCodes.OK,
             result,
             'Subadmin deleted successfully',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// -------------------- DELETE USER (ADMIN/SUPERADMIN ONLY) --------------------
+// Get user by ID - requires admin or superadmin authentication
+export const getUserById = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        if (!id) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'User ID is required',
+            );
+            return;
+        }
+
+        const user = await getUserProfileService(id);
+
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            user,
+            'User retrieved successfully',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// Update user by ID - requires admin or superadmin authentication
+export const updateUserById = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        if (!id) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'User ID is required',
+            );
+            return;
+        }
+
+        const {
+            full_name,
+            email,
+            mobile_number,
+            national_id_number,
+            business_registration_id,
+            resume_url,
+            cover_letter,
+            preferred_location,
+        } = req.body;
+
+        const updatedUser = await updateProfileService(id, {
+            full_name,
+            email,
+            mobile_number,
+            national_id_number,
+            business_registration_id,
+            resume_url,
+            cover_letter,
+            preferred_location,
+        });
+
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            updatedUser,
+            'User updated successfully',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+export const deleteUser = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        if (!id) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'User ID is required',
+            );
+            return;
+        }
+
+        const result = await deleteUserService(id);
+
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            result,
+            'User deleted successfully',
         );
     } catch (error: any) {
         response.errorResponse(

@@ -321,11 +321,13 @@ export const getAllUsersService = async (
         limit,
         roleWhere: whereCondition,
     });
-    if (!rows.length)
-        throw new CustomError(
-            Messages.User.NO_USERS_FOUND,
-            StatusCodes.NOT_FOUND,
-        );
+
+    console.log('rows', rows);
+    console.log("hello this is console log");
+    // break;
+
+    // Get counts for students and employers to include in response
+    const roleCounts = await repo.getRoleCounts();
 
     return {
         data: rows,
@@ -334,6 +336,10 @@ export const getAllUsersService = async (
             page,
             limit,
             totalPages: Math.ceil(count / limit),
+        },
+        counts: {
+            students: roleCounts.studentCount,
+            employers: roleCounts.employerCount,
         },
     };
 };
@@ -347,11 +353,6 @@ export const getAllStudentsService = async (
         limit,
         roleWhere: roleWhere || { roleType: 'student' },
     });
-    if (!rows.length)
-        throw new CustomError(
-            Messages.User.NO_STUDENTS_FOUND,
-            StatusCodes.NOT_FOUND,
-        );
 
     return {
         data: rows,
@@ -373,11 +374,6 @@ export const getAllEmployersService = async (
         limit,
         roleWhere: roleWhere || { roleType: 'employer' },
     });
-    if (!rows.length)
-        throw new CustomError(
-            Messages.User.NO_EMPLOYERS_FOUND,
-            StatusCodes.NOT_FOUND,
-        );
 
     return {
         data: rows,
@@ -856,6 +852,19 @@ export const deleteSubAdminService = async (user_id: string) => {
     await repo.deleteUser(user_id);
 
     return { message: 'Subadmin deleted successfully' };
+};
+
+// -------------------- DELETE USER (ADMIN/SUPERADMIN ONLY) --------------------
+export const deleteUserService = async (user_id: string) => {
+    // Check if user exists
+    const user = await repo.findUserById(user_id);
+    if (!user)
+        throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+
+    // Delete the user
+    await repo.deleteUser(user_id);
+
+    return { message: 'User deleted successfully' };
 };
 
 // -------------------- SEND PHONE VERIFICATION OTP --------------------
