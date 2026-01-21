@@ -1,6 +1,7 @@
 import express from 'express';
 import {
     register,
+    addUserController,
     login,
     refreshAccessToken,
     logout,
@@ -10,8 +11,8 @@ import {
     verifyResetOTP,
     resetPassword,
     getAllusers,
-    getAllStudents,
-    getAllEmployers,
+   // getAllStudents,
+   // getAllEmployers,
     getUserProfile,
     updateProfile,
     verifyEmail,
@@ -119,8 +120,8 @@ authRouter.post('/send-phone-verification-otp', authMiddleware, sendPhoneVerific
 authRouter.post('/verify-phone', authMiddleware, verifyPhone);
 
 authRouter.get('/get-user', getAllusers);
-authRouter.get('/get-students', getAllStudents);
-authRouter.get('/get-employers', getAllEmployers);
+// authRouter.get('/get-students', getAllStudents);
+// authRouter.get('/get-employers', getAllEmployers);
 
 // Get user profile - requires authentication
 authRouter.get('/profile', authMiddleware, getUserProfile);
@@ -185,6 +186,14 @@ authRouter.delete(
     authMiddleware,
     adminOrSuperadminOnly,
     deleteUser,
+);
+
+// Add user - requires admin or superadmin authentication
+authRouter.post(
+    '/add-user',
+    authMiddleware,
+    adminOrSuperadminOnly,
+    addUserController,
 );
 
 export default authRouter;
