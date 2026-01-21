@@ -17,15 +17,18 @@ export const PermissionChecker = (route: string, action: string) => {
                 return next();
             }
 
-            // ⭐ Admin also bypasses all permissions
-            if (roleName === 'admin' || roleName === 'subadmin') {
-                return next();
-            }
-
-            // Load role from DB
+            // Load role from DB to check roleType
             const role = await DB.Roles.findOne({ where: { roleName } });
             if (!role) {
                 return next(new CustomError('Role not found', 403));
+            }
+
+            // ⭐ If roleType is 'admin', bypass permission checks (for backward compatibility)
+            // But note: Custom admin roles (like "job-admin") should still check permissions
+            // So we only bypass if the roleName is exactly "admin" (legacy behavior)
+            // For custom admin roles, we check permissions below
+            if (roleName === 'admin' && role.roleType === 'admin') {
+                return next();
             }
 
             // Parse permission_json if it's a string, otherwise use it as-is

@@ -3,6 +3,7 @@ import Sequelize from 'sequelize';
 
 import userModel from './models/user.model';
 import rolesModel from './models/roles.model';
+import permissionModel from './models/permission.model';
 import jobModel from './models/job.model';
 import jobApplicationModel from './models/jobApplication.model';
 import academicVerificationModel from './models/academicVerification.model';
@@ -59,6 +60,7 @@ sequelize
 // Initialize models
 const Users = userModel(sequelize);
 const Roles = rolesModel(sequelize);
+const Permissions = permissionModel(sequelize);
 const Jobs = jobModel(sequelize);
 const JobApplications = jobApplicationModel(sequelize);
 const AcademicVerifications = academicVerificationModel(sequelize);
@@ -605,7 +607,7 @@ const ensureUserTableColumns = async () => {
 
         // Use sync with alter, but catch and handle role_type errors specifically
         try {
-            await sequelize.sync({ alter: true });
+            await sequelize.sync({ alter: false });
             logger.info('✅ Database synced');
         } catch (syncErr: any) {
             // If sync fails due to role_type null values, try to fix and retry
@@ -625,7 +627,7 @@ const ensureUserTableColumns = async () => {
                 if (retryFixSuccess) {
                     // Retry sync
                     try {
-                        await sequelize.sync({ alter: true });
+                        await sequelize.sync({ alter: false });
                         logger.info(
                             '✅ Database synced successfully after fixing NULL values',
                         );
@@ -689,6 +691,7 @@ const ensureUserTableColumns = async () => {
 export const DB = {
     Users,
     Roles,
+    Permissions,
     Jobs,
     JobApplications,
     AcademicVerifications,

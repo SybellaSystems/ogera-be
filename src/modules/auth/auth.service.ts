@@ -62,11 +62,18 @@ export const registerUser = async (data: any) => {
 
     const hashedPassword = await hash(data.password, 10);
 
+    // Find role by roleType (student or employer) instead of roleName
+    // This allows users to register and get assigned to the appropriate role
     const role = await DB.Roles.findOne({
-        where: { roleName: data.role },
+        where: { roleType: data.role }, // data.role is "student" or "employer"
     });
 
-    if (!role) throw new CustomError('Invalid role', StatusCodes.BAD_REQUEST);
+    if (!role) {
+        throw new CustomError(
+            `No role found for ${data.role}. Please create a role with roleType "${data.role}" first.`,
+            StatusCodes.BAD_REQUEST,
+        );
+    }
 
     // Validate roleType - must be one of the allowed values
     const allowedRoleTypes = ['student', 'employer', 'superAdmin', 'admin'];

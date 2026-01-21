@@ -152,10 +152,10 @@ const repo = {
             attributes: ['id', 'roleName', 'roleType'],
         };
 
-        // Use provided where condition or default to admin roleType
+        // Use provided where condition or default to admin roleType only (exclude superAdmin)
         includeOptions.where = roleWhere || {
             roleType: {
-                [Op.in]: ['admin', 'superAdmin'],
+                [Op.eq]: 'admin',
             },
         };
 
