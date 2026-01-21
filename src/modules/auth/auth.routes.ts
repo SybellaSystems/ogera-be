@@ -63,11 +63,11 @@ authRouter.get('/me', authMiddleware, async (req, res) => {
         
         let permissions = null;
         
-        // Fetch role permissions if role exists and is not superadmin/admin/subadmin
+        // Fetch role permissions if role exists and is not superadmin or exact "admin" roleName
+        // Custom admin roles like "admin1", "admin2", "subadmin" etc. will fetch permissions
         if (roleName && 
             roleName.toLowerCase() !== 'superadmin' && 
-            roleName !== 'admin' && 
-            roleName !== 'subadmin') {
+            roleName !== 'admin') {
             console.log('🔍 [AUTH/ME] Fetching permissions for role:', roleName);
             const role = await DB.Roles.findOne({ where: { roleName } });
             if (role) {
@@ -84,7 +84,7 @@ authRouter.get('/me', authMiddleware, async (req, res) => {
                 console.log('⚠️ [AUTH/ME] Role not found in database for roleName:', roleName);
             }
         } else {
-            console.log('🔍 [AUTH/ME] Skipping permission fetch (superadmin/admin/subadmin bypass)');
+            console.log('🔍 [AUTH/ME] Skipping permission fetch (superadmin or exact "admin" roleName bypass)');
         }
         
         const responseData = {

@@ -2,11 +2,7 @@ import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { ResponseFormat } from '@/exception/responseFormat';
 import { Messages } from '@/utils/messages';
-import {
-    getAllUsersService,
-    getAllStudentsService,
-    getAllEmployersService,
-} from '@/modules/auth/auth.service';
+import { getAllUsersService } from '@/modules/auth/auth.service';
 
 const response = new ResponseFormat();
 
@@ -15,12 +11,13 @@ export const getAllUsers = async (req: Request, res: Response) => {
     try {
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || 10;
+        const type = req.query.type as string | undefined;
 
         // Get current user's role to determine if admin roles should be excluded
         const currentUserRole = req.user?.role;
 
-        const { data, pagination } = await getAllUsersService(
-            { page, limit },
+        const { data, pagination, counts } = await getAllUsersService(
+            { page, limit, type },
             currentUserRole,
         );
 
@@ -30,6 +27,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
             success: true,
             pagination,
             data,
+            counts,
         });
     } catch (error: any) {
         response.errorResponse(
@@ -47,10 +45,10 @@ export const getAllStudents = async (req: Request, res: Response) => {
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || 10;
 
-        const { data, pagination } = await getAllStudentsService({
-            page,
-            limit,
-        });
+        const { data, pagination } = await getAllUsersService(
+            { page, limit, type: 'Student' },
+            req.user?.role,
+        );
 
         res.status(StatusCodes.OK).json({
             status: StatusCodes.OK,
@@ -75,10 +73,10 @@ export const getAllEmployers = async (req: Request, res: Response) => {
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || 10;
 
-        const { data, pagination } = await getAllEmployersService({
-            page,
-            limit,
-        });
+        const { data, pagination } = await getAllUsersService(
+            { page, limit, type: 'Employer' },
+            req.user?.role,
+        );
 
         res.status(StatusCodes.OK).json({
             status: StatusCodes.OK,
