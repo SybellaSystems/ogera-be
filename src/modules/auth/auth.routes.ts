@@ -9,9 +9,6 @@ import {
     forgotPassword,
     verifyResetOTP,
     resetPassword,
-    getAllusers,
-    getAllStudents,
-    getAllEmployers,
     getUserProfile,
     updateProfile,
     verifyEmail,
@@ -66,10 +63,6 @@ authRouter.post('/resend-verification-email', resendVerificationEmail);
 // Phone verification routes
 authRouter.post('/send-phone-verification-otp', authMiddleware, sendPhoneVerificationOTP);
 authRouter.post('/verify-phone', authMiddleware, verifyPhone);
-
-authRouter.get('/get-user', getAllusers);
-authRouter.get('/get-students', getAllStudents);
-authRouter.get('/get-employers', getAllEmployers);
 
 // Get user profile - requires authentication
 authRouter.get('/profile', authMiddleware, getUserProfile);
