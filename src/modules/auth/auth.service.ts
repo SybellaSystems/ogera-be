@@ -95,14 +95,14 @@ export const registerUser = async (data: any) => {
     const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     const user = await repo.createUser({
-        full_name: data.full_name?.trim() || '', // Use provided name as-is, trimmed (never add "Doe" or default last name)
+        full_name: data.full_name?.trim() || '',
         email: data.email,
         mobile_number: data.mobile_number,
         national_id_number: data.national_id_number,
         business_registration_id: data.business_registration_id || null,
         password_hash: hashedPassword,
         role_id: role.id,
-        role_type: role.roleType, // Save role_type from the role's roleType
+        role_type: role.roleType,
         email_verified: false,
         email_verification_token: verificationToken,
         email_verification_token_expiry: verificationTokenExpiry,
@@ -131,6 +131,83 @@ export const registerUser = async (data: any) => {
         });
     } catch (error) {
         // Log error but don't fail registration
+        console.error('Failed to send verification email:', error);
+    }
+
+    return { user };
+};
+
+// -------------------- ADD USER (ADMIN/SUPERADMIN) --------------------
+export const addUser = async (data: any) => {
+    // Check if email exists
+    const exists = await repo.findUserByEmail(data.email);
+    if (exists)
+        throw new CustomError('Email already exists', StatusCodes.CONFLICT);
+
+    const hashedPassword = await hash(data.password, 10);
+
+    const role = await DB.Roles.findOne({
+        where: { roleName: data.role },
+    });
+
+    if (!role) throw new CustomError('Invalid role', StatusCodes.BAD_REQUEST);
+
+    // Validate roleType - must be one of the allowed values
+    const allowedRoleTypes = ['student', 'employer', 'superAdmin', 'admin'];
+    if (!allowedRoleTypes.includes(role.roleType)) {
+        throw new CustomError(
+            `Invalid roleType: ${
+                role.roleType
+            }. Must be one of: ${allowedRoleTypes.join(', ')}`,
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+
+    // Generate email verification token
+    const verificationToken = jwt.sign(
+        { email: data.email, type: 'email_verification' },
+        JWT_SECRET as string,
+        { expiresIn: '24h' },
+    );
+    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    const user = await repo.createUser({
+        full_name: data.full_name?.trim() || '',
+        email: data.email,
+        mobile_number: data.mobile_number,
+        national_id_number: data.national_id_number,
+        business_registration_id: data.business_registration_id || null,
+        password_hash: hashedPassword,
+        role_id: role.id,
+        role_type: role.roleType,
+        email_verified: false,
+        email_verification_token: verificationToken,
+        email_verification_token_expiry: verificationTokenExpiry,
+
+        /* ⭐ LEGAL - auto-accept when admin adds user */
+        terms_accepted: true,
+        privacy_accepted: true,
+        terms_accepted_at: new Date(),
+        privacy_accepted_at: new Date(),
+    });
+
+    // Send verification email
+    const frontendUrl = FRONTEND_URL || 'http://localhost:5173';
+    const verificationLink = `${frontendUrl}/auth/verify-email?token=${verificationToken}`;
+    const { html, text } = EmailVerificationTemplate(
+        verificationLink,
+        verificationTokenExpiry,
+    );
+
+    try {
+        await sendMail({
+            to: data.email,
+            subject: 'Verify Your Email Address',
+            text,
+            html,
+        });
+    } catch (error) {
+        // Log error but don't fail user creation
         console.error('Failed to send verification email:', error);
     }
 
@@ -301,14 +378,35 @@ export const resetPasswordService = async (
 };
 
 export const getAllUsersService = async (
-    { page, limit }: PaginationQuery,
+    { page, limit, type }: PaginationQuery & { type?: string },
     currentUserRole?: string,
     roleWhere?: any,
 ) => {
-    let whereCondition = roleWhere;
+    let whereCondition: any = undefined;
 
-    // If no where condition provided, exclude admin and superAdmin roles for non-admin users
-    if (!whereCondition) {
+    // Handle type parameter: filter by roleType if type is provided
+    // Type parameter takes precedence over roleWhere
+    if (type && type !== 'all') {
+        // Map frontend type values to backend roleType values
+        const typeToRoleType: Record<string, string> = {
+            'Student': 'student',
+            'Employer': 'employer',
+            'student': 'student',
+            'employer': 'employer',
+        };
+        
+        const roleType = typeToRoleType[type];
+        if (roleType) {
+            // Set the whereCondition to filter by the specific roleType
+            whereCondition = {
+                roleType: roleType,
+            };
+        }
+    } else if (roleWhere) {
+        // Use roleWhere if provided and no type filter
+        whereCondition = roleWhere;
+    } else {
+        // If no type specified and no roleWhere, exclude admin and superAdmin roles for non-admin users
         const excludeAdminRoles =
             currentUserRole !== 'admin' &&
             currentUserRole !== 'superadmin' &&
@@ -328,11 +426,13 @@ export const getAllUsersService = async (
         limit,
         roleWhere: whereCondition,
     });
-    if (!rows.length)
-        throw new CustomError(
-            Messages.User.NO_USERS_FOUND,
-            StatusCodes.NOT_FOUND,
-        );
+
+    console.log('rows', rows);
+    console.log("hello this is console log");
+    // break;
+
+    // Get counts for students and employers to include in response
+    const roleCounts = await repo.getRoleCounts();
 
     return {
         data: rows,
@@ -342,60 +442,56 @@ export const getAllUsersService = async (
             limit,
             totalPages: Math.ceil(count / limit),
         },
-    };
-};
-
-export const getAllStudentsService = async (
-    { page, limit }: PaginationQuery,
-    roleWhere?: any,
-) => {
-    const { rows, count } = await repo.findAllStudents({
-        page,
-        limit,
-        roleWhere: roleWhere || { roleType: 'student' },
-    });
-    if (!rows.length)
-        throw new CustomError(
-            Messages.User.NO_STUDENTS_FOUND,
-            StatusCodes.NOT_FOUND,
-        );
-
-    return {
-        data: rows,
-        pagination: {
-            total: count,
-            page,
-            limit,
-            totalPages: Math.ceil(count / limit),
+        counts: {
+            students: roleCounts.studentCount,
+            employers: roleCounts.employerCount,
         },
     };
 };
 
-export const getAllEmployersService = async (
-    { page, limit }: PaginationQuery,
-    roleWhere?: any,
-) => {
-    const { rows, count } = await repo.findAllEmployers({
-        page,
-        limit,
-        roleWhere: roleWhere || { roleType: 'employer' },
-    });
-    if (!rows.length)
-        throw new CustomError(
-            Messages.User.NO_EMPLOYERS_FOUND,
-            StatusCodes.NOT_FOUND,
-        );
+// export const getAllStudentsService = async (
+//     { page, limit, type }: PaginationQuery & { type?: number },
+//     roleWhere?: any,
+// ) => {
+//     const { rows, count } = await repo.findAllUsers({
+//         page,
+//         limit,
+//         roleWhere: roleWhere || { roleType: 'student' },
+//         type: 'student' as 'student',
+//     });
 
-    return {
-        data: rows,
-        pagination: {
-            total: count,
-            page,
-            limit,
-            totalPages: Math.ceil(count / limit),
-        },
-    };
-};
+//     return {
+//         data: rows,
+//         pagination: {
+//             total: count,
+//             page,
+//             limit,
+//             totalPages: Math.ceil(count / limit),
+//         },
+//     };
+// };
+
+// export const getAllEmployersService = async (
+//     { page, limit, type }: PaginationQuery & { type?: number },
+//     roleWhere?: any,
+// ) => {
+//     const { rows, count } = await repo.findAllUsers({
+//         page,
+//         limit,
+//         roleWhere: roleWhere || { roleType: 'employer' },
+//         type: 'employer' as 'employer',
+//     });
+
+//     return {
+//         data: rows,
+//         pagination: {
+//             total: count,
+//             page,
+//             limit,
+//             totalPages: Math.ceil(count / limit),
+//         },
+//     };
+// };
 
 // -------------------- GET USER PROFILE --------------------
 export const getUserProfileService = async (user_id: string) => {
@@ -863,6 +959,19 @@ export const deleteSubAdminService = async (user_id: string) => {
     await repo.deleteUser(user_id);
 
     return { message: 'Subadmin deleted successfully' };
+};
+
+// -------------------- DELETE USER (ADMIN/SUPERADMIN ONLY) --------------------
+export const deleteUserService = async (user_id: string) => {
+    // Check if user exists
+    const user = await repo.findUserById(user_id);
+    if (!user)
+        throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+
+    // Delete the user
+    await repo.deleteUser(user_id);
+
+    return { message: 'User deleted successfully' };
 };
 
 // -------------------- SEND PHONE VERIFICATION OTP --------------------

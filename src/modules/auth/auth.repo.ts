@@ -27,7 +27,13 @@ const repo = {
         page,
         limit,
         roleWhere,
-    }: PaginationQuery & { roleWhere?: any }): Promise<{
+        type,
+    }: {
+        page: number;
+        limit: number;
+        roleWhere?: any;
+        type?: 'student' | 'employer';
+    }): Promise<{
         rows: User[];
         count: number;
     }> => {
@@ -37,9 +43,11 @@ const repo = {
             attributes: ['id', 'roleName', 'roleType'],
         };
 
-        // Apply where condition if provided
+        // Apply where condition: roleWhere takes precedence, then type, then no filter
         if (roleWhere) {
             includeOptions.where = roleWhere;
+        } else if (type) {
+            includeOptions.where = { roleType: type };
         }
 
         return await DB.Users.findAndCountAll({
@@ -60,69 +68,69 @@ const repo = {
         });
     },
 
-    findAllStudents: async ({
-        page,
-        limit,
-        roleWhere,
-    }: PaginationQuery & { roleWhere?: any }) => {
-        const includeOptions: any = {
-            model: DB.Roles,
-            as: 'role',
-            attributes: ['id', 'roleName', 'roleType'],
-        };
+    // findAllStudents: async ({
+    //     page,
+    //     limit,
+    //     roleWhere,
+    // }: PaginationQuery & { roleWhere?: any }) => {
+    //     const includeOptions: any = {
+    //         model: DB.Roles,
+    //         as: 'role',
+    //         attributes: ['id', 'roleName', 'roleType'],
+    //     };
 
-        // Use provided where condition or default to student roleType
-        includeOptions.where = roleWhere || { roleType: 'student' };
+    //     // Use provided where condition or default to student roleType
+    //     includeOptions.where = roleWhere || { roleType: 'student' };
 
-        return await DB.Users.findAndCountAll({
-            include: [includeOptions],
-            offset: (page - 1) * limit,
-            limit,
-            order: [['created_at', 'DESC']],
-            attributes: {
-                exclude: [
-                    'password_hash',
-                    'reset_otp',
-                    'reset_otp_expiry',
-                    'two_fa_secret',
-                    'phone_verification_otp',
-                    'phone_verification_otp_expiry',
-                ],
-            },
-        });
-    },
+    //     return await DB.Users.findAndCountAll({
+    //         include: [includeOptions],
+    //         offset: (page - 1) * limit,
+    //         limit,
+    //         order: [['created_at', 'DESC']],
+    //         attributes: {
+    //             exclude: [
+    //                 'password_hash',
+    //                 'reset_otp',
+    //                 'reset_otp_expiry',
+    //                 'two_fa_secret',
+    //                 'phone_verification_otp',
+    //                 'phone_verification_otp_expiry',
+    //             ],
+    //         },
+    //     });
+    // },
 
-    findAllEmployers: async ({
-        page,
-        limit,
-        roleWhere,
-    }: PaginationQuery & { roleWhere?: any }) => {
-        const includeOptions: any = {
-            model: DB.Roles,
-            as: 'role',
-            attributes: ['id', 'roleName', 'roleType'],
-        };
+    // findAllEmployers: async ({
+    //     page,
+    //     limit,
+    //     roleWhere,
+    // }: PaginationQuery & { roleWhere?: any }) => {
+    //     const includeOptions: any = {
+    //         model: DB.Roles,
+    //         as: 'role',
+    //         attributes: ['id', 'roleName', 'roleType'],
+    //     };
 
-        // Use provided where condition or default to employer roleType
-        includeOptions.where = roleWhere || { roleType: 'employer' };
+    //     // Use provided where condition or default to employer roleType
+    //     includeOptions.where = roleWhere || { roleType: 'employer' };
 
-        return await DB.Users.findAndCountAll({
-            include: [includeOptions],
-            offset: (page - 1) * limit,
-            limit,
-            order: [['created_at', 'DESC']],
-            attributes: {
-                exclude: [
-                    'password_hash',
-                    'reset_otp',
-                    'reset_otp_expiry',
-                    'two_fa_secret',
-                    'phone_verification_otp',
-                    'phone_verification_otp_expiry',
-                ],
-            },
-        });
-    },
+    //     return await DB.Users.findAndCountAll({
+    //         include: [includeOptions],
+    //         offset: (page - 1) * limit,
+    //         limit,
+    //         order: [['created_at', 'DESC']],
+    //         attributes: {
+    //             exclude: [
+    //                 'password_hash',
+    //                 'reset_otp',
+    //                 'reset_otp_expiry',
+    //                 'two_fa_secret',
+    //                 'phone_verification_otp',
+    //                 'phone_verification_otp_expiry',
+    //             ],
+    //         },
+    //     });
+    // },
 
     // findAndCount: async ({include,offset,order, limit }: PaginationQuery) => {
     //   return await DB.Users.findAndCountAll({
@@ -205,6 +213,34 @@ const repo = {
                 },
             ],
         });
+    },
+
+    // Get counts for students and employers
+    getRoleCounts: async (): Promise<{ studentCount: number; employerCount: number }> => {
+        const [studentCount, employerCount] = await Promise.all([
+            DB.Users.count({
+                include: [
+                    {
+                        model: DB.Roles,
+                        as: 'role',
+                        where: { roleType: 'student' },
+                        attributes: [],
+                    },
+                ],
+            }),
+            DB.Users.count({
+                include: [
+                    {
+                        model: DB.Roles,
+                        as: 'role',
+                        where: { roleType: 'employer' },
+                        attributes: [],
+                    },
+                ],
+            }),
+        ]);
+
+        return { studentCount, employerCount };
     },
 };
 

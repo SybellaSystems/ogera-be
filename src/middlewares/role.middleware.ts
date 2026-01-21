@@ -100,3 +100,36 @@ export const superadminOnly = async (
         next(error);
     }
 };
+
+// -------------------- ADMIN OR SUPERADMIN MIDDLEWARE --------------------
+export const adminOrSuperadminOnly = async (
+    req: any,
+    _res: Response,
+    next: NextFunction,
+) => {
+    try {
+        if (!req.user) {
+            return next(new CustomError('Unauthorized', 401));
+        }
+
+        const roleName = req.user.role;
+
+        // Check if user is superadmin (case-insensitive) or admin/subadmin
+        if (
+            roleName?.toLowerCase() !== 'superadmin' &&
+            roleName !== 'admin' &&
+            roleName !== 'subadmin'
+        ) {
+            return next(
+                new CustomError(
+                    'Forbidden: Only admin or superadmin can perform this action',
+                    403,
+                ),
+            );
+        }
+
+        next();
+    } catch (error) {
+        next(error);
+    }
+};

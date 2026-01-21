@@ -4,6 +4,7 @@ import { ResponseFormat } from '@/exception/responseFormat';
 import { Messages } from '@/utils/messages';
 import {
     registerUser,
+    addUser,
     loginUser,
     generate2FAUser,
     refreshTokenService,
@@ -13,8 +14,8 @@ import {
     verifyResetOTPService,
     resetPasswordService,
     getAllUsersService,
-    getAllStudentsService,
-    getAllEmployersService,
+    //getAllStudentsService,
+    //getAllEmployersService,
     getUserProfileService,
     updateProfileService,
     verifyEmailService,
@@ -26,10 +27,11 @@ import {
     getSubAdminByIdService,
     updateSubAdminService,
     deleteSubAdminService,
+    deleteUserService,
 } from './auth.service';
 
 const response = new ResponseFormat();
-
+console.log("hello this is console log");
 // -------------------- REGISTER --------------------
 export const register = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -52,6 +54,31 @@ export const register = async (req: Request, res: Response): Promise<void> => {
             StatusCodes.CREATED,
             result.user,
             'User registered successfully',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// -------------------- ADD USER (ADMIN/SUPERADMIN) --------------------
+export const addUserController = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const result = await addUser(req.body);
+
+        response.response(
+            res,
+            true,
+            StatusCodes.CREATED,
+            result.user,
+            'User added successfully',
         );
     } catch (error: any) {
         response.errorResponse(
@@ -291,13 +318,15 @@ export const getAllusers = async (req: Request, res: Response) => {
     try {
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || 10;
+        // Accept type as string: "all", "Student", or "Employer"
+        const type = req.query.type as string | undefined;
 
         // Get current user's role to determine if admin roles should be excluded
         // req.user.role is already a string (roleName), not an object
         const currentUserRole = req.user?.role;
 
-        const { data, pagination } = await getAllUsersService(
-            { page, limit },
+        const { data, pagination, counts } = await getAllUsersService(
+            { page, limit, type },
             currentUserRole,
         );
 
@@ -307,6 +336,7 @@ export const getAllusers = async (req: Request, res: Response) => {
             success: true,
             pagination,
             data,
+            counts,
         });
     } catch (error: any) {
         response.errorResponse(
@@ -319,60 +349,65 @@ export const getAllusers = async (req: Request, res: Response) => {
 };
 
 // Get All Students
-export const getAllStudents = async (req: Request, res: Response) => {
-    try {
-        const page = parseInt(req.query.page as string) || 1;
-        const limit = parseInt(req.query.limit as string) || 10;
+// export const getAllStudents = async (req: Request, res: Response) => {
+//     try {
+//         const page = parseInt(req.query.page as string) || 1;
+//         const limit = parseInt(req.query.limit as string) || 10;
 
-        const { data, pagination } = await getAllStudentsService({
-            page,
-            limit,
-        });
+//         const { data, pagination } = await getAllStudentsService({
+//             page,
+//             limit,
+//         });
 
-        res.status(StatusCodes.OK).json({
-            status: StatusCodes.OK,
-            message: Messages.User.FETCH_STUDENTS,
-            success: true,
-            pagination,
-            data,
-        });
-    } catch (error: any) {
-        response.errorResponse(
-            res,
-            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
-            false,
-            error.message,
-        );
-    }
-};
+//         res.status(StatusCodes.OK).json({
+//             status: StatusCodes.OK,
+//             message: Messages.User.FETCH_STUDENTS,
+//             success: true,
+//             pagination,
+//             data,
+//         }); 
+//         console.log('data', data);
+//         console.log("hello this is console log");
+//     } catch (error: any) {
+//         response.errorResponse(
+//             res,
+//             error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+//             false,
+//             error.message,
+//         );
+//     }
+// };
 
-// Get All Employers
-export const getAllEmployers = async (req: Request, res: Response) => {
-    try {
-        const page = parseInt(req.query.page as string) || 1;
-        const limit = parseInt(req.query.limit as string) || 10;
+// // Get All Employers
+// export const getAllEmployers = async (req: Request, res: Response) => {
+//     try {
+//         const page = parseInt(req.query.page as string) || 1;
+//         const limit = parseInt(req.query.limit as string) || 10;
 
-        const { data, pagination } = await getAllEmployersService({
-            page,
-            limit,
-        });
+//         const { data, pagination } = await getAllEmployersService({
+//             page,
+//             limit,
+//         });
 
-        res.status(StatusCodes.OK).json({
-            status: StatusCodes.OK,
-            message: Messages.User.FETCH_EMPLOYERS,
-            success: true,
-            pagination,
-            data,
-        });
-    } catch (error: any) {
-        response.errorResponse(
-            res,
-            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
-            false,
-            error.message,
-        );
-    }
-};
+//         res.status(StatusCodes.OK).json({
+//             status: StatusCodes.OK,
+//             message: Messages.User.FETCH_EMPLOYERS,
+//             success: true,
+//             pagination,
+//             data,
+//         });
+//         console.log('data', data);
+//         console.log("hello this is console log");
+//     } catch (error: any) {
+//         console.log(error);
+//         response.errorResponse(
+//             res,
+//             error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+//             false,
+//             error.message,
+//         );
+//     }
+// };
 
 // -------------------- GET USER PROFILE --------------------
 export const getUserProfile = async (
@@ -767,6 +802,137 @@ export const deleteSubAdmin = async (
             StatusCodes.OK,
             result,
             'Subadmin deleted successfully',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// -------------------- DELETE USER (ADMIN/SUPERADMIN ONLY) --------------------
+// Get user by ID - requires admin or superadmin authentication
+export const getUserById = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        if (!id) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'User ID is required',
+            );
+            return;
+        }
+
+        const user = await getUserProfileService(id);
+
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            user,
+            'User retrieved successfully',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// Update user by ID - requires admin or superadmin authentication
+export const updateUserById = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        if (!id) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'User ID is required',
+            );
+            return;
+        }
+
+        const {
+            full_name,
+            email,
+            mobile_number,
+            national_id_number,
+            business_registration_id,
+            resume_url,
+            cover_letter,
+            preferred_location,
+        } = req.body;
+
+        const updatedUser = await updateProfileService(id, {
+            full_name,
+            email,
+            mobile_number,
+            national_id_number,
+            business_registration_id,
+            resume_url,
+            cover_letter,
+            preferred_location,
+        });
+
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            updatedUser,
+            'User updated successfully',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+export const deleteUser = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        if (!id) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'User ID is required',
+            );
+            return;
+        }
+
+        const result = await deleteUserService(id);
+
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            result,
+            'User deleted successfully',
         );
     } catch (error: any) {
         response.errorResponse(
