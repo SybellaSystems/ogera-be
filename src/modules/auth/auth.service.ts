@@ -379,46 +379,42 @@ export const resetPasswordService = async (
 
 export const getAllUsersService = async (
     { page, limit, type }: PaginationQuery & { type?: string },
-    currentUserRole?: string,
+    _currentUserRole?: string,
     roleWhere?: any,
 ) => {
     let whereCondition: any = undefined;
 
-    // Handle type parameter: filter by roleType if type is provided
-    // Type parameter takes precedence over roleWhere
+    // Handle type parameter: filter by roleType if type is provided.
+    // Type parameter takes precedence over roleWhere.
     if (type && type !== 'all') {
         // Map frontend type values to backend roleType values
         const typeToRoleType: Record<string, string> = {
-            'Student': 'student',
-            'Employer': 'employer',
-            'student': 'student',
-            'employer': 'employer',
+            Student: 'student',
+            Employer: 'employer',
+            student: 'student',
+            employer: 'employer',
         };
-        
+
         const roleType = typeToRoleType[type];
         if (roleType) {
             // Set the whereCondition to filter by the specific roleType
             whereCondition = {
-                roleType: roleType,
+                roleType,
             };
         }
     } else if (roleWhere) {
         // Use roleWhere if provided and no type filter
         whereCondition = roleWhere;
     } else {
-        // If no type specified and no roleWhere, exclude admin and superAdmin roles for non-admin users
-        const excludeAdminRoles =
-            currentUserRole !== 'admin' &&
-            currentUserRole !== 'superadmin' &&
-            currentUserRole !== 'subadmin';
-
-        if (excludeAdminRoles) {
-            whereCondition = {
-                roleType: {
-                    [Op.notIn]: ['admin', 'superAdmin'],
-                },
-            };
-        }
+        // Default behaviour for "All Users" views:
+        // always restrict to end‑users (students + employers) and
+        // exclude any admin / superAdmin accounts. Admins are managed
+        // separately via the admin management endpoints.
+        whereCondition = {
+            roleType: {
+                [Op.in]: ['student', 'employer'],
+            },
+        };
     }
 
     const { rows, count } = await repo.findAllUsers({
@@ -830,13 +826,13 @@ export const getAllSubAdminsService = async ({
 export const getSubAdminByIdService = async (user_id: string) => {
     const user = await repo.findUserProfileById(user_id);
     if (!user)
-        throw new CustomError('Subadmin not found', StatusCodes.NOT_FOUND);
+        throw new CustomError('Admin not found', StatusCodes.NOT_FOUND);
 
-    // Check if user is subadmin or admin
-    const roleName = user.role?.roleName;
-    if (roleName !== 'subadmin' && roleName !== 'admin') {
+    // Check if user is an admin-type account (roleType === 'admin')
+    const roleType = user.role?.roleType;
+    if (roleType !== 'admin') {
         throw new CustomError(
-            'User is not a subadmin',
+            'User is not an admin',
             StatusCodes.BAD_REQUEST,
         );
     }
@@ -859,13 +855,13 @@ export const updateSubAdminService = async (
     // Check if user exists and is a subadmin
     const user = await repo.findUserById(user_id);
     if (!user)
-        throw new CustomError('Subadmin not found', StatusCodes.NOT_FOUND);
+        throw new CustomError('Admin not found', StatusCodes.NOT_FOUND);
 
-    // Verify user is subadmin or admin
+    // Verify user is an admin-type account
     const role = await DB.Roles.findOne({ where: { id: user.role_id } });
-    if (!role || (role.roleName !== 'subadmin' && role.roleName !== 'admin')) {
+    if (!role || role.roleType !== 'admin') {
         throw new CustomError(
-            'User is not a subadmin',
+            'User is not an admin',
             StatusCodes.BAD_REQUEST,
         );
     }
@@ -944,13 +940,13 @@ export const deleteSubAdminService = async (user_id: string) => {
     // Check if user exists and is a subadmin
     const user = await repo.findUserById(user_id);
     if (!user)
-        throw new CustomError('Subadmin not found', StatusCodes.NOT_FOUND);
+        throw new CustomError('Admin not found', StatusCodes.NOT_FOUND);
 
-    // Verify user is subadmin or admin
+    // Verify user is an admin-type account
     const role = await DB.Roles.findOne({ where: { id: user.role_id } });
-    if (!role || (role.roleName !== 'subadmin' && role.roleName !== 'admin')) {
+    if (!role || role.roleType !== 'admin') {
         throw new CustomError(
-            'User is not a subadmin',
+            'User is not an admin',
             StatusCodes.BAD_REQUEST,
         );
     }
