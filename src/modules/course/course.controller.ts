@@ -1,0 +1,146 @@
+import { Request, Response, NextFunction } from 'express';
+import { StatusCodes } from 'http-status-codes';
+import { ResponseFormat } from '@/exception/responseFormat';
+import { Messages } from '@/utils/messages';
+import {
+    createCourseService,
+    getAllCoursesService,
+    getCourseByIdService,
+    updateCourseService,
+    deleteCourseService,
+} from './course.service';
+
+const response = new ResponseFormat();
+
+export const createCourse = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+): Promise<void> => {
+    try {
+        if (!req.user) {
+            response.errorResponse(
+                res,
+                StatusCodes.UNAUTHORIZED,
+                false,
+                'User not authenticated',
+            );
+            return;
+        }
+        const course = await createCourseService(req.body);
+        response.response(
+            res,
+            true,
+            StatusCodes.CREATED,
+            course,
+            Messages.Course.CREATE_COURSE,
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+export const getAllCourses = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+) => {
+    try {
+        const courses = await getAllCoursesService();
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            courses,
+            Messages.Course.GET_ALL_COURSES,
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+export const getCourseById = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+) => {
+    try {
+        const { id } = req.params;
+        const course = await getCourseByIdService(id);
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            course,
+            Messages.Course.GET_COURSE_BY_ID,
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+export const updateCourse = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+) => {
+    try {
+        const { id } = req.params;
+        const course = await updateCourseService(id, req.body);
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            course,
+            Messages.Course.UPDATE_COURSE,
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+export const deleteCourse = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+) => {
+    try {
+        const { id } = req.params;
+        const result = await deleteCourseService(id);
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            result,
+            Messages.Course.DELETE_COURSE,
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+

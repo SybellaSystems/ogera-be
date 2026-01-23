@@ -12,6 +12,8 @@ import { UserEducationModel } from '@/database/models/userEducation.model';
 import { UserProjectModel } from '@/database/models/userProject.model';
 import { UserAccomplishmentModel } from '@/database/models/userAccomplishment.model';
 import { UserExtendedProfileModel } from '@/database/models/userExtendedProfile.model';
+import { CourseModel } from '@/database/models/course.model';
+import { CourseStepModel } from '@/database/models/courseStep.model';
 
 export const setupAssociations = () => {
     // ====================== USER ↔ ROLE ======================
@@ -265,6 +267,23 @@ export const setupAssociations = () => {
     UserExtendedProfileModel.belongsTo(UserModel, {
         foreignKey: 'user_id',
         as: 'user',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // ====================== COURSE ↔ COURSE STEP ======================
+    // A course can have many steps
+    CourseModel.hasMany(CourseStepModel, {
+        foreignKey: 'course_id',
+        as: 'steps',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // A step belongs to one course
+    CourseStepModel.belongsTo(CourseModel, {
+        foreignKey: 'course_id',
+        as: 'course',
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
     });

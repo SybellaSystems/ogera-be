@@ -8,6 +8,7 @@ import notificationRouter from '@/modules/notification/notification.routes';
 import trustScoreRouter from '@/modules/trustScore/trustScore.routes';
 import profileRouter from '@/modules/profile/profile.routes';
 import userRouter from '@/modules/user/user.routes';
+import courseRouter from '@/modules/course/course.routes';
 import express from 'express';
 
 const router = express.Router();
@@ -22,5 +23,6 @@ router.use('/notifications', notificationRouter);
 router.use('/trust-score', trustScoreRouter);
 router.use('/profile', profileRouter);
 router.use('/users', userRouter);
+router.use('/courses', courseRouter);
 
 export default router;
