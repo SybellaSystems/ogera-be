@@ -103,6 +103,7 @@ export const getAllRoutes = async (_req: Request, res: Response) => {
             '/trust-score',
             '/profile',
             '/users',
+            '/courses',
         ];
 
         res.status(StatusCodes.OK).json({

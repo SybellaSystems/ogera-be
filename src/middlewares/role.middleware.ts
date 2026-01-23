@@ -133,3 +133,48 @@ export const adminOrSuperadminOnly = async (
         next(error);
     }
 };
+
+// -------------------- COURSE ADMIN OR SUPERADMIN MIDDLEWARE --------------------
+export const courseAdminOrSuperadminOnly = async (
+    req: any,
+    _res: Response,
+    next: NextFunction,
+) => {
+    try {
+        if (!req.user) {
+            return next(new CustomError('Unauthorized', 401));
+        }
+
+        const roleName = req.user.role;
+
+        // ⭐ Superadmin bypasses (case-insensitive check)
+        if (roleName?.toLowerCase() === 'superadmin') {
+            return next();
+        }
+
+        // Load role from DB to check roleType
+        const role = await DB.Roles.findOne({ where: { roleName } });
+        if (!role) {
+            return next(
+                new CustomError(
+                    'Forbidden: Only CourseAdmin or superAdmin can create courses',
+                    403,
+                ),
+            );
+        }
+
+        // Check if user is CourseAdmin (case-insensitive) with admin roleType
+        if (roleName?.toLowerCase() === 'courseadmin' && role.roleType === 'admin') {
+            return next();
+        }
+
+        return next(
+            new CustomError(
+                'Forbidden: Only CourseAdmin or superAdmin can create courses',
+                403,
+            ),
+        );
+    } catch (error) {
+        next(error);
+    }
+};
