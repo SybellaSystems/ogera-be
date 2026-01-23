@@ -5,6 +5,7 @@ import userModel from './models/user.model';
 import rolesModel from './models/roles.model';
 import permissionModel from './models/permission.model';
 import jobModel from './models/job.model';
+import jobCategoryModel from './models/jobCategory.model';
 import jobApplicationModel from './models/jobApplication.model';
 import academicVerificationModel from './models/academicVerification.model';
 import notificationModel from './models/notification.model';
@@ -62,6 +63,7 @@ const Users = userModel(sequelize);
 const Roles = rolesModel(sequelize);
 const Permissions = permissionModel(sequelize);
 const Jobs = jobModel(sequelize);
+const JobCategories = jobCategoryModel(sequelize);
 const JobApplications = jobApplicationModel(sequelize);
 const AcademicVerifications = academicVerificationModel(sequelize);
 const Notifications = notificationModel(sequelize);
@@ -369,6 +371,27 @@ const fixNullRoleTypeValues = async (): Promise<boolean> => {
     }
 };
 
+// Function to ensure job_categories table has job_count column
+const ensureJobCategoriesTableColumns = async () => {
+    const queryInterface = sequelize.getQueryInterface();
+
+    try {
+        // Check if job_categories table exists
+        await queryInterface.describeTable('job_categories');
+    } catch (err) {
+        // Table doesn't exist, sync will create it
+        logger.info('Job categories table does not exist, will be created by sync');
+        return;
+    }
+
+    // Add job_count if missing
+    await ensureColumnExists('job_categories', 'job_count', {
+        type: Sequelize.DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: 0,
+    });
+};
+
 // Function to ensure all required user table columns exist
 const ensureUserTableColumns = async () => {
     const queryInterface = sequelize.getQueryInterface();
@@ -591,6 +614,10 @@ const ensureUserTableColumns = async () => {
         logger.info('Ensuring user table columns exist...');
         await ensureUserTableColumns();
 
+        // Ensure job_categories table has job_count column
+        logger.info('Ensuring job_categories table columns exist...');
+        await ensureJobCategoriesTableColumns();
+
         // Fix any NULL role_type values BEFORE syncing
         logger.info('Checking for NULL role_type values...');
         const fixSuccess = await fixNullRoleTypeValues();
@@ -673,6 +700,7 @@ const ensureUserTableColumns = async () => {
 
         // Ensure all columns are correct
         await ensureUserTableColumns();
+        await ensureJobCategoriesTableColumns();
     } catch (err: any) {
         logger.error(
             '❌ Error during database initialization:',
@@ -681,6 +709,7 @@ const ensureUserTableColumns = async () => {
         // Try to continue anyway
         try {
             await ensureUserTableColumns();
+            await ensureJobCategoriesTableColumns();
             await fixNullRoleTypeValues();
         } catch (finalErr) {
             logger.warn('⚠️  Could not complete final column checks');
@@ -693,6 +722,7 @@ export const DB = {
     Roles,
     Permissions,
     Jobs,
+    JobCategories,
     JobApplications,
     AcademicVerifications,
     Notifications,
