@@ -1,0 +1,20 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 30
+    },
+    "auditLog": "/home/pacific/Desktop/sybella_system/ogera-be/src/logs/api/.07c51ec8473488aeba7879314f55d1e4a2180f5e-audit.json",
+    "files": [
+        {
+            "date": 1769452711020,
+            "name": "/home/pacific/Desktop/sybella_system/ogera-be/src/logs/api/api-2026-01-26.log",
+            "hash": "bf398cdc40c788d8d5d87ae72f3cb1cbf61ce8c338918a8498e416a5c20927c6"
+        },
+        {
+            "date": 1769464800919,
+            "name": "/home/pacific/Desktop/sybella_system/ogera-be/src/logs/api/api-2026-01-27.log",
+            "hash": "5c4acf518a32efdd952008980aa6f36a7bbae0f89d6386294f53bc9037e3a55f"
+        }
+    ],
+    "hashType": "sha256"
+}
