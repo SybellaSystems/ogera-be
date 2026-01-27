@@ -1,0 +1,137 @@
+[2026-01-26T18:51:39.750Z] ERROR: API Error
+[2026-01-26T18:51:43.529Z] ERROR: API Error
+[2026-01-26T18:51:46.631Z] ERROR: API Error
+[2026-01-26T18:51:47.266Z] ERROR: API Error
+[2026-01-26T18:51:47.440Z] ERROR: API Error
+[2026-01-26T18:51:47.613Z] ERROR: API Error
+[2026-01-26T18:51:47.885Z] ERROR: API Error
+[2026-01-26T18:51:48.077Z] ERROR: API Error
+[2026-01-26T18:51:48.188Z] ERROR: API Error
+[2026-01-26T18:51:52.035Z] ERROR: API Error
+[2026-01-26T18:56:31.112Z] ERROR: API Error
+[2026-01-26T18:58:07.991Z] ERROR: API Error
+[2026-01-26T18:59:29.298Z] ERROR: API Error
+[2026-01-26T19:04:05.673Z] ERROR: API Error
+[2026-01-26T19:07:28.406Z] ERROR: API Error
+[2026-01-26T19:07:56.704Z] ERROR: API Error
+[2026-01-26T19:10:42.665Z] ERROR: API Error
+[2026-01-26T19:13:10.953Z] ERROR: API Error
+[2026-01-26T19:13:30.191Z] ERROR: API Error
+[2026-01-26T19:14:21.953Z] ERROR: API Error
+[2026-01-26T19:14:41.851Z] ERROR: API Error
+[2026-01-26T19:15:38.735Z] ERROR: ❌ Database connection error:
+[2026-01-26T19:15:38.736Z] ERROR: Please check your database configuration and ensure the database server is running
+[2026-01-26T19:15:38.741Z] ERROR: Unable to connect to the database: password authentication failed for user "postgres"
+[2026-01-26T19:15:38.775Z] ERROR: ❌ Database sync error:
+[2026-01-26T19:16:24.104Z] ERROR: ❌ Database connection error:
+[2026-01-26T19:16:24.104Z] ERROR: Please check your database configuration and ensure the database server is running
+[2026-01-26T19:16:24.107Z] ERROR: Unable to connect to the database: password authentication failed for user "postgres"
+[2026-01-26T19:16:24.134Z] ERROR: ❌ Database sync error:
+[2026-01-26T19:16:30.327Z] ERROR: ❌ Database connection error:
+[2026-01-26T19:16:30.328Z] ERROR: Please check your database configuration and ensure the database server is running
+[2026-01-26T19:16:30.334Z] ERROR: Unable to connect to the database: password authentication failed for user "postgres"
+[2026-01-26T19:16:30.377Z] ERROR: ❌ Database sync error:
+[2026-01-26T19:16:33.119Z] ERROR: ❌ Database connection error:
+[2026-01-26T19:16:33.120Z] ERROR: Please check your database configuration and ensure the database server is running
+[2026-01-26T19:16:33.123Z] ERROR: Unable to connect to the database: password authentication failed for user "postgres"
+[2026-01-26T19:16:33.154Z] ERROR: ❌ Database sync error:
+[2026-01-26T19:25:16.667Z] ERROR: ❌ Database connection error:
+[2026-01-26T19:25:16.668Z] ERROR: Please check your database configuration and ensure the database server is running
+[2026-01-26T19:25:16.673Z] ERROR: Unable to connect to the database: password authentication failed for user "postgres"
+[2026-01-26T19:25:16.701Z] ERROR: ❌ Database sync error:
+[2026-01-26T19:54:00.891Z] ERROR: ❌ Database connection error:
+[2026-01-26T19:54:00.891Z] ERROR: Please check your database configuration and ensure the database server is running
+[2026-01-26T19:54:00.895Z] ERROR: Unable to connect to the database: connection is insecure (try using `sslmode=require`)
+[2026-01-26T19:54:06.620Z] ERROR: ❌ Database sync error:
+[2026-01-26T19:56:07.461Z] ERROR: ❌ Database initialization failed:
+[2026-01-26T19:56:26.500Z] ERROR: ❌ Database connection error:
+[2026-01-26T19:56:26.501Z] ERROR: Please check your database configuration and ensure the database server is running
+[2026-01-26T19:56:28.549Z] ERROR: ❌ Database initialization failed:
+[2026-01-26T19:57:20.798Z] ERROR: ❌ Database initialization failed:
+[2026-01-26T20:01:58.670Z] ERROR: API Error
+[2026-01-26T20:04:40.474Z] ERROR: API Error
+[2026-01-26T20:04:40.481Z] ERROR: API Error
+[2026-01-26T21:25:44.467Z] ERROR: ❌ Database connection error:
+[2026-01-26T21:25:44.468Z] ERROR: Please check your database configuration and ensure the database server is running
+[2026-01-26T21:25:44.471Z] ERROR: Unable to connect to the database:
+[2026-01-26T21:25:46.735Z] ERROR: ❌ Database sync error:
+[2026-01-26T21:30:25.100Z] ERROR: ❌ Database connection error:
+[2026-01-26T21:30:25.104Z] ERROR: Error name:
+[2026-01-26T21:30:25.106Z] ERROR: Error message:
+[2026-01-26T21:30:25.107Z] ERROR: Parent error:
+[2026-01-26T21:30:25.108Z] ERROR: Parent error code:
+[2026-01-26T21:30:25.115Z] ERROR: Full error:
+[2026-01-26T21:30:25.116Z] ERROR: Please check your database configuration and ensure the database server is running
+[2026-01-26T21:30:25.118Z] ERROR: Unable to connect to the database:
+[2026-01-26T21:30:27.412Z] ERROR: ❌ Database sync error:
+[2026-01-26T21:30:57.543Z] ERROR: ❌ Database connection error:
+[2026-01-26T21:30:57.543Z] ERROR: Error name:
+[2026-01-26T21:30:57.544Z] ERROR: Error message:
+[2026-01-26T21:30:57.544Z] ERROR: Parent error:
+[2026-01-26T21:30:57.545Z] ERROR: Parent error code:
+[2026-01-26T21:30:57.546Z] ERROR: Full error:
+[2026-01-26T21:30:57.546Z] ERROR: Please check your database configuration and ensure the database server is running
+[2026-01-26T21:30:57.547Z] ERROR: Unable to connect to the database:
+[2026-01-26T21:30:59.810Z] ERROR: ❌ Database sync error:
+[2026-01-26T21:31:24.993Z] ERROR: ❌ Database connection error:
+[2026-01-26T21:31:24.996Z] ERROR: Error name:
+[2026-01-26T21:31:24.997Z] ERROR: Error message:
+[2026-01-26T21:31:24.998Z] ERROR: Parent error:
+[2026-01-26T21:31:25.000Z] ERROR: Parent error code:
+[2026-01-26T21:31:25.007Z] ERROR: Full error:
+[2026-01-26T21:31:25.010Z] ERROR: Please check your database configuration and ensure the database server is running
+[2026-01-26T21:31:25.013Z] ERROR: Unable to connect to the database:
+[2026-01-26T21:31:27.302Z] ERROR: ❌ Database sync error:
+[2026-01-26T21:32:05.416Z] ERROR: ❌ Database connection error:
+[2026-01-26T21:32:05.416Z] ERROR: Error name:
+[2026-01-26T21:32:05.417Z] ERROR: Error message:
+[2026-01-26T21:32:05.417Z] ERROR: Parent error:
+[2026-01-26T21:32:05.417Z] ERROR: Parent error code:
+[2026-01-26T21:32:05.419Z] ERROR: Full error:
+[2026-01-26T21:32:05.419Z] ERROR: Please check your database configuration and ensure the database server is running
+[2026-01-26T21:32:05.420Z] ERROR: Unable to connect to the database:
+[2026-01-26T21:32:07.686Z] ERROR: ❌ Database sync error:
+[2026-01-26T21:32:33.922Z] ERROR: ❌ Database connection error:
+[2026-01-26T21:32:33.923Z] ERROR: Error name:
+[2026-01-26T21:32:33.924Z] ERROR: Error message:
+[2026-01-26T21:32:33.924Z] ERROR: Parent error:
+[2026-01-26T21:32:33.924Z] ERROR: Parent error code:
+[2026-01-26T21:32:33.927Z] ERROR: Full error:
+[2026-01-26T21:32:33.927Z] ERROR: Please check your database configuration and ensure the database server is running
+[2026-01-26T21:32:33.928Z] ERROR: Unable to connect to the database:
+[2026-01-26T21:32:36.197Z] ERROR: ❌ Database sync error:
+[2026-01-26T21:36:40.953Z] ERROR: ❌ Database connection error:
+[2026-01-26T21:36:40.956Z] ERROR: Error name:
+[2026-01-26T21:36:40.958Z] ERROR: Error message:
+[2026-01-26T21:36:40.960Z] ERROR: Parent error:
+[2026-01-26T21:36:40.961Z] ERROR: Parent error code:
+[2026-01-26T21:36:40.969Z] ERROR: Full error:
+[2026-01-26T21:36:40.971Z] ERROR: Please check your database configuration and ensure the database server is running
+[2026-01-26T21:36:40.974Z] ERROR: Unable to connect to the database:
+[2026-01-26T21:36:45.640Z] ERROR: ❌ Database connection error:
+[2026-01-26T21:36:45.641Z] ERROR: Error name:
+[2026-01-26T21:36:45.642Z] ERROR: Error message:
+[2026-01-26T21:36:45.642Z] ERROR: Parent error:
+[2026-01-26T21:36:45.643Z] ERROR: Parent error code:
+[2026-01-26T21:36:45.646Z] ERROR: Full error:
+[2026-01-26T21:36:45.647Z] ERROR: Please check your database configuration and ensure the database server is running
+[2026-01-26T21:36:45.649Z] ERROR: Unable to connect to the database:
+[2026-01-26T21:36:47.926Z] ERROR: ❌ Database sync error:
+[2026-01-26T21:37:04.444Z] ERROR: ❌ Database connection error:
+[2026-01-26T21:37:04.445Z] ERROR: Error name:
+[2026-01-26T21:37:04.445Z] ERROR: Error message:
+[2026-01-26T21:37:04.446Z] ERROR: Parent error:
+[2026-01-26T21:37:04.446Z] ERROR: Parent error code:
+[2026-01-26T21:37:04.447Z] ERROR: Full error:
+[2026-01-26T21:37:04.448Z] ERROR: Please check your database configuration and ensure the database server is running
+[2026-01-26T21:37:04.448Z] ERROR: Unable to connect to the database:
+[2026-01-26T21:37:06.714Z] ERROR: ❌ Database sync error:
+[2026-01-26T21:44:27.081Z] ERROR: ❌ Database connection error:
+[2026-01-26T21:44:27.084Z] ERROR: Error name:
+[2026-01-26T21:44:27.086Z] ERROR: Error message:
+[2026-01-26T21:44:27.087Z] ERROR: Parent error:
+[2026-01-26T21:44:27.089Z] ERROR: Parent error code:
+[2026-01-26T21:44:27.096Z] ERROR: Full error:
+[2026-01-26T21:44:27.098Z] ERROR: Please check your database configuration and ensure the database server is running
+[2026-01-26T21:44:27.100Z] ERROR: Unable to connect to the database:
+[2026-01-26T21:44:29.373Z] ERROR: ❌ Database sync error:
