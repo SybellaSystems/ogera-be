@@ -158,7 +158,7 @@ export const getJobById = async (
     next: NextFunction,
 ) => {
     try {
-        const job = await getJobByIdService(req.params.id);
+        const job = await getJobByIdService(req.params.id as string);
         response.response(
             res,
             true,
@@ -182,7 +182,7 @@ export const updateJob = async (
     next: NextFunction,
 ) => {
     try {
-        const job = await updateJobService(req.params.id, req.body);
+        const job = await updateJobService(req.params.id as string, req.body);
         response.response(
             res,
             true,
@@ -206,7 +206,7 @@ export const deleteJob = async (
     next: NextFunction,
 ) => {
     try {
-        const result = await deleteJobService(req.params.id);
+        const result = await deleteJobService(req.params.id as string);
         response.response(
             res,
             true,
@@ -240,7 +240,7 @@ export const toggleJobStatus = async (
             return;
         }
         const job = await toggleJobStatusService(
-            req.params.id,
+            req.params.id as string,
             req.user.user_id,
             req.user.role,
         );

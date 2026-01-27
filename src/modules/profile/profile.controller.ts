@@ -92,7 +92,11 @@ export const updateSkill = async (req: Request, res: Response): Promise<void> =>
         }
 
         const { id } = req.params;
-        const skill = await updateSkillService(user_id, id, req.body);
+        const skill = await updateSkillService(user_id, id as string, req.body);
+        if (!skill) {
+            response.errorResponse(res, StatusCodes.NOT_FOUND, false, 'Skill not found');
+            return;
+        }
         response.response(res, true, StatusCodes.OK, skill, 'Skill updated successfully');
     } catch (error: any) {
         response.errorResponse(res, error.status || StatusCodes.INTERNAL_SERVER_ERROR, false, error.message);
@@ -108,7 +112,7 @@ export const deleteSkill = async (req: Request, res: Response): Promise<void> =>
         }
 
         const { id } = req.params;
-        const result = await deleteSkillService(user_id, id);
+        const result = await deleteSkillService(user_id, id as string);
         response.response(res, true, StatusCodes.OK, result, 'Skill deleted successfully');
     } catch (error: any) {
         response.errorResponse(res, error.status || StatusCodes.INTERNAL_SERVER_ERROR, false, error.message);
@@ -155,7 +159,11 @@ export const updateEmployment = async (req: Request, res: Response): Promise<voi
         }
 
         const { id } = req.params;
-        const employment = await updateEmploymentService(user_id, id, req.body);
+        const employment = await updateEmploymentService(user_id, id as string, req.body);
+        if (!employment) {
+            response.errorResponse(res, StatusCodes.NOT_FOUND, false, 'Employment not found');
+            return;
+        }
         response.response(res, true, StatusCodes.OK, employment, 'Employment updated successfully');
     } catch (error: any) {
         response.errorResponse(res, error.status || StatusCodes.INTERNAL_SERVER_ERROR, false, error.message);
@@ -171,7 +179,7 @@ export const deleteEmployment = async (req: Request, res: Response): Promise<voi
         }
 
         const { id } = req.params;
-        const result = await deleteEmploymentService(user_id, id);
+        const result = await deleteEmploymentService(user_id, id as string);
         response.response(res, true, StatusCodes.OK, result, 'Employment deleted successfully');
     } catch (error: any) {
         response.errorResponse(res, error.status || StatusCodes.INTERNAL_SERVER_ERROR, false, error.message);
@@ -218,7 +226,11 @@ export const updateEducation = async (req: Request, res: Response): Promise<void
         }
 
         const { id } = req.params;
-        const education = await updateEducationService(user_id, id, req.body);
+        const education = await updateEducationService(user_id, id as string, req.body);
+        if (!education) {
+            response.errorResponse(res, StatusCodes.NOT_FOUND, false, 'Education not found');
+            return;
+        }
         response.response(res, true, StatusCodes.OK, education, 'Education updated successfully');
     } catch (error: any) {
         response.errorResponse(res, error.status || StatusCodes.INTERNAL_SERVER_ERROR, false, error.message);
@@ -234,7 +246,7 @@ export const deleteEducation = async (req: Request, res: Response): Promise<void
         }
 
         const { id } = req.params;
-        const result = await deleteEducationService(user_id, id);
+        const result = await deleteEducationService(user_id, id as string);
         response.response(res, true, StatusCodes.OK, result, 'Education deleted successfully');
     } catch (error: any) {
         response.errorResponse(res, error.status || StatusCodes.INTERNAL_SERVER_ERROR, false, error.message);
@@ -281,7 +293,11 @@ export const updateProject = async (req: Request, res: Response): Promise<void> 
         }
 
         const { id } = req.params;
-        const project = await updateProjectService(user_id, id, req.body);
+        const project = await updateProjectService(user_id, id as string, req.body);
+        if (!project) {
+            response.errorResponse(res, StatusCodes.NOT_FOUND, false, 'Project not found');
+            return;
+        }
         response.response(res, true, StatusCodes.OK, project, 'Project updated successfully');
     } catch (error: any) {
         response.errorResponse(res, error.status || StatusCodes.INTERNAL_SERVER_ERROR, false, error.message);
@@ -297,7 +313,7 @@ export const deleteProject = async (req: Request, res: Response): Promise<void> 
         }
 
         const { id } = req.params;
-        const result = await deleteProjectService(user_id, id);
+        const result = await deleteProjectService(user_id, id as string);
         response.response(res, true, StatusCodes.OK, result, 'Project deleted successfully');
     } catch (error: any) {
         response.errorResponse(res, error.status || StatusCodes.INTERNAL_SERVER_ERROR, false, error.message);
@@ -345,7 +361,11 @@ export const updateAccomplishment = async (req: Request, res: Response): Promise
         }
 
         const { id } = req.params;
-        const accomplishment = await updateAccomplishmentService(user_id, id, req.body);
+        const accomplishment = await updateAccomplishmentService(user_id, id as string, req.body);
+        if (!accomplishment) {
+            response.errorResponse(res, StatusCodes.NOT_FOUND, false, 'Accomplishment not found');
+            return;
+        }
         response.response(res, true, StatusCodes.OK, accomplishment, 'Accomplishment updated successfully');
     } catch (error: any) {
         response.errorResponse(res, error.status || StatusCodes.INTERNAL_SERVER_ERROR, false, error.message);
@@ -361,7 +381,7 @@ export const deleteAccomplishment = async (req: Request, res: Response): Promise
         }
 
         const { id } = req.params;
-        const result = await deleteAccomplishmentService(user_id, id);
+        const result = await deleteAccomplishmentService(user_id, id as string);
         response.response(res, true, StatusCodes.OK, result, 'Accomplishment deleted successfully');
     } catch (error: any) {
         response.errorResponse(res, error.status || StatusCodes.INTERNAL_SERVER_ERROR, false, error.message);
@@ -378,6 +398,10 @@ export const getExtendedProfile = async (req: Request, res: Response): Promise<v
         }
 
         const extendedProfile = await getExtendedProfileService(user_id);
+        if (!extendedProfile) {
+            response.errorResponse(res, StatusCodes.NOT_FOUND, false, 'Extended profile not found');
+            return;
+        }
         response.response(res, true, StatusCodes.OK, extendedProfile, 'Extended profile retrieved successfully');
     } catch (error: any) {
         response.errorResponse(res, error.status || StatusCodes.INTERNAL_SERVER_ERROR, false, error.message);
@@ -393,6 +417,10 @@ export const updateExtendedProfile = async (req: Request, res: Response): Promis
         }
 
         const extendedProfile = await updateExtendedProfileService(user_id, req.body);
+        if (!extendedProfile) {
+            response.errorResponse(res, StatusCodes.NOT_FOUND, false, 'Extended profile not found');
+            return;
+        }
         response.response(res, true, StatusCodes.OK, extendedProfile, 'Extended profile updated successfully');
     } catch (error: any) {
         response.errorResponse(res, error.status || StatusCodes.INTERNAL_SERVER_ERROR, false, error.message);

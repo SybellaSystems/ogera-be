@@ -1,5 +1,6 @@
 import logger from '@/utils/logger';
 import Sequelize from 'sequelize';
+import dns from 'dns';
 
 import userModel from './models/user.model';
 import rolesModel from './models/roles.model';
@@ -31,6 +32,21 @@ import {
     NODE_ENV,
 } from '@/config';
 
+// Fix IPv6 timeout issues by forcing IPv4 DNS resolution
+const originalLookup = dns.lookup;
+dns.lookup = function(hostname: any, options: any, callback: any) {
+    if (typeof options === 'function') {
+        callback = options;
+        options = {};
+    }
+    // Force IPv4 to avoid IPv6 timeout issues with Neon
+    options = { ...options, family: 4 };
+    return originalLookup(hostname, options, callback);
+} as any;
+
+// Extract endpoint ID for Neon (everything before first dot)
+const endpointId = DB_HOST?.split('.')[0] || '';
+
 const sequelize = new Sequelize.Sequelize(DB_NAME!, DB_USERNAME!, DB_PASSWORD, {
     dialect: DB_DIALECT as Sequelize.Dialect,
     host: DB_HOST,
@@ -45,6 +61,16 @@ const sequelize = new Sequelize.Sequelize(DB_NAME!, DB_USERNAME!, DB_PASSWORD, {
     pool: { min: 0, max: 5 },
     logging: (query, time) => logger.info(time + 'ms ' + query),
     benchmark: true,
+    dialectOptions: {
+        ssl: {
+            require: true,
+            rejectUnauthorized: false,
+        },
+        // Add endpoint parameter for Neon SNI support
+        ...(endpointId && {
+            options: `endpoint=${endpointId}`,
+        }),
+    },
 });
 
 // Test DB connection with improved error handling
@@ -54,8 +80,15 @@ sequelize
         logger.info('✅ Database connected successfully');
         logger.info(`📊 Database: ${DB_NAME} | Host: ${DB_HOST}:${DB_PORT}`);
     })
-    .catch((err: Error) => {
-        logger.error('❌ Database connection error:', err.message);
+    .catch((err: any) => {
+        logger.error('❌ Database connection error:');
+        logger.error('Error name:', err.name);
+        logger.error('Error message:', err.message);
+        if (err.parent) {
+            logger.error('Parent error:', err.parent.message);
+            logger.error('Parent error code:', err.parent.code);
+        }
+        logger.error('Full error:', err);
         logger.error('Please check your database configuration and ensure the database server is running');
         // Don't exit process - let the app continue and handle errors gracefully
     });

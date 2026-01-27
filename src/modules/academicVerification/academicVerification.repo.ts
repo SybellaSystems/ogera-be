@@ -10,6 +10,7 @@ const repo = {
     document_path: string;
     storage_type: 'local' | 's3';
     status?: AcademicVerificationStatus;
+    assigned_to?: string | null;
   }): Promise<AcademicVerification> => {
     return await DB.AcademicVerifications.create(data as any);
   },

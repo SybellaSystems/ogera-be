@@ -66,7 +66,7 @@ export const getUserTrustScore = async (
             return;
         }
 
-        const trustScore = await getTrustScoreService(user_id);
+        const trustScore = await getTrustScoreService(user_id as string);
 
         response.response(
             res,

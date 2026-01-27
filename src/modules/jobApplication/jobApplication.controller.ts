@@ -32,7 +32,7 @@ export const applyForJob = async (
             return;
         }
         const application = await applyForJobService(
-            req.params.job_id,
+            req.params.job_id as string,
             req.user.user_id,
             req.body,
         );
@@ -79,7 +79,7 @@ export const getJobApplications = async (
             return;
         }
         const applications = await getJobApplicationsService(
-            req.params.job_id,
+            req.params.job_id as string,
             req.user.user_id,
             req.user.role,
         );
@@ -200,7 +200,7 @@ export const updateApplicationStatus = async (
             return;
         }
         const application = await updateApplicationStatusService(
-            req.params.application_id,
+            req.params.application_id as string,
             status,
             req.user.user_id,
             req.user.role,
@@ -239,7 +239,7 @@ export const getApplicationById = async (
             return;
         }
         const application = await getApplicationByIdService(
-            req.params.application_id,
+            req.params.application_id as string,
             req.user.user_id,
             req.user.role,
         );
@@ -323,7 +323,7 @@ export const checkStudentApplication = async (
             return;
         }
         const result = await checkStudentApplicationService(
-            req.params.job_id,
+            req.params.job_id as string,
             req.user.user_id,
         );
         response.response(

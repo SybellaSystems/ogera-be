@@ -31,7 +31,7 @@ import {
 } from './auth.service';
 
 const response = new ResponseFormat();
-console.log("hello this is console log");
+
 // -------------------- REGISTER --------------------
 export const register = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -685,7 +685,7 @@ export const getSubAdminById = async (
     res: Response,
 ): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { id: string };
 
         if (!id) {
             response.errorResponse(
@@ -722,7 +722,7 @@ export const updateSubAdmin = async (
     res: Response,
 ): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { id: string };
         const { full_name, email, mobile_number, password, role } = req.body;
 
         if (!id) {
@@ -782,7 +782,7 @@ export const deleteSubAdmin = async (
     res: Response,
 ): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { id: string };
 
         if (!id) {
             response.errorResponse(
@@ -820,7 +820,7 @@ export const getUserById = async (
     res: Response,
 ): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { id: string };
 
         if (!id) {
             response.errorResponse(
@@ -857,7 +857,7 @@ export const updateUserById = async (
     res: Response,
 ): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { id: string };
 
         if (!id) {
             response.errorResponse(
@@ -913,7 +913,7 @@ export const deleteUser = async (
     res: Response,
 ): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { id: string };
 
         if (!id) {
             response.errorResponse(

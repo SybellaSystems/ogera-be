@@ -25,4 +25,10 @@ module.exports = {
     dialect: DB_DIALECT || 'postgres',
     migrationStorageTableName: 'sequelize_migrations',
     seederStorageTableName: 'sequelize_seeds',
+    dialectOptions: {
+        ssl: {
+            require: true,
+            rejectUnauthorized: false,
+        },
+    },
 };

@@ -108,9 +108,18 @@ export const markNotificationAsRead = async (
     }
 
     const notification = await markNotificationAsReadService(
-      req.params.notification_id,
+      req.params.notification_id as string,
       req.user.user_id
     );
+    if (!notification) {
+      response.errorResponse(
+        res,
+        StatusCodes.NOT_FOUND,
+        false,
+        'Notification not found'
+      );
+      return;
+    }
     response.response(
       res,
       true,
@@ -181,7 +190,7 @@ export const deleteNotification = async (
     }
 
     const result = await deleteNotificationService(
-      req.params.notification_id,
+      req.params.notification_id as string,
       req.user.user_id
     );
     response.response(

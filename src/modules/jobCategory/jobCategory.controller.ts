@@ -77,7 +77,7 @@ export const getCategoryById = async (
     next: NextFunction,
 ) => {
     try {
-        const category = await getCategoryByIdService(req.params.id);
+        const category = await getCategoryByIdService(req.params.id as string);
         response.response(
             res,
             true,
@@ -111,7 +111,7 @@ export const updateCategory = async (
             return;
         }
         const category = await updateCategoryService(
-            req.params.id,
+            req.params.id as string,
             req.body,
             req.user.role,
         );
@@ -148,7 +148,7 @@ export const deleteCategory = async (
             return;
         }
         const result = await deleteCategoryService(
-            req.params.id,
+            req.params.id as string,
             req.user.role,
         );
         response.response(

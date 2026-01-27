@@ -40,7 +40,7 @@ export const getAllPermissions = async (_req: Request, res: Response) => {
 export const getPermissionById = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const permission = await permissionService.getPermissionById(id);
+        const permission = await permissionService.getPermissionById(id as string);
         res.status(StatusCodes.OK).json({
             success: true,
             message: 'Permission retrieved successfully',
@@ -57,7 +57,7 @@ export const getPermissionById = async (req: Request, res: Response) => {
 export const updatePermission = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const permission = await permissionService.updatePermission(id, req.body);
+        const permission = await permissionService.updatePermission(id as string, req.body);
         res.status(StatusCodes.OK).json({
             success: true,
             message: 'Permission updated successfully',
@@ -74,7 +74,7 @@ export const updatePermission = async (req: Request, res: Response) => {
 export const deletePermission = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        await permissionService.deletePermission(id);
+        await permissionService.deletePermission(id as string);
         res.status(StatusCodes.OK).json({
             success: true,
             message: 'Permission deleted successfully',

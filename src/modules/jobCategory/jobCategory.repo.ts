@@ -2,7 +2,7 @@ import { DB } from "@/database";
 import { JobCategory } from "@/interfaces/jobCategory.interfaces";
 
 const repo = {
-  createCategory: async (categoryData: Partial<JobCategory>) => {
+  createCategory: async (categoryData: Pick<JobCategory, 'name'> & Partial<Pick<JobCategory, 'description' | 'icon' | 'color' | 'job_count'>>) => {
     return await DB.JobCategories.create(categoryData);
   },
 

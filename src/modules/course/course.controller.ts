@@ -76,7 +76,7 @@ export const getCourseById = async (
 ) => {
     try {
         const { id } = req.params;
-        const course = await getCourseByIdService(id);
+        const course = await getCourseByIdService(id as string);
         response.response(
             res,
             true,
@@ -101,7 +101,7 @@ export const updateCourse = async (
 ) => {
     try {
         const { id } = req.params;
-        const course = await updateCourseService(id, req.body);
+        const course = await updateCourseService(id as string, req.body);
         response.response(
             res,
             true,
@@ -126,7 +126,7 @@ export const deleteCourse = async (
 ) => {
     try {
         const { id } = req.params;
-        const result = await deleteCourseService(id);
+        const result = await deleteCourseService(id as string);
         response.response(
             res,
             true,
