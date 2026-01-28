@@ -14,6 +14,7 @@ import { UserAccomplishmentModel } from '@/database/models/userAccomplishment.mo
 import { UserExtendedProfileModel } from '@/database/models/userExtendedProfile.model';
 import { CourseModel } from '@/database/models/course.model';
 import { CourseStepModel } from '@/database/models/courseStep.model';
+import { CourseProgressModel } from '@/database/models/courseProgress.model';
 
 export const setupAssociations = () => {
     // ====================== USER ↔ ROLE ======================
@@ -284,6 +285,57 @@ export const setupAssociations = () => {
     CourseStepModel.belongsTo(CourseModel, {
         foreignKey: 'course_id',
         as: 'course',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // ====================== USER ↔ COURSE PROGRESS ======================
+    // A user can have many course progress records
+    UserModel.hasMany(CourseProgressModel, {
+        foreignKey: 'user_id',
+        as: 'courseProgress',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // A course progress belongs to one user
+    CourseProgressModel.belongsTo(UserModel, {
+        foreignKey: 'user_id',
+        as: 'user',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // ====================== COURSE ↔ COURSE PROGRESS ======================
+    // A course can have many progress records
+    CourseModel.hasMany(CourseProgressModel, {
+        foreignKey: 'course_id',
+        as: 'progress',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // A course progress belongs to one course
+    CourseProgressModel.belongsTo(CourseModel, {
+        foreignKey: 'course_id',
+        as: 'course',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // ====================== COURSE STEP ↔ COURSE PROGRESS ======================
+    // A course step can have many progress records
+    CourseStepModel.hasMany(CourseProgressModel, {
+        foreignKey: 'step_id',
+        as: 'progress',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // A course progress belongs to one course step
+    CourseProgressModel.belongsTo(CourseStepModel, {
+        foreignKey: 'step_id',
+        as: 'step',
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
     });
