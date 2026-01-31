@@ -4,6 +4,7 @@ import { StatusCodes } from 'http-status-codes';
 import { Messages } from '@/utils/messages';
 import { Job } from '@/interfaces/job.interfaces';
 import { DB } from '@/database';
+import jobCategoryRepo from '../jobCategory/jobCategory.repo';
 
 export const createJobService = async (
     jobData: Partial<Job> & { questions?: any[] },
@@ -53,6 +54,16 @@ export const createJobService = async (
     if (!jobData.category) {
         throw new CustomError('Category is required', StatusCodes.BAD_REQUEST);
     }
+    
+    // Validate that the category exists in the database
+    const categoryExists = await jobCategoryRepo.findCategoryByName(jobData.category.trim());
+    if (!categoryExists) {
+        throw new CustomError(
+            'Invalid category. Please select a valid category from the list.',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+    
     if (!jobData.budget) {
         throw new CustomError('Budget is required', StatusCodes.BAD_REQUEST);
     }
@@ -136,6 +147,17 @@ export const updateJobService = async (
         }
         updates.employer_id = employer.user_id;
         delete updates.employer_name;
+    }
+
+    // Validate category if it's being updated
+    if (updates.category) {
+        const categoryExists = await jobCategoryRepo.findCategoryByName(updates.category.trim());
+        if (!categoryExists) {
+            throw new CustomError(
+                'Invalid category. Please select a valid category from the list.',
+                StatusCodes.BAD_REQUEST,
+            );
+        }
     }
 
     const { questions, ...jobUpdates } = updates;
