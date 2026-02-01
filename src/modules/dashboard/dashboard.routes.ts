@@ -1,5 +1,5 @@
 import express, { Router } from "express";
-import { getMetrics } from "./dashboard.controller";
+import { getMetrics, getRecentActivities } from "./dashboard.controller";
 import { authMiddleware } from "@/middlewares/auth.middleware";
 import { superadminOnly } from "@/middlewares/role.middleware";
 
@@ -15,6 +15,16 @@ router.get(
   authMiddleware,
   superadminOnly,
   getMetrics
+);
+
+/**
+ * GET /api/dashboard/recent-activities
+ */
+router.get(
+  "/recent-activities",
+  authMiddleware,
+  superadminOnly,
+  getRecentActivities,
 );
 
 export default router;

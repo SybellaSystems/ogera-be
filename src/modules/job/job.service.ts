@@ -27,7 +27,7 @@ export const createJobService = async (
         throw new CustomError('User not found', StatusCodes.NOT_FOUND);
     }
 
-    const roleType = user.role.roleType;
+        const roleType = user.role.roleType;
     const roleName = user.role.roleName.toLowerCase();
 
     // Only employer and superadmin can create jobs
@@ -110,7 +110,18 @@ export const createJobService = async (
             StatusCodes.INTERNAL_SERVER_ERROR,
         );
     }
-    return createdJob;
+        try {
+            await DB.ActivityLogs.create({
+                user_id: user_id || null,
+                action: 'CREATE',
+                entity_type: 'Job',
+                entity_id: createdJob.job_id,
+                description: `Job created: ${createdJob.job_title || createdJob.title || createdJob.job_id}`,
+            } as any);
+        } catch (e) {
+            // swallow logging errors
+        }
+        return createdJob;
 };
 
 export const getAllJobsService = async (status?: string) => {
@@ -187,11 +198,34 @@ export const updateJobService = async (
                 'Failed to retrieve updated job',
                 StatusCodes.INTERNAL_SERVER_ERROR,
             );
-        }
-        return updatedJob;
+                }
+                try {
+                    await DB.ActivityLogs.create({
+                        user_id: null,
+                        action: 'UPDATE',
+                        entity_type: 'Job',
+                        entity_id: updatedJob.job_id,
+                        description: `Job updated: ${updatedJob.job_title || updatedJob.title || updatedJob.job_id}`,
+                    } as any);
+                } catch (e) {
+                    // swallow logging errors
+                }
+                return updatedJob;
     }
 
-    return updated;
+        try {
+            await DB.ActivityLogs.create({
+                user_id: null,
+                action: 'UPDATE',
+                entity_type: 'Job',
+                entity_id: job_id,
+                description: `Job updated: ${job_id}`,
+            } as any);
+        } catch (e) {
+            // swallow logging errors
+        }
+
+        return updated;
 };
 
 export const deleteJobService = async (job_id: string) => {

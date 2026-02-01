@@ -114,6 +114,32 @@ export const registerUser = async (data: any) => {
         privacy_accepted_at: new Date(),
     });
 
+        // Log activity: Admin added user
+        try {
+            await DB.ActivityLogs.create({
+                user_id: null,
+                action: 'CREATE',
+                entity_type: 'User',
+                entity_id: user.user_id,
+                description: `User added by admin: ${user.email}`,
+            } as any);
+        } catch (e) {
+            // swallow
+        }
+
+        // Log activity: CREATE User
+        try {
+            await DB.ActivityLogs.create({
+                user_id: null,
+                action: 'CREATE',
+                entity_type: 'User',
+                entity_id: user.user_id,
+                description: `User registered: ${user.email}`,
+            } as any);
+        } catch (e) {
+            // swallow
+        }
+
     // Send verification email
     const frontendUrl = FRONTEND_URL || 'http://localhost:5173';
     const verificationLink = `${frontendUrl}/auth/verify-email?token=${verificationToken}`;

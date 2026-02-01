@@ -21,6 +21,8 @@ import userExtendedProfileModel from './models/userExtendedProfile.model';
 import courseModel from './models/course.model';
 import courseStepModel from './models/courseStep.model';
 import courseProgressModel from './models/courseProgress.model';
+import activityLogModel from './models/activityLog.model';
+import transactionModel from './models/transaction.model';
 import { setupAssociations } from '@/association/index';
 
 import {
@@ -127,6 +129,8 @@ const UserExtendedProfiles = userExtendedProfileModel(sequelize);
 const Courses = courseModel(sequelize);
 const CourseSteps = courseStepModel(sequelize);
 const CourseProgress = courseProgressModel(sequelize);
+const ActivityLogs = activityLogModel(sequelize);
+const Transactions = transactionModel(sequelize);
 
 // Apply Associations
 setupAssociations();
@@ -789,6 +793,8 @@ export const DB = {
     Courses,
     CourseSteps,
     CourseProgress,
+    ActivityLogs,
+    Transactions,
     sequelize,
     Sequelize,
 };

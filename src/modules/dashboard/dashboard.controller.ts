@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import dashboardService, { DashboardMetrics } from "./dashboard.service";
+import repo from "./dashboard.repo";
 import { StatusCodes } from "http-status-codes";
 import { CustomError } from "@/utils/custom-error";
 import logger from "@/utils/logger";
@@ -16,11 +17,19 @@ export const getMetrics = async (
     logger.info("[Dashboard Controller] Getting metrics endpoint called");
     const metrics: DashboardMetrics = await dashboardService.getDashboardMetrics();
 
-    logger.info("[Dashboard Controller] Sending metrics response:", metrics);
+    // Sanitize and ensure numeric values (including 0) are returned
+    const safeMetrics = {
+      totalUsers: Number(metrics.totalUsers ?? 0),
+      totalStudents: Number(metrics.totalStudents ?? 0),
+      activeJobs: Number(metrics.activeJobs ?? 0),
+      totalEarnings: Number(metrics.totalEarnings ?? 0),
+    };
+
+    logger.info("[Dashboard Controller] Sending metrics response:", safeMetrics);
     res.status(StatusCodes.OK).json({
       success: true,
       status: StatusCodes.OK,
-      data: metrics,
+      data: safeMetrics,
       message: "Dashboard metrics retrieved successfully",
     });
   } catch (error) {
@@ -41,6 +50,33 @@ export const getMetrics = async (
   }
 };
 
+/**
+ * GET /api/dashboard/recent-activities
+ */
+export const getRecentActivities = async (req: Request, res: Response): Promise<void> => {
+  try {
+    logger.info('[Dashboard Controller] Getting recent activities');
+    const limit = Number(req.query.limit) || 5;
+    const rows = await repo.getRecentActivities(limit);
+
+    // Return JSON only
+    res.status(StatusCodes.OK).json({
+      success: true,
+      status: StatusCodes.OK,
+      data: rows,
+      message: 'Recent activities retrieved successfully',
+    });
+  } catch (error) {
+    logger.error('[Dashboard Controller] Error in getRecentActivities:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      status: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: 'Failed to retrieve recent activities',
+    });
+  }
+};
+
 export default {
   getMetrics,
+  getRecentActivities,
 };
