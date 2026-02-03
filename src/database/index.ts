@@ -23,6 +23,7 @@ import courseStepModel from './models/courseStep.model';
 import courseProgressModel from './models/courseProgress.model';
 import activityLogModel from './models/activityLog.model';
 import transactionModel from './models/transaction.model';
+import interviewModel from './models/interview.model';
 import { setupAssociations } from '@/association/index';
 
 import {
@@ -131,6 +132,67 @@ const CourseSteps = courseStepModel(sequelize);
 const CourseProgress = courseProgressModel(sequelize);
 const ActivityLogs = activityLogModel(sequelize);
 const Transactions = transactionModel(sequelize);
+const Interviews = interviewModel(sequelize);
+
+// Attach hooks to ensure key events are logged to activity_logs when created
+try {
+    if (Transactions && ActivityLogs) {
+        Transactions.afterCreate(async (tx: any) => {
+            try {
+                await ActivityLogs.create({
+                    user_id: tx.user_id || null,
+                    action: 'payment_completed',
+                    entity_type: 'Transaction',
+                    entity_id: tx.id,
+                    description: `Payment of ${tx.amount} ${tx.currency}`,
+                    created_at: tx.created_at || new Date(),
+                } as any);
+            } catch (e) {
+                logger.warn('Failed to write transaction activity log:', e);
+            }
+        });
+    }
+
+    if (Interviews && ActivityLogs) {
+        Interviews.afterCreate(async (iv: any) => {
+            try {
+                await ActivityLogs.create({
+                    user_id: iv.student_id || null,
+                    action: 'interview_scheduled',
+                    entity_type: 'Interview',
+                    entity_id: iv.id,
+                    description: `Interview scheduled at ${iv.scheduled_at}`,
+                    created_at: iv.created_at || new Date(),
+                } as any);
+            } catch (e) {
+                logger.warn('Failed to write interview activity log:', e);
+            }
+        });
+    }
+
+    {
+        // JobApplications model may not yet be exported to DB variable, attach via sequelize model name
+        const JobAppsModel = (sequelize as any).models['job_applications'] || (sequelize as any).models['JobApplications'];
+        if (JobAppsModel) {
+            JobAppsModel.afterCreate(async (app: any) => {
+                try {
+                    await ActivityLogs.create({
+                        user_id: app.student_id || null,
+                        action: 'job_application',
+                        entity_type: 'JobApplication',
+                        entity_id: app.application_id || app.id,
+                        description: `Applied to job ${app.job_id}`,
+                        created_at: app.applied_at || new Date(),
+                    } as any);
+                } catch (e) {
+                    logger.warn('Failed to write job application activity log:', e);
+                }
+            });
+        }
+    }
+} catch (hookErr) {
+    logger.warn('Failed to attach model hooks for activity logging:', hookErr);
+}
 
 // Apply Associations
 setupAssociations();
@@ -795,6 +857,7 @@ export const DB = {
     CourseProgress,
     ActivityLogs,
     Transactions,
+    Interviews,
     sequelize,
     Sequelize,
 };

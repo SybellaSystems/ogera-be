@@ -202,6 +202,19 @@ export const applyForJobService = async (
         }
     }
 
+    // Write activity log for application (audit)
+    try {
+        await DB.ActivityLogs.create({
+            user_id: student_id || null,
+            action: 'job_application',
+            entity_type: 'JobApplication',
+            entity_id: application.application_id,
+            description: `Student ${student_id} applied to job ${job_id}`,
+        } as any);
+    } catch (e) {
+        // Swallow logging errors
+    }
+
     return normalizeApplicationResumeUrl(result);
 };
 

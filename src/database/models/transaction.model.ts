@@ -52,3 +52,7 @@ export default (sequelize: Sequelize) => {
 
   return Transactions;
 };
+
+// After-create hook: log transaction creation to activity_logs for audit
+// (We attach hook here to ensure transactions are logged centrally whenever they are created)
+// NOTE: DB.ActivityLogs may not be available at model definition time; attach hook at runtime in DB initialization if necessary.

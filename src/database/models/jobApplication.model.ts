@@ -19,6 +19,7 @@ export class JobApplicationModel
   public cover_letter?: string;
   public resume_url?: string;
   public applied_at!: Date;
+  public completed_at?: Date;
   public reviewed_at?: Date;
   public reviewed_by?: string;
   public readonly created_at!: Date;
@@ -73,6 +74,10 @@ export default function (sequelize: Sequelize): typeof JobApplicationModel {
         type: DataTypes.DATE,
         defaultValue: Sequelize.literal("NOW()"),
         allowNull: false,
+      },
+      completed_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
       },
       reviewed_at: {
         type: DataTypes.DATE,

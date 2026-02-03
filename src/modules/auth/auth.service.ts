@@ -531,6 +531,8 @@ export const verifyEmailService = async (token: string) => {
             type: string;
         };
 
+        console.log('🔍 [VERIFY EMAIL] Decoded token payload:', decoded);
+
         if (decoded.type !== 'email_verification') {
             throw new CustomError(
                 'Invalid token type',
@@ -541,6 +543,15 @@ export const verifyEmailService = async (token: string) => {
         const user = await repo.findUserByEmail(decoded.email);
         if (!user)
             throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+
+        // Debug info to assist in development: log whether stored token matches and expiry
+        console.log('🔍 [VERIFY EMAIL] Stored token present:', !!user.email_verification_token);
+        console.log(
+            '🔍 [VERIFY EMAIL] Stored token (truncated):',
+            user.email_verification_token ? user.email_verification_token.slice(0, 30) + '...' : null,
+        );
+        console.log('🔍 [VERIFY EMAIL] Provided token (truncated):', token.slice(0, 30) + '...');
+        console.log('🔍 [VERIFY EMAIL] Token expiry:', user.email_verification_token_expiry);
 
         // Check if token matches and is not expired
         if (user.email_verification_token !== token) {

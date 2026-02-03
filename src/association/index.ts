@@ -15,6 +15,7 @@ import { UserExtendedProfileModel } from '@/database/models/userExtendedProfile.
 import { CourseModel } from '@/database/models/course.model';
 import { CourseStepModel } from '@/database/models/courseStep.model';
 import { CourseProgressModel } from '@/database/models/courseProgress.model';
+import { InterviewModel } from '@/database/models/interview.model';
 
 export const setupAssociations = () => {
     // ====================== USER ↔ ROLE ======================
@@ -338,5 +339,29 @@ export const setupAssociations = () => {
         as: 'step',
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
+    });
+
+    // ====================== INTERVIEWS ======================
+    // A student (User) can have many interviews
+    UserModel.hasMany(InterviewModel, {
+        foreignKey: 'student_id',
+        as: 'interviews',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    InterviewModel.belongsTo(UserModel, {
+        foreignKey: 'student_id',
+        as: 'student',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // Interview belongs to a job (optional)
+    InterviewModel.belongsTo(JobModel, {
+        foreignKey: 'job_id',
+        as: 'job',
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
     });
 };

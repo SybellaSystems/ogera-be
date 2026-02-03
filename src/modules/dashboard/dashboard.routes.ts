@@ -1,5 +1,6 @@
 import express, { Router } from "express";
 import { getMetrics, getRecentActivities } from "./dashboard.controller";
+import { getStudentDashboard } from "./dashboard.controller";
 import { authMiddleware } from "@/middlewares/auth.middleware";
 import { superadminOnly } from "@/middlewares/role.middleware";
 
@@ -25,6 +26,17 @@ router.get(
   authMiddleware,
   superadminOnly,
   getRecentActivities,
+);
+
+/**
+ * GET /api/dashboard/student
+ * Get dashboard metrics for authenticated student
+ * Requires authentication (student)
+ */
+router.get(
+  "/student",
+  authMiddleware,
+  getStudentDashboard,
 );
 
 export default router;

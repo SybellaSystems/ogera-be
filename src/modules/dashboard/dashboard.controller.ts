@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import dashboardService, { DashboardMetrics } from "./dashboard.service";
+import { StudentDashboardResponse } from "./dashboard.service";
 import repo from "./dashboard.repo";
 import { StatusCodes } from "http-status-codes";
 import { CustomError } from "@/utils/custom-error";
@@ -47,6 +48,43 @@ export const getMetrics = async (
         message: "Failed to retrieve dashboard metrics",
       });
     }
+  }
+};
+
+/**
+ * GET /api/dashboard/student
+ * Returns student-specific dashboard metrics for the authenticated user
+ */
+export const getStudentDashboard = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.user_id as string | undefined;
+    if (!userId) {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        status: StatusCodes.UNAUTHORIZED,
+        message: 'User not authenticated',
+      });
+      return;
+    }
+
+    // Optional: period in days for comparison (defaults to 30)
+    const periodDays = Number(req.query.periodDays) || 30;
+
+    const metrics: StudentDashboardResponse = await dashboardService.getStudentDashboard(userId, periodDays);
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      status: StatusCodes.OK,
+      data: metrics,
+      message: 'Student dashboard metrics retrieved successfully',
+    });
+  } catch (error) {
+    logger.error('[Dashboard Controller] Error in getStudentDashboard:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      status: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: 'Failed to retrieve student dashboard metrics',
+    });
   }
 };
 
