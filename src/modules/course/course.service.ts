@@ -7,21 +7,29 @@ import { Course } from '@/interfaces/course.interfaces';
 export const createCourseService = async (
     courseData: Partial<Course> & { steps?: any[] },
 ) => {
-    // Validate required fields
     if (!courseData.course_name) {
-        throw new CustomError('Course name is required', StatusCodes.BAD_REQUEST);
+        throw new CustomError(
+            'Course name is required',
+            StatusCodes.BAD_REQUEST,
+        );
     }
     if (!courseData.type) {
-        throw new CustomError('Course type is required', StatusCodes.BAD_REQUEST);
+        throw new CustomError(
+            'Course type is required',
+            StatusCodes.BAD_REQUEST,
+        );
     }
     if (!courseData.tag) {
         throw new CustomError('Tag is required', StatusCodes.BAD_REQUEST);
     }
 
     const { steps, ...coursePayloadData } = courseData;
-    
+    const is_free = coursePayloadData.is_free !== false;
     const coursePayload = {
         ...coursePayloadData,
+        is_free,
+        price_amount: is_free ? null : coursePayloadData.price_amount ?? null,
+        price_currency: coursePayloadData.price_currency ?? 'RWF',
     };
 
     const course = await repo.createCourse(coursePayload);
@@ -75,7 +83,7 @@ export const updateCourseService = async (
     if (steps !== undefined) {
         // Delete existing steps
         await repo.deleteCourseSteps(course_id);
-        
+
         // Create new steps if provided
         if (Array.isArray(steps) && steps.length > 0) {
             await repo.createCourseSteps(course_id, steps);
@@ -104,4 +112,90 @@ export const deleteCourseService = async (course_id: string) => {
     return { message: 'Course deleted successfully' };
 };
 
+// ---------- Enrollments (SRS: enroll → complete → admin review → certificate) ----------
 
+export const enrollCourseService = async (
+    user_id: string,
+    course_id: string,
+) => {
+    const course = await repo.findCourseById(course_id);
+    if (!course) {
+        throw new CustomError('Course not found', StatusCodes.NOT_FOUND);
+    }
+    const existing = await repo.findEnrollment(user_id, course_id);
+    if (existing) {
+        throw new CustomError(
+            'Already enrolled in this course',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+    const is_free = (course as any).is_free !== false;
+    const priceAmount =
+        (course as any).price_amount != null
+            ? Number((course as any).price_amount)
+            : 0;
+    const amount_due = is_free ? null : priceAmount;
+    const enrollment = await repo.createEnrollment(
+        user_id,
+        course_id,
+        amount_due,
+    );
+    return enrollment;
+};
+
+export const getMyEnrollmentsService = async (user_id: string) => {
+    return await repo.findEnrollmentsByUser(user_id);
+};
+
+export const getEnrollmentService = async (
+    user_id: string,
+    course_id: string,
+) => {
+    const enrollment = await repo.findEnrollment(user_id, course_id);
+    if (!enrollment) return null;
+    return enrollment;
+};
+
+export const completeCourseService = async (
+    user_id: string,
+    course_id: string,
+) => {
+    const enrollment = await repo.findEnrollment(user_id, course_id);
+    if (!enrollment) {
+        throw new CustomError('Enrollment not found', StatusCodes.NOT_FOUND);
+    }
+    if ((enrollment as any).completed_at) {
+        throw new CustomError(
+            'Course already completed',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+    const result = await repo.completeEnrollment(user_id, course_id);
+    if (!result) {
+        throw new CustomError(
+            'Failed to complete course',
+            StatusCodes.INTERNAL_SERVER_ERROR,
+        );
+    }
+    return result;
+};
+
+export const getEnrollmentsPendingReviewService = async () => {
+    return await repo.findEnrollmentsPendingReview();
+};
+
+export const updateCertificateStatusService = async (
+    enrollment_id: string,
+    certificate_status: 'pending_review' | 'approved',
+    funded?: boolean,
+) => {
+    const updated = await repo.updateCertificateStatus(
+        enrollment_id,
+        certificate_status,
+        funded,
+    );
+    if (!updated) {
+        throw new CustomError('Enrollment not found', StatusCodes.NOT_FOUND);
+    }
+    return updated;
+};
