@@ -120,19 +120,6 @@ export class PermissionService {
         await this.getPermissionById(id);
         return this.repo.deletePermission(id);
     }
-
-    async getPermissionByApiName(api_name: string) {
-        const permission = await this.repo.getPermissionByApiName(api_name);
-        if (!permission) return null;
-
-        return {
-            ...permission.toJSON(),
-            permission:
-                typeof permission.permission === 'string'
-                    ? JSON.parse(permission.permission)
-                    : permission.permission,
-        };
-    }
 }
 
 

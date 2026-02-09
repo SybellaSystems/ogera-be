@@ -98,15 +98,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
-            // secure: false,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
-        // 2. The Hint Cookie (NOT httpOnly - so JS can read it) ⭐
-        res.cookie('isLoggedIn', 'true', {
-            httpOnly: false, // Accessible by frontend
-            secure: process.env.NODE_ENV === 'production',
+            secure: false,
             sameSite: 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
@@ -136,8 +128,7 @@ export const refreshAccessToken = async (
     try {
         const refreshToken = req.cookies.refreshToken;
         if (!refreshToken) {
-            // response.errorResponse(res, 401, false, 'Refresh token missing');
-            response.errorResponse(res, StatusCodes.UNAUTHORIZED, false, 'No session found');
+            response.errorResponse(res, 401, false, 'Refresh token missing');
             return;
         }
 
@@ -147,8 +138,7 @@ export const refreshAccessToken = async (
 
         res.cookie('refreshToken', newRefreshToken, {
             httpOnly: true,
-            // secure: false,
-            secure: process.env.NODE_ENV === 'production', // Only true in production
+            secure: false,
             sameSite: 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
@@ -176,7 +166,6 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
         await logoutUser();
 
         res.clearCookie('refreshToken');
-        res.clearCookie('isLoggedIn'); // Clear the hint ⭐
 
         response.response(
             res,
