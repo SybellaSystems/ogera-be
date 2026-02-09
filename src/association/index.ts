@@ -16,6 +16,10 @@ import { CourseModel } from '@/database/models/course.model';
 import { CourseStepModel } from '@/database/models/courseStep.model';
 import { CourseProgressModel } from '@/database/models/courseProgress.model';
 import { InterviewModel } from '@/database/models/interview.model';
+import { DisputeModel } from '@/database/models/dispute.model';
+import { DisputeEvidenceModel } from '@/database/models/disputeEvidence.model';
+import { DisputeMessageModel } from '@/database/models/disputeMessage.model';
+import { DisputeTimelineModel } from '@/database/models/disputeTimeline.model';
 
 export const setupAssociations = () => {
     // ====================== USER ↔ ROLE ======================
@@ -363,5 +367,130 @@ export const setupAssociations = () => {
         as: 'job',
         onUpdate: 'CASCADE',
         onDelete: 'SET NULL',
+    });
+
+    // ====================== DISPUTES ======================
+    // Dispute belongs to a job
+    DisputeModel.belongsTo(JobModel, {
+        foreignKey: 'job_id',
+        as: 'job',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // Dispute belongs to student (User)
+    DisputeModel.belongsTo(UserModel, {
+        foreignKey: 'student_id',
+        as: 'student',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // Dispute belongs to employer (User)
+    DisputeModel.belongsTo(UserModel, {
+        foreignKey: 'employer_id',
+        as: 'employer',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // Dispute belongs to moderator (User)
+    DisputeModel.belongsTo(UserModel, {
+        foreignKey: 'moderator_id',
+        as: 'moderator',
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
+    });
+
+    // Dispute escalated to admin (User)
+    DisputeModel.belongsTo(UserModel, {
+        foreignKey: 'escalated_to',
+        as: 'escalatedAdmin',
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
+    });
+
+    // User can have many disputes (as student)
+    UserModel.hasMany(DisputeModel, {
+        foreignKey: 'student_id',
+        as: 'disputesAsStudent',
+    });
+
+    // User can have many disputes (as employer)
+    UserModel.hasMany(DisputeModel, {
+        foreignKey: 'employer_id',
+        as: 'disputesAsEmployer',
+    });
+
+    // User can moderate many disputes
+    UserModel.hasMany(DisputeModel, {
+        foreignKey: 'moderator_id',
+        as: 'moderatedDisputes',
+    });
+
+    // ====================== DISPUTE EVIDENCE ======================
+    DisputeModel.hasMany(DisputeEvidenceModel, {
+        foreignKey: 'dispute_id',
+        as: 'evidence',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    DisputeEvidenceModel.belongsTo(DisputeModel, {
+        foreignKey: 'dispute_id',
+        as: 'dispute',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    DisputeEvidenceModel.belongsTo(UserModel, {
+        foreignKey: 'uploaded_by',
+        as: 'uploader',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // ====================== DISPUTE MESSAGES ======================
+    DisputeModel.hasMany(DisputeMessageModel, {
+        foreignKey: 'dispute_id',
+        as: 'messages',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    DisputeMessageModel.belongsTo(DisputeModel, {
+        foreignKey: 'dispute_id',
+        as: 'dispute',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    DisputeMessageModel.belongsTo(UserModel, {
+        foreignKey: 'sender_id',
+        as: 'sender',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // ====================== DISPUTE TIMELINE ======================
+    DisputeModel.hasMany(DisputeTimelineModel, {
+        foreignKey: 'dispute_id',
+        as: 'timeline',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    DisputeTimelineModel.belongsTo(DisputeModel, {
+        foreignKey: 'dispute_id',
+        as: 'dispute',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    DisputeTimelineModel.belongsTo(UserModel, {
+        foreignKey: 'performed_by',
+        as: 'performer',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
     });
 };
