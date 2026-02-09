@@ -24,10 +24,6 @@ import courseProgressModel from './models/courseProgress.model';
 import activityLogModel from './models/activityLog.model';
 import transactionModel from './models/transaction.model';
 import interviewModel from './models/interview.model';
-import disputeModel from './models/dispute.model';
-import disputeEvidenceModel from './models/disputeEvidence.model';
-import disputeMessageModel from './models/disputeMessage.model';
-import disputeTimelineModel from './models/disputeTimeline.model';
 import { setupAssociations } from '@/association/index';
 
 import {
@@ -137,10 +133,6 @@ const CourseProgress = courseProgressModel(sequelize);
 const ActivityLogs = activityLogModel(sequelize);
 const Transactions = transactionModel(sequelize);
 const Interviews = interviewModel(sequelize);
-const Disputes = disputeModel(sequelize);
-const DisputeEvidence = disputeEvidenceModel(sequelize);
-const DisputeMessages = disputeMessageModel(sequelize);
-const DisputeTimeline = disputeTimelineModel(sequelize);
 
 // Attach hooks to ensure key events are logged to activity_logs when created
 try {
@@ -531,19 +523,6 @@ const ensureUserTableColumns = async () => {
         return;
     }
 
-    // Add legacy id column if missing (used by some parts of the codebase)
-    await ensureColumnExists('users', 'id', {
-        type: Sequelize.DataTypes.UUID,
-        allowNull: true, // keep nullable for existing rows; model will populate for new ones
-    });
-
-    // Add legacy name column if missing (used for backward‑compatibility)
-    await ensureColumnExists('users', 'name', {
-        type: Sequelize.DataTypes.STRING(255),
-        allowNull: true,
-        defaultValue: '',
-    });
-
     // Add role_id if missing
     await ensureColumnExists('users', 'role_id', {
         type: Sequelize.DataTypes.UUID,
@@ -879,10 +858,6 @@ export const DB = {
     ActivityLogs,
     Transactions,
     Interviews,
-    Disputes,
-    DisputeEvidence,
-    DisputeMessages,
-    DisputeTimeline,
     sequelize,
     Sequelize,
 };
