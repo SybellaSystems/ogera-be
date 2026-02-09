@@ -50,6 +50,14 @@ const repo = {
                     as: 'moderator',
                     attributes: ['user_id', 'full_name', 'email'],
                     required: false,
+                    include: [
+                        {
+                            model: DB.Roles,
+                            as: 'role',
+                            attributes: ['roleName', 'roleType'],
+                            required: false,
+                        },
+                    ],
                 },
                 {
                     model: DB.Jobs,
@@ -83,6 +91,14 @@ const repo = {
                     as: 'moderator',
                     attributes: ['user_id', 'full_name', 'email'],
                     required: false,
+                    include: [
+                        {
+                            model: DB.Roles,
+                            as: 'role',
+                            attributes: ['roleName', 'roleType'],
+                            required: false,
+                        },
+                    ],
                 },
                 {
                     model: DB.Users,
@@ -121,6 +137,14 @@ const repo = {
                     as: 'moderator',
                     attributes: ['user_id', 'full_name', 'email'],
                     required: false,
+                    include: [
+                        {
+                            model: DB.Roles,
+                            as: 'role',
+                            attributes: ['roleName', 'roleType'],
+                            required: false,
+                        },
+                    ],
                 },
             ],
             order: [['created_at', 'DESC']],
@@ -226,8 +250,16 @@ const repo = {
                 {
                     model: DB.Users,
                     as: 'performer',
-                    attributes: ['user_id', 'full_name'],
+                    attributes: ['user_id', 'full_name', 'email'],
                     required: false,
+                    include: [
+                        {
+                            model: DB.Roles,
+                            as: 'role',
+                            attributes: ['roleName', 'roleType'],
+                            required: false,
+                        },
+                    ],
                 },
             ],
             order: [['created_at', 'ASC']],
@@ -238,7 +270,7 @@ const repo = {
     findDisputesNeedingEscalation: async () => {
         const now = new Date();
         const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+        const fortyHoursAgo = new Date(now.getTime() - 40 * 60 * 60 * 1000);
 
         // Disputes with no response for 24+ hours (need reassignment)
         const needsReassignment = await DB.Disputes.findAll({
@@ -250,12 +282,12 @@ const repo = {
             },
         });
 
-        // Disputes with no response for 48+ hours (need senior admin escalation)
+        // Disputes with no response for 40+ hours (need superadmin escalation)
         const needsEscalation = await DB.Disputes.findAll({
             where: {
                 status: { [Op.in]: ['Open', 'Under Review'] },
                 moderator_id: { [Op.ne]: null },
-                last_response_at: { [Op.lt]: fortyEightHoursAgo },
+                last_response_at: { [Op.lt]: fortyHoursAgo },
                 auto_escalated_at: null,
             },
         });
@@ -281,7 +313,7 @@ const repo = {
         return { open, underReview, resolved, highPriority };
     },
 
-    // Find available moderators
+    // Find available moderators (admins with roleType 'admin', not superadmin)
     findAvailableModerators: async () => {
         return await DB.Users.findAll({
             include: [
@@ -289,7 +321,7 @@ const repo = {
                     model: DB.Roles,
                     as: 'role',
                     where: {
-                        roleType: { [Op.in]: ['admin', 'superAdmin'] },
+                        roleType: 'admin', // Only regular admins, not superadmin
                     },
                     attributes: ['roleName', 'roleType'],
                 },

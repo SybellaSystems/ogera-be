@@ -335,13 +335,13 @@ export const getUserDisputes = async (req: Request, res: Response): Promise<void
             return;
         }
 
-        const result = await getUserDisputesService(user_id, userRole);
+        const disputes = await getUserDisputesService(user_id, userRole);
 
         response.response(
             res,
             true,
             StatusCodes.OK,
-            result,
+            disputes, // Return array directly
             'User disputes retrieved successfully',
         );
     } catch (error: any) {
