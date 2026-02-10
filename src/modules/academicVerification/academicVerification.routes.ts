@@ -12,6 +12,7 @@ import {
   getMyAcademicVerification,
   getAllAcademicVerifications,
   getPendingAcademicVerifications,
+  getAcademicVerificationDocument,
 } from './academicVerification.controller';
 
 const router = express.Router();
@@ -87,6 +88,17 @@ router.patch(
 );
 
 /**
+ * 9. Download / View academic document (MUST be BEFORE /:id route)
+ * Permission: view
+ */
+router.get(
+  '/:id/document',
+  authMiddleware,
+  PermissionChecker('/academic-verifications', 'view'),
+  getAcademicVerificationDocument
+);
+
+/**
  * 5. Get academic verification by ID
  * Permission: view
  */
@@ -128,6 +140,17 @@ router.get(
   authMiddleware,
   PermissionChecker('/academic-verifications', 'view'),
   getPendingAcademicVerifications
+);
+
+/**
+ * 9. Get academic verification document (view/download)
+ * Permission: view
+ */
+router.get(
+  '/:id/document',
+  authMiddleware,
+  PermissionChecker('/academic-verifications', 'view'),
+  getAcademicVerificationDocument
 );
 
 export default router;
