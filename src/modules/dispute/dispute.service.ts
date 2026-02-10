@@ -38,6 +38,11 @@ export const createDisputeService = async (
         employer_id = job.employer_id;
     } else {
         // Employer is creating the dispute
+        // Verify that the job belongs to this employer
+        if (job.employer_id !== user_id) {
+            throw new CustomError('You can only create disputes for jobs you posted', StatusCodes.FORBIDDEN);
+        }
+        
         employer_id = user_id;
         
         // Find student from job_application if provided
@@ -47,6 +52,10 @@ export const createDisputeService = async (
             });
             if (!jobApplication) {
                 throw new CustomError('Job application not found', StatusCodes.NOT_FOUND);
+            }
+            // Verify the application belongs to this job
+            if (jobApplication.job_id !== data.job_id) {
+                throw new CustomError('Job application does not belong to the selected job', StatusCodes.BAD_REQUEST);
             }
             student_id = jobApplication.student_id;
         } else {
@@ -59,7 +68,7 @@ export const createDisputeService = async (
                 order: [['created_at', 'DESC']],
             });
             if (!jobApplication) {
-                throw new CustomError('No student found for this job. Please specify a job application.', StatusCodes.BAD_REQUEST);
+                throw new CustomError('No accepted or hired student found for this job. Please specify a job application.', StatusCodes.BAD_REQUEST);
             }
             student_id = jobApplication.student_id;
         }
