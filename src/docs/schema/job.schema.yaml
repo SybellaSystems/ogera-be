@@ -1,0 +1,151 @@
+components:
+    schemas:
+        CreateJob:
+            type: object
+            required:
+                - employer_id
+                - job_title
+                - category
+                - budget
+                - duration
+                - location
+            properties:
+                employer_id:
+                    type: string
+                    format: uuid
+                    description: UUID of the employer creating the job
+                    example: "123e4567-e89b-12d3-a456-426614174000"
+                job_title:
+                    type: string
+                    maxLength: 255
+                    description: Title of the job posting
+                    example: "Full Stack Developer"
+                category:
+                    type: string
+                    maxLength: 100
+                    description: Job category
+                    example: "Technology"
+                budget:
+                    type: number
+                    format: float
+                    description: Budget for the job
+                    example: 5000.00
+                duration:
+                    type: string
+                    maxLength: 100
+                    description: Expected duration of the job
+                    example: "3 months"
+                location:
+                    type: string
+                    maxLength: 255
+                    description: Job location
+                    example: "New York, NY"
+                status:
+                    type: string
+                    enum: [Pending, Active, Completed]
+                    description: Job status
+                    example: "Active"
+
+        UpdateJob:
+            type: object
+            properties:
+                job_title:
+                    type: string
+                    maxLength: 255
+                    example: "Senior Full Stack Developer"
+                category:
+                    type: string
+                    maxLength: 100
+                    example: "Technology"
+                budget:
+                    type: number
+                    format: float
+                    example: 6000.00
+                duration:
+                    type: string
+                    maxLength: 100
+                    example: "4 months"
+                location:
+                    type: string
+                    maxLength: 255
+                    example: "San Francisco, CA"
+                status:
+                    type: string
+                    enum: [Pending, Active, Completed]
+                    example: "Active"
+
+        JobData:
+            type: object
+            properties:
+                job_id:
+                    type: string
+                    format: uuid
+                    example: "123e4567-e89b-12d3-a456-426614174000"
+                employer_id:
+                    type: string
+                    format: uuid
+                    example: "123e4567-e89b-12d3-a456-426614174001"
+                job_title:
+                    type: string
+                    example: "Full Stack Developer"
+                applications:
+                    type: integer
+                    example: 5
+                category:
+                    type: string
+                    example: "Technology"
+                budget:
+                    type: number
+                    format: float
+                    example: 5000.00
+                duration:
+                    type: string
+                    example: "3 months"
+                location:
+                    type: string
+                    example: "New York, NY"
+                status:
+                    type: string
+                    enum: [Pending, Active, Completed]
+                    example: "Active"
+                created_at:
+                    type: string
+                    format: date-time
+                    example: "2025-11-27T10:30:00Z"
+                updated_at:
+                    type: string
+                    format: date-time
+                    example: "2025-11-27T10:30:00Z"
+
+        JobResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                    example: true
+                status:
+                    type: integer
+                    example: 200
+                data:
+                    $ref: '#/components/schemas/JobData'
+                message:
+                    type: string
+                    example: "Job retrieved successfully"
+
+        JobsListResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                    example: true
+                status:
+                    type: integer
+                    example: 200
+                data:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/JobData'
+                message:
+                    type: string
+                    example: "Jobs retrieved successfully"
+
