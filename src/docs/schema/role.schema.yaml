@@ -1,0 +1,61 @@
+components:
+    schemas:
+        CreateRole:
+            type: object
+            required:
+                - roleName
+            properties:
+                roleName:
+                    type: string
+                    enum: [student, employer, admin]
+                    description: Name of the role
+                    example: "student"
+                permission_json:
+                    type: string
+                    description: JSON string containing permissions for the role
+                    example: '[{"resource": "/jobs", "actions": ["view", "create"]}]'
+
+        UpdateRole:
+            type: object
+            properties:
+                roleName:
+                    type: string
+                    enum: [student, employer, admin]
+                    example: "employer"
+                permission_json:
+                    type: string
+                    description: JSON string containing updated permissions
+                    example: '[{"resource": "/jobs", "actions": ["view", "create", "edit", "delete"]}]'
+
+        RoleData:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                    example: "123e4567-e89b-12d3-a456-426614174000"
+                roleName:
+                    type: string
+                    enum: [student, employer, admin]
+                    example: "student"
+                permission_json:
+                    type: string
+                    example: '[{"resource": "/jobs", "actions": ["view"]}]'
+                created_at:
+                    type: string
+                    format: date-time
+                    example: "2025-11-27T10:30:00Z"
+                updated_at:
+                    type: string
+                    format: date-time
+                    example: "2025-11-27T10:30:00Z"
+
+        RoleResponse:
+            type: object
+            properties:
+                message:
+                    type: string
+                    example: "Role created successfully"
+                data:
+                    $ref: '#/components/schemas/RoleData'
+
