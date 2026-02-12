@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { authMiddleware } from '@/middlewares/auth.middleware';
 import {
     // Skills
@@ -32,15 +33,34 @@ import {
     updateExtendedProfile,
     // Full Profile
     getFullProfile,
+    // Profile Image
+    uploadProfileImage,
 } from './profile.controller';
 
 const router = Router();
+
+// Multer config for profile image upload
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: (_req, file, cb) => {
+        const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (allowedMimes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files (JPEG, PNG, GIF, WEBP) are allowed'));
+        }
+    },
+});
 
 // All routes require authentication
 router.use(authMiddleware);
 
 // ====================== FULL PROFILE ======================
 router.get('/full', getFullProfile);
+
+// ====================== PROFILE IMAGE ======================
+router.post('/upload-image', upload.single('profile_image'), uploadProfileImage);
 
 // ====================== EXTENDED PROFILE ======================
 router.get('/extended', getExtendedProfile);

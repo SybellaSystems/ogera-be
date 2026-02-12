@@ -26,6 +26,7 @@ import {
     getExtendedProfileService,
     updateExtendedProfileService,
     getFullProfileService,
+    uploadProfileImageService,
 } from './profile.service';
 
 const response = new ResponseFormat();
@@ -438,6 +439,27 @@ export const getFullProfile = async (req: Request, res: Response): Promise<void>
 
         const fullProfile = await getFullProfileService(user_id);
         response.response(res, true, StatusCodes.OK, fullProfile, 'Full profile retrieved successfully');
+    } catch (error: any) {
+        response.errorResponse(res, error.status || StatusCodes.INTERNAL_SERVER_ERROR, false, error.message);
+    }
+};
+
+// ====================== PROFILE IMAGE ======================
+export const uploadProfileImage = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const user_id = req.user?.user_id;
+        if (!user_id) {
+            response.errorResponse(res, StatusCodes.UNAUTHORIZED, false, 'User not authenticated');
+            return;
+        }
+
+        if (!req.file) {
+            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'No image file provided');
+            return;
+        }
+
+        const result = await uploadProfileImageService(user_id, req.file);
+        response.response(res, true, StatusCodes.OK, result, 'Profile image uploaded successfully');
     } catch (error: any) {
         response.errorResponse(res, error.status || StatusCodes.INTERNAL_SERVER_ERROR, false, error.message);
     }

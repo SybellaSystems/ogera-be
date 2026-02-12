@@ -15,6 +15,7 @@ export type UserCreationAttributes = Optional<
     | 'resume_url'
     | 'cover_letter'
     | 'preferred_location'
+    | 'profile_image_url'
     | 'reset_otp'
     | 'reset_otp_expiry'
     | 'terms_accepted'
@@ -50,6 +51,7 @@ export class UserModel
     public resume_url?: string;
     public cover_letter?: string;
     public preferred_location?: string;
+    public profile_image_url?: string;
 
     public terms_accepted!: boolean;
     public privacy_accepted!: boolean;
@@ -180,6 +182,11 @@ export default function (sequelize: Sequelize): typeof UserModel {
                 type: DataTypes.STRING(255),
                 allowNull: true,
                 comment: 'Preferred work location for students',
+            },
+
+            profile_image_url: {
+                type: DataTypes.STRING(500),
+                allowNull: true,
             },
 
             /* ⭐ LEGAL FIELDS */

@@ -1,6 +1,9 @@
+import * as path from 'path';
 import { StatusCodes } from 'http-status-codes';
 import { CustomError } from '@/utils/custom-error';
 import repo from './profile.repo';
+import { saveFile } from '@/utils/storage.service';
+import { DB } from '@/database';
 import {
     CreateSkillRequest,
     CreateEmploymentRequest,
@@ -241,5 +244,24 @@ export const updateExtendedProfileService = async (user_id: string, data: Update
 export const getFullProfileService = async (user_id: string) => {
     const fullProfile = await repo.getFullProfile(user_id);
     return fullProfile;
+};
+
+// ====================== PROFILE IMAGE ======================
+export const uploadProfileImageService = async (user_id: string, file: Express.Multer.File) => {
+    const { path: filePath, storageType } = await saveFile(file, 'profile-images');
+
+    // For local storage, store a URL-friendly relative path
+    let imageUrl = filePath;
+    if (storageType === 'local') {
+        const fileName = path.basename(filePath);
+        imageUrl = `/uploads/profile-images/${fileName}`;
+    }
+
+    await DB.Users.update(
+        { profile_image_url: imageUrl },
+        { where: { user_id } },
+    );
+
+    return { profile_image_url: imageUrl };
 };
 

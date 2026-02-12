@@ -1,10 +1,11 @@
 import express from 'express';
+import path from 'path';
 import cors from 'cors';
-import cookieParser from "cookie-parser";  
+import cookieParser from "cookie-parser";
 import router from '@routes/routes';
 import logger from '@utils/logger';
 import { DB } from '@database/index';
-import { PORT, SMS_CONFIG } from './config';
+import { PORT, SMS_CONFIG, STORAGE_CONFIG } from './config';
 import { errorHandler } from './utils/error-handler';
 import { swaggerSpec, swaggerUi } from './utils/swagger';
 import { apiLimiter } from './middlewares/rateLimiter.middleware';
@@ -48,6 +49,12 @@ appServer.use(cookieParser());
 appServer.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 appServer.use('/api', apiLimiter);
+
+// Serve uploaded files statically (allow cross-origin loading for images)
+appServer.use('/uploads', (_req, res, next) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+}, express.static(path.resolve(STORAGE_CONFIG.localStoragePath)));
 
 // API routes
 appServer.use('/api', router);
