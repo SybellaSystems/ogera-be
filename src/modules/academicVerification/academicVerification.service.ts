@@ -234,6 +234,19 @@ export const reviewAcademicDocService = async (
     throw new CustomError('Failed to retrieve updated verification', StatusCodes.INTERNAL_SERVER_ERROR);
   }
 
+  // Log activity: APPROVE or REJECT
+  try {
+    await DB.ActivityLogs.create({
+      user_id: admin_id || null,
+      action: status === 'accepted' ? 'APPROVE' : 'REJECT',
+      entity_type: 'Verification',
+      entity_id: id,
+      description: `Verification ${status === 'accepted' ? 'approved' : 'rejected'} for user ${updated.user_id}`,
+    } as any);
+  } catch (e) {
+    // ignore logging errors
+  }
+
   return updated;
 };
 

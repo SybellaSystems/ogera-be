@@ -37,6 +37,7 @@ export default function (sequelize: Sequelize): typeof RoleModel {
                 type: DataTypes.STRING,
                 allowNull: false,
                 unique: true,
+                field: 'role_name',  // Map to database column role_name
             },
 
             roleType: {
@@ -47,22 +48,26 @@ export default function (sequelize: Sequelize): typeof RoleModel {
                     'admin',
                 ),
                 allowNull: false,
+                field: 'role_type',  // Map to database column role_type
             },
 
             permission_json: {
                 type: DataTypes.JSON,
                 allowNull: true,
                 defaultValue: [],
+                field: 'permission_json',
             },
 
             created_at: {
                 type: DataTypes.DATE,
                 defaultValue: Sequelize.literal('NOW()'),
+                field: 'created_at',
             },
 
             updated_at: {
                 type: DataTypes.DATE,
                 defaultValue: Sequelize.literal('NOW()'),
+                field: 'updated_at',
             },
         },
         {
