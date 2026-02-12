@@ -51,7 +51,7 @@ export default {
         if (progress) {
             await progress.update({
                 completed: false,
-                completed_at: null,
+                completed_at: null as any,
             });
         }
 
@@ -215,9 +215,9 @@ export default {
         const userIdSet = new Set<string>();
         for (const record of allProgress) {
             // Try different possible property names (case-insensitive, different formats)
-            const userId = record.user_id || 
-                          record.userId || 
-                          record.USER_ID || 
+            const userId = record.user_id ||
+                          (record as any).userId ||
+                          (record as any).USER_ID ||
                           (record as any)['user_id'] ||
                           (record as any)['userId'] ||
                           null;
@@ -467,9 +467,9 @@ export default {
         const students = await this.getCourseStudents(course_id);
 
         const totalEnrolled = students.length;
-        const completedStudents = students.filter((s) => s.is_completed).length;
-        const inProgressStudents = students.filter((s) => !s.is_completed && s.completed_steps > 0).length;
-        const notStartedStudents = students.filter((s) => s.completed_steps === 0).length;
+        const completedStudents = students.filter((s: any) => s.is_completed).length;
+        const inProgressStudents = students.filter((s: any) => !s.is_completed && s.completed_steps > 0).length;
+        const notStartedStudents = students.filter((s: any) => s.completed_steps === 0).length;
 
         return {
             course_id: course.course_id,

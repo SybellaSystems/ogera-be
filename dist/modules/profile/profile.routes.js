@@ -1,13 +1,33 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
+const multer_1 = __importDefault(require("multer"));
 const auth_middleware_1 = require("../../middlewares/auth.middleware");
 const profile_controller_1 = require("./profile.controller");
 const router = (0, express_1.Router)();
+// Multer config for profile image upload
+const upload = (0, multer_1.default)({
+    storage: multer_1.default.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: (_req, file, cb) => {
+        const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (allowedMimes.includes(file.mimetype)) {
+            cb(null, true);
+        }
+        else {
+            cb(new Error('Only image files (JPEG, PNG, GIF, WEBP) are allowed'));
+        }
+    },
+});
 // All routes require authentication
 router.use(auth_middleware_1.authMiddleware);
 // ====================== FULL PROFILE ======================
 router.get('/full', profile_controller_1.getFullProfile);
+// ====================== PROFILE IMAGE ======================
+router.post('/upload-image', upload.single('profile_image'), profile_controller_1.uploadProfileImage);
 // ====================== EXTENDED PROFILE ======================
 router.get('/extended', profile_controller_1.getExtendedProfile);
 router.put('/extended', profile_controller_1.updateExtendedProfile);

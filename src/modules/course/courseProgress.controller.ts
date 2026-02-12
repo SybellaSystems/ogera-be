@@ -96,7 +96,7 @@ export const markStepIncomplete = async (
             res,
             true,
             StatusCodes.OK,
-            result,
+            result as object,
             'Step marked as incomplete',
         );
     } catch (error: any) {
@@ -138,7 +138,7 @@ export const getCourseProgress = async (
             return;
         }
 
-        const result = await getCourseProgressService(user_id, course_id);
+        const result = await getCourseProgressService(user_id, course_id as string);
         response.response(
             res,
             true,
@@ -185,7 +185,7 @@ export const getCourseCompletion = async (
             return;
         }
 
-        const result = await getCourseCompletionService(user_id, course_id);
+        const result = await getCourseCompletionService(user_id, course_id as string);
         response.response(
             res,
             true,
@@ -267,7 +267,7 @@ export const checkCourseStarted = async (
             return;
         }
 
-        const result = await checkCourseStartedService(user_id, course_id);
+        const result = await checkCourseStartedService(user_id, course_id as string);
         response.response(
             res,
             true,
@@ -313,7 +313,7 @@ export const getCourseStudents = async (
             return;
         }
 
-        const result = await getCourseStudentsService(course_id);
+        const result = await getCourseStudentsService(course_id as string);
         
         // Ensure result is an array
         const studentsArray = Array.isArray(result) ? result : [];
@@ -397,7 +397,7 @@ export const getCourseSpecificStatistics = async (
             return;
         }
 
-        const result = await getCourseSpecificStatisticsService(course_id);
+        const result = await getCourseSpecificStatisticsService(course_id as string);
         if (!result) {
             response.errorResponse(
                 res,

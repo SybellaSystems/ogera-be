@@ -95,7 +95,7 @@ export async function getPaymentStatus(req: Request, res: Response): Promise<voi
             return;
         }
 
-        const result = await pesapalService.getTransactionStatus(orderTrackingId);
+        const result = await pesapalService.getTransactionStatus(orderTrackingId as string);
 
         res.json({
             success: true,

@@ -15,6 +15,9 @@ const trustScore_routes_1 = __importDefault(require("../modules/trustScore/trust
 const profile_routes_1 = __importDefault(require("../modules/profile/profile.routes"));
 const user_routes_1 = __importDefault(require("../modules/user/user.routes"));
 const course_routes_1 = __importDefault(require("../modules/course/course.routes"));
+const pesapal_routes_1 = __importDefault(require("../modules/pesapal/pesapal.routes"));
+const dashboard_routes_1 = __importDefault(require("../modules/dashboard/dashboard.routes"));
+const dispute_routes_1 = __importDefault(require("../modules/dispute/dispute.routes"));
 const express_1 = __importDefault(require("express"));
 const router = express_1.default.Router();
 router.use('/auth', auth_routes_1.default);
@@ -29,4 +32,7 @@ router.use('/trust-score', trustScore_routes_1.default);
 router.use('/profile', profile_routes_1.default);
 router.use('/users', user_routes_1.default);
 router.use('/courses', course_routes_1.default);
+router.use('/payments', pesapal_routes_1.default);
+router.use('/dashboard', dashboard_routes_1.default);
+router.use('/disputes', dispute_routes_1.default);
 exports.default = router;

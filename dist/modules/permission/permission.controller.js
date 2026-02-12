@@ -12,7 +12,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAllRoutes = exports.deletePermission = exports.updatePermission = exports.getPermissionById = exports.getAllPermissions = exports.createPermission = void 0;
 const permission_service_1 = require("./permission.service");
 const http_status_codes_1 = require("http-status-codes");
-const custom_error_1 = require("../../utils/custom-error");
 const permissionService = new permission_service_1.PermissionService();
 const createPermission = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -24,7 +23,30 @@ const createPermission = (req, res) => __awaiter(void 0, void 0, void 0, functio
         });
     }
     catch (error) {
-        throw new custom_error_1.CustomError(error.message || 'Failed to create permission', http_status_codes_1.StatusCodes.BAD_REQUEST);
+        // Check if permission already exists - return existing one with helpful message
+        if (error.message && error.message.includes('already exists')) {
+            try {
+                const existingPermission = yield permissionService.getPermissionByApiName(req.body.api_name);
+                if (existingPermission) {
+                    // Return existing permission with a message suggesting to use update
+                    return res.status(http_status_codes_1.StatusCodes.CONFLICT).json({
+                        success: false,
+                        message: `Permission with API name '${req.body.api_name}' already exists. Please update the existing permission instead.`,
+                        data: existingPermission,
+                        errorCode: 'PERMISSION_ALREADY_EXISTS',
+                    });
+                }
+            }
+            catch (findError) {
+                // If we can't find it, continue with original error
+            }
+        }
+        // Return error response instead of throwing (prevents app crash)
+        res.status(http_status_codes_1.StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: error.message || 'Failed to create permission',
+            error: error.message,
+        });
     }
 });
 exports.createPermission = createPermission;
@@ -38,7 +60,11 @@ const getAllPermissions = (_req, res) => __awaiter(void 0, void 0, void 0, funct
         });
     }
     catch (error) {
-        throw new custom_error_1.CustomError(error.message || 'Failed to retrieve permissions', http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR);
+        res.status(http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: error.message || 'Failed to retrieve permissions',
+            error: error.message,
+        });
     }
 });
 exports.getAllPermissions = getAllPermissions;
@@ -53,7 +79,11 @@ const getPermissionById = (req, res) => __awaiter(void 0, void 0, void 0, functi
         });
     }
     catch (error) {
-        throw new custom_error_1.CustomError(error.message || 'Failed to retrieve permission', http_status_codes_1.StatusCodes.NOT_FOUND);
+        res.status(http_status_codes_1.StatusCodes.NOT_FOUND).json({
+            success: false,
+            message: error.message || 'Failed to retrieve permission',
+            error: error.message,
+        });
     }
 });
 exports.getPermissionById = getPermissionById;
@@ -68,7 +98,11 @@ const updatePermission = (req, res) => __awaiter(void 0, void 0, void 0, functio
         });
     }
     catch (error) {
-        throw new custom_error_1.CustomError(error.message || 'Failed to update permission', http_status_codes_1.StatusCodes.BAD_REQUEST);
+        res.status(http_status_codes_1.StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: error.message || 'Failed to update permission',
+            error: error.message,
+        });
     }
 });
 exports.updatePermission = updatePermission;
@@ -82,7 +116,11 @@ const deletePermission = (req, res) => __awaiter(void 0, void 0, void 0, functio
         });
     }
     catch (error) {
-        throw new custom_error_1.CustomError(error.message || 'Failed to delete permission', http_status_codes_1.StatusCodes.BAD_REQUEST);
+        res.status(http_status_codes_1.StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: error.message || 'Failed to delete permission',
+            error: error.message,
+        });
     }
 });
 exports.deletePermission = deletePermission;
@@ -111,7 +149,11 @@ const getAllRoutes = (_req, res) => __awaiter(void 0, void 0, void 0, function* 
         });
     }
     catch (error) {
-        throw new custom_error_1.CustomError(error.message || 'Failed to retrieve routes', http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR);
+        res.status(http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: error.message || 'Failed to retrieve routes',
+            error: error.message,
+        });
     }
 });
 exports.getAllRoutes = getAllRoutes;

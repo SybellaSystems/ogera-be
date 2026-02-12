@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const path_1 = __importDefault(require("path"));
 const cors_1 = __importDefault(require("cors"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const routes_1 = __importDefault(require("./routes/routes"));
@@ -43,6 +44,11 @@ appServer.use((0, cookie_parser_1.default)());
 // Swagger
 appServer.use('/api-docs', swagger_1.swaggerUi.serve, swagger_1.swaggerUi.setup(swagger_1.swaggerSpec));
 appServer.use('/api', rateLimiter_middleware_1.apiLimiter);
+// Serve uploaded files statically (allow cross-origin loading for images)
+appServer.use('/uploads', (_req, res, next) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+}, express_1.default.static(path_1.default.resolve(config_1.STORAGE_CONFIG.localStoragePath)));
 // API routes
 appServer.use('/api', routes_1.default);
 // Error handler

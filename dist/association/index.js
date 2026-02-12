@@ -17,6 +17,12 @@ const userAccomplishment_model_1 = require("../database/models/userAccomplishmen
 const userExtendedProfile_model_1 = require("../database/models/userExtendedProfile.model");
 const course_model_1 = require("../database/models/course.model");
 const courseStep_model_1 = require("../database/models/courseStep.model");
+const courseProgress_model_1 = require("../database/models/courseProgress.model");
+const interview_model_1 = require("../database/models/interview.model");
+const dispute_model_1 = require("../database/models/dispute.model");
+const disputeEvidence_model_1 = require("../database/models/disputeEvidence.model");
+const disputeMessage_model_1 = require("../database/models/disputeMessage.model");
+const disputeTimeline_model_1 = require("../database/models/disputeTimeline.model");
 const setupAssociations = () => {
     // ====================== USER ↔ ROLE ======================
     user_model_1.UserModel.belongsTo(roles_model_1.RoleModel, {
@@ -251,6 +257,180 @@ const setupAssociations = () => {
     courseStep_model_1.CourseStepModel.belongsTo(course_model_1.CourseModel, {
         foreignKey: 'course_id',
         as: 'course',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+    // ====================== USER ↔ COURSE PROGRESS ======================
+    // A user can have many course progress records
+    user_model_1.UserModel.hasMany(courseProgress_model_1.CourseProgressModel, {
+        foreignKey: 'user_id',
+        as: 'courseProgress',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+    // A course progress belongs to one user
+    courseProgress_model_1.CourseProgressModel.belongsTo(user_model_1.UserModel, {
+        foreignKey: 'user_id',
+        as: 'user',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+    // ====================== COURSE ↔ COURSE PROGRESS ======================
+    // A course can have many progress records
+    course_model_1.CourseModel.hasMany(courseProgress_model_1.CourseProgressModel, {
+        foreignKey: 'course_id',
+        as: 'progress',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+    // A course progress belongs to one course
+    courseProgress_model_1.CourseProgressModel.belongsTo(course_model_1.CourseModel, {
+        foreignKey: 'course_id',
+        as: 'course',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+    // ====================== COURSE STEP ↔ COURSE PROGRESS ======================
+    // A course step can have many progress records
+    courseStep_model_1.CourseStepModel.hasMany(courseProgress_model_1.CourseProgressModel, {
+        foreignKey: 'step_id',
+        as: 'progress',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+    // A course progress belongs to one course step
+    courseProgress_model_1.CourseProgressModel.belongsTo(courseStep_model_1.CourseStepModel, {
+        foreignKey: 'step_id',
+        as: 'step',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+    // ====================== INTERVIEWS ======================
+    // A student (User) can have many interviews
+    user_model_1.UserModel.hasMany(interview_model_1.InterviewModel, {
+        foreignKey: 'student_id',
+        as: 'interviews',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+    interview_model_1.InterviewModel.belongsTo(user_model_1.UserModel, {
+        foreignKey: 'student_id',
+        as: 'student',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+    // Interview belongs to a job (optional)
+    interview_model_1.InterviewModel.belongsTo(job_model_1.JobModel, {
+        foreignKey: 'job_id',
+        as: 'job',
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
+    });
+    // ====================== DISPUTES ======================
+    // Dispute belongs to a job
+    dispute_model_1.DisputeModel.belongsTo(job_model_1.JobModel, {
+        foreignKey: 'job_id',
+        as: 'job',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+    // Dispute belongs to student (User)
+    dispute_model_1.DisputeModel.belongsTo(user_model_1.UserModel, {
+        foreignKey: 'student_id',
+        as: 'student',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+    // Dispute belongs to employer (User)
+    dispute_model_1.DisputeModel.belongsTo(user_model_1.UserModel, {
+        foreignKey: 'employer_id',
+        as: 'employer',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+    // Dispute belongs to moderator (User)
+    dispute_model_1.DisputeModel.belongsTo(user_model_1.UserModel, {
+        foreignKey: 'moderator_id',
+        as: 'moderator',
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
+    });
+    // Dispute escalated to admin (User)
+    dispute_model_1.DisputeModel.belongsTo(user_model_1.UserModel, {
+        foreignKey: 'escalated_to',
+        as: 'escalatedAdmin',
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
+    });
+    // User can have many disputes (as student)
+    user_model_1.UserModel.hasMany(dispute_model_1.DisputeModel, {
+        foreignKey: 'student_id',
+        as: 'disputesAsStudent',
+    });
+    // User can have many disputes (as employer)
+    user_model_1.UserModel.hasMany(dispute_model_1.DisputeModel, {
+        foreignKey: 'employer_id',
+        as: 'disputesAsEmployer',
+    });
+    // User can moderate many disputes
+    user_model_1.UserModel.hasMany(dispute_model_1.DisputeModel, {
+        foreignKey: 'moderator_id',
+        as: 'moderatedDisputes',
+    });
+    // ====================== DISPUTE EVIDENCE ======================
+    dispute_model_1.DisputeModel.hasMany(disputeEvidence_model_1.DisputeEvidenceModel, {
+        foreignKey: 'dispute_id',
+        as: 'evidence',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+    disputeEvidence_model_1.DisputeEvidenceModel.belongsTo(dispute_model_1.DisputeModel, {
+        foreignKey: 'dispute_id',
+        as: 'dispute',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+    disputeEvidence_model_1.DisputeEvidenceModel.belongsTo(user_model_1.UserModel, {
+        foreignKey: 'uploaded_by',
+        as: 'uploader',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+    // ====================== DISPUTE MESSAGES ======================
+    dispute_model_1.DisputeModel.hasMany(disputeMessage_model_1.DisputeMessageModel, {
+        foreignKey: 'dispute_id',
+        as: 'messages',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+    disputeMessage_model_1.DisputeMessageModel.belongsTo(dispute_model_1.DisputeModel, {
+        foreignKey: 'dispute_id',
+        as: 'dispute',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+    disputeMessage_model_1.DisputeMessageModel.belongsTo(user_model_1.UserModel, {
+        foreignKey: 'sender_id',
+        as: 'sender',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+    // ====================== DISPUTE TIMELINE ======================
+    dispute_model_1.DisputeModel.hasMany(disputeTimeline_model_1.DisputeTimelineModel, {
+        foreignKey: 'dispute_id',
+        as: 'timeline',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+    disputeTimeline_model_1.DisputeTimelineModel.belongsTo(dispute_model_1.DisputeModel, {
+        foreignKey: 'dispute_id',
+        as: 'dispute',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+    disputeTimeline_model_1.DisputeTimelineModel.belongsTo(user_model_1.UserModel, {
+        foreignKey: 'performed_by',
+        as: 'performer',
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
     });

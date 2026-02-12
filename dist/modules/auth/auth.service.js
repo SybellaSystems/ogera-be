@@ -89,6 +89,32 @@ const registerUser = (data) => __awaiter(void 0, void 0, void 0, function* () {
         terms_accepted_at: new Date(),
         privacy_accepted_at: new Date(),
     });
+    // Log activity: Admin added user
+    try {
+        yield database_1.DB.ActivityLogs.create({
+            user_id: null,
+            action: 'CREATE',
+            entity_type: 'User',
+            entity_id: user.user_id,
+            description: `User added by admin: ${user.email}`,
+        });
+    }
+    catch (e) {
+        // swallow
+    }
+    // Log activity: CREATE User
+    try {
+        yield database_1.DB.ActivityLogs.create({
+            user_id: null,
+            action: 'CREATE',
+            entity_type: 'User',
+            entity_id: user.user_id,
+            description: `User registered: ${user.email}`,
+        });
+    }
+    catch (e) {
+        // swallow
+    }
     // Send verification email
     const frontendUrl = config_1.FRONTEND_URL || 'http://localhost:5173';
     const verificationLink = `${frontendUrl}/auth/verify-email?token=${verificationToken}`;
@@ -401,12 +427,18 @@ exports.getUserProfileService = getUserProfileService;
 const verifyEmailService = (token) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const decoded = jsonwebtoken_1.default.verify(token, config_1.JWT_ACCESS_TOKEN_SECRET);
+        console.log('🔍 [VERIFY EMAIL] Decoded token payload:', decoded);
         if (decoded.type !== 'email_verification') {
             throw new custom_error_1.CustomError('Invalid token type', http_status_codes_1.StatusCodes.BAD_REQUEST);
         }
         const user = yield auth_repo_1.default.findUserByEmail(decoded.email);
         if (!user)
             throw new custom_error_1.CustomError('User not found', http_status_codes_1.StatusCodes.NOT_FOUND);
+        // Debug info to assist in development: log whether stored token matches and expiry
+        console.log('🔍 [VERIFY EMAIL] Stored token present:', !!user.email_verification_token);
+        console.log('🔍 [VERIFY EMAIL] Stored token (truncated):', user.email_verification_token ? user.email_verification_token.slice(0, 30) + '...' : null);
+        console.log('🔍 [VERIFY EMAIL] Provided token (truncated):', token.slice(0, 30) + '...');
+        console.log('🔍 [VERIFY EMAIL] Token expiry:', user.email_verification_token_expiry);
         // Check if token matches and is not expired
         if (user.email_verification_token !== token) {
             throw new custom_error_1.CustomError('Invalid verification token', http_status_codes_1.StatusCodes.BAD_REQUEST);

@@ -1,7 +1,7 @@
 "use strict";
 var _a, _b, _c;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SMS_CONFIG = exports.EMAIL_CONFIG = exports.STORAGE_CONFIG = exports.AWS_S3_BUCKET_NAME = exports.AWS_REGION = exports.AWS_SECRET_ACCESS_KEY = exports.AWS_ACCESS_KEY_ID = exports.USE_LOCAL_STORAGE = exports.DB_DIALECT = exports.DB_HOST = exports.DB_NAME = exports.DB_PASSWORD = exports.DB_USERNAME = exports.DB_PORT = exports.JWT_REFRESH_TOKEN_SECRET = exports.JWT_ACCESS_TOKEN_SECRET = exports.FRONTEND_URL = exports.BASE_URL = exports.NODE_ENV = exports.PORT = void 0;
+exports.SMS_CONFIG = exports.PESAPAL_CONFIG = exports.EMAIL_CONFIG = exports.STORAGE_CONFIG = exports.AWS_S3_BUCKET_NAME = exports.AWS_REGION = exports.AWS_SECRET_ACCESS_KEY = exports.AWS_ACCESS_KEY_ID = exports.USE_LOCAL_STORAGE = exports.DB_DIALECT = exports.DB_HOST = exports.DB_NAME = exports.DB_PASSWORD = exports.DB_USERNAME = exports.DB_PORT = exports.JWT_REFRESH_TOKEN_SECRET = exports.JWT_ACCESS_TOKEN_SECRET = exports.FRONTEND_URL = exports.BASE_URL = exports.NODE_ENV = exports.PORT = void 0;
 const dotenv_1 = require("dotenv");
 const envFile = `.env`;
 (0, dotenv_1.config)({ path: envFile });
@@ -40,6 +40,13 @@ exports.EMAIL_CONFIG = {
     },
     // Frontend URL for email links
     frontendUrl: exports.FRONTEND_URL || 'http://localhost:5173',
+};
+// Pesapal Payment Configuration
+exports.PESAPAL_CONFIG = {
+    consumerKey: process.env.PESAPAL_CONSUMER_KEY || '',
+    consumerSecret: process.env.PESAPAL_CONSUMER_SECRET || '',
+    isSandbox: process.env.PESAPAL_SANDBOX !== 'false', // Default to sandbox for safety
+    baseUrl: process.env.BASE_URL || 'http://localhost:5000',
 };
 // SMS Configuration
 exports.SMS_CONFIG = {

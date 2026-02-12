@@ -11,7 +11,7 @@ import {
     DisputeStatus,
     DisputePriority,
 } from '@/interfaces/dispute.interfaces';
-import { uploadFile } from '@/utils/storage.service';
+import { saveFile } from '@/utils/storage.service';
 import { createNotificationService } from '../notification/notification.service';
 import { sendMail } from '@/utils/mailer';
 import logger from '@/utils/logger';
@@ -109,7 +109,7 @@ export const createDisputeService = async (
     if (data.evidence_files && data.evidence_files.length > 0) {
         for (const file of data.evidence_files) {
             try {
-                const uploadResult = await uploadFile(file, 'dispute-evidence');
+                const uploadResult = await saveFile(file, 'dispute-evidence');
                 await repo.addEvidence({
                     dispute_id: dispute.dispute_id,
                     uploaded_by: user_id,
@@ -423,9 +423,9 @@ export const resolveDisputeService = async (
     dispute_id: string,
     resolution: 'Refunded' | 'Settled' | 'Dismissed' | 'Escalated',
     resolution_notes: string,
-    refund_amount?: number,
     user_id: string,
     userRole: string,
+    refund_amount?: number,
 ) => {
     // Superadmin can always resolve disputes
     if (userRole?.toLowerCase() === 'superadmin') {
@@ -559,7 +559,7 @@ export const uploadEvidenceService = async (
         throw new CustomError('Access denied', StatusCodes.FORBIDDEN);
     }
 
-    const uploadResult = await uploadFile(file, 'dispute-evidence');
+    const uploadResult = await saveFile(file, 'dispute-evidence');
     const evidence = await repo.addEvidence({
         dispute_id,
         uploaded_by: user_id,

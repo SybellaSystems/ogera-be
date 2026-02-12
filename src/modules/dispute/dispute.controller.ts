@@ -54,7 +54,7 @@ export const createDispute = async (req: Request, res: Response): Promise<void> 
             res,
             true,
             StatusCodes.CREATED,
-            dispute,
+            dispute as object,
             'Dispute created successfully',
         );
     } catch (error: any) {
@@ -112,7 +112,7 @@ export const getDisputeById = async (req: Request, res: Response): Promise<void>
         const user_id = req.user?.user_id;
         const userRole = req.user?.role?.toLowerCase();
 
-        const result = await getDisputeByIdService(id, user_id, userRole);
+        const result = await getDisputeByIdService(id as string, user_id, userRole);
 
         response.response(
             res,
@@ -138,13 +138,13 @@ export const updateDispute = async (req: Request, res: Response): Promise<void> 
         const user_id = req.user?.user_id;
         const userRole = req.user?.role?.toLowerCase();
 
-        const result = await updateDisputeService(id, req.body, user_id!, userRole!);
+        const result = await updateDisputeService(id as string, req.body, user_id!, userRole!);
 
         response.response(
             res,
             true,
             StatusCodes.OK,
-            result,
+            result as object,
             'Dispute updated successfully',
         );
     } catch (error: any) {
@@ -176,19 +176,19 @@ export const resolveDispute = async (req: Request, res: Response): Promise<void>
         }
 
         const result = await resolveDisputeService(
-            id,
+            id as string,
             resolution,
             resolution_notes,
-            refund_amount,
             user_id!,
             userRole!,
+            refund_amount,
         );
 
         response.response(
             res,
             true,
             StatusCodes.OK,
-            result,
+            result as object,
             'Dispute resolved successfully',
         );
     } catch (error: any) {
@@ -219,7 +219,7 @@ export const addDisputeMessage = async (req: Request, res: Response): Promise<vo
             return;
         }
 
-        const result = await addDisputeMessageService(id, { message, is_internal }, user_id!, userRole);
+        const result = await addDisputeMessageService(id as string, { message, is_internal }, user_id!, userRole);
 
         response.response(
             res,
@@ -256,7 +256,7 @@ export const uploadEvidence = async (req: Request, res: Response): Promise<void>
             return;
         }
 
-        const result = await uploadEvidenceService(id, file, description, user_id!);
+        const result = await uploadEvidenceService(id as string, file, description, user_id!);
 
         response.response(
             res,

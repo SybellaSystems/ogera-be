@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -9,11 +42,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getPendingAcademicVerifications = exports.getAllAcademicVerifications = exports.getMyAcademicVerification = exports.getAcademicVerificationByUserId = exports.getAcademicVerificationById = exports.reviewAcademicDoc = exports.reuploadAcademicDoc = exports.uploadAcademicDoc = void 0;
+exports.getPendingAcademicVerifications = exports.getAllAcademicVerifications = exports.getMyAcademicVerification = exports.getAcademicVerificationByUserId = exports.getAcademicVerificationById = exports.reviewAcademicDoc = exports.reuploadAcademicDoc = exports.getAcademicVerificationDocument = exports.uploadAcademicDoc = void 0;
 const http_status_codes_1 = require("http-status-codes");
 const responseFormat_1 = require("../../exception/responseFormat");
 const database_1 = require("../../database");
 const academicVerification_service_1 = require("./academicVerification.service");
+const storage_service_1 = require("../../utils/storage.service");
+const path = __importStar(require("path"));
 const response = new responseFormat_1.ResponseFormat();
 // -------------------- UPLOAD ACADEMIC DOCUMENT (STUDENT) --------------------
 const uploadAcademicDoc = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -37,6 +72,59 @@ const uploadAcademicDoc = (req, res) => __awaiter(void 0, void 0, void 0, functi
     }
 });
 exports.uploadAcademicDoc = uploadAcademicDoc;
+// -------------------- DOWNLOAD / VIEW DOCUMENT --------------------
+const getAcademicVerificationDocument = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    try {
+        const { id } = req.params;
+        const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.user_id;
+        const role = (_b = req.user) === null || _b === void 0 ? void 0 : _b.role;
+        console.log(`[VIEW_DOC] Request for doc ID: ${id}, User: ${userId}, Role: ${role}`);
+        const verification = yield (0, academicVerification_service_1.getAcademicVerificationByIdService)(id);
+        console.log(`[VIEW_DOC] Verification found. Storage type: ${verification.storage_type}, Path: ${verification.document_path}`);
+        // Students can only access their own document
+        if (role === 'student' && verification.user_id !== userId) {
+            response.errorResponse(res, http_status_codes_1.StatusCodes.FORBIDDEN, false, 'You can only view your own academic verification document');
+            return;
+        }
+        const { storage_type, document_path } = verification;
+        if (storage_type === 's3') {
+            // Return presigned URL so frontend can open it directly
+            const url = yield (0, storage_service_1.getFileUrl)(document_path, 's3');
+            console.log(`[VIEW_DOC] S3 URL generated: ${url}`);
+            res.status(http_status_codes_1.StatusCodes.OK).json({ success: true, url });
+            return;
+        }
+        // Local storage: stream the file as binary
+        console.log(`[VIEW_DOC] Attempting to fetch local file: ${document_path}`);
+        const fileBuffer = (0, storage_service_1.getLocalFile)(document_path);
+        if (!fileBuffer) {
+            console.error(`[VIEW_DOC] File buffer is null for path: ${document_path}`);
+            response.errorResponse(res, http_status_codes_1.StatusCodes.NOT_FOUND, false, 'Document file not found on server');
+            return;
+        }
+        // Determine content type from extension (basic mapping)
+        const ext = path.extname(document_path || '').toLowerCase();
+        const mimeMap = {
+            '.pdf': 'application/pdf',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.doc': 'application/msword',
+            '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        };
+        const contentType = mimeMap[ext] || 'application/octet-stream';
+        console.log(`[VIEW_DOC] Sending file with content type: ${contentType}, size: ${fileBuffer.length} bytes`);
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Disposition', 'inline');
+        res.status(http_status_codes_1.StatusCodes.OK).send(fileBuffer);
+    }
+    catch (error) {
+        console.error(`[VIEW_DOC] Error:`, error);
+        response.errorResponse(res, error.status || http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, false, error.message);
+    }
+});
+exports.getAcademicVerificationDocument = getAcademicVerificationDocument;
 // -------------------- RE-UPLOAD ACADEMIC DOCUMENT (STUDENT - IF REJECTED) --------------------
 const reuploadAcademicDoc = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;

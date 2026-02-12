@@ -29,6 +29,7 @@ const custom_error_1 = require("../../utils/custom-error");
 const http_status_codes_1 = require("http-status-codes");
 const messages_1 = require("../../utils/messages");
 const database_1 = require("../../database");
+const jobCategory_repo_1 = __importDefault(require("../jobCategory/jobCategory.repo"));
 const createJobService = (jobData, user_id, userRole) => __awaiter(void 0, void 0, void 0, function* () {
     // Check if user has employer or superadmin roleType
     const user = yield database_1.DB.Users.findOne({
@@ -62,6 +63,11 @@ const createJobService = (jobData, user_id, userRole) => __awaiter(void 0, void 
     if (!jobData.category) {
         throw new custom_error_1.CustomError('Category is required', http_status_codes_1.StatusCodes.BAD_REQUEST);
     }
+    // Validate that the category exists in the database
+    const categoryExists = yield jobCategory_repo_1.default.findCategoryByName(jobData.category.trim());
+    if (!categoryExists) {
+        throw new custom_error_1.CustomError('Invalid category. Please select a valid category from the list.', http_status_codes_1.StatusCodes.BAD_REQUEST);
+    }
     if (!jobData.budget) {
         throw new custom_error_1.CustomError('Budget is required', http_status_codes_1.StatusCodes.BAD_REQUEST);
     }
@@ -86,6 +92,18 @@ const createJobService = (jobData, user_id, userRole) => __awaiter(void 0, void 
     const createdJob = yield job_repo_1.default.findJobById(job.job_id);
     if (!createdJob) {
         throw new custom_error_1.CustomError('Failed to retrieve created job', http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR);
+    }
+    try {
+        yield database_1.DB.ActivityLogs.create({
+            user_id: user_id || null,
+            action: 'CREATE',
+            entity_type: 'Job',
+            entity_id: createdJob.job_id,
+            description: `Job created: ${createdJob.job_title || createdJob.job_id}`,
+        });
+    }
+    catch (e) {
+        // swallow logging errors
     }
     return createdJob;
 });
@@ -115,6 +133,13 @@ const updateJobService = (job_id, updates) => __awaiter(void 0, void 0, void 0, 
         updates.employer_id = employer.user_id;
         delete updates.employer_name;
     }
+    // Validate category if it's being updated
+    if (updates.category) {
+        const categoryExists = yield jobCategory_repo_1.default.findCategoryByName(updates.category.trim());
+        if (!categoryExists) {
+            throw new custom_error_1.CustomError('Invalid category. Please select a valid category from the list.', http_status_codes_1.StatusCodes.BAD_REQUEST);
+        }
+    }
     const { questions } = updates, jobUpdates = __rest(updates, ["questions"]);
     const updated = yield job_repo_1.default.updateJob(job_id, jobUpdates);
     if (!updated) {
@@ -136,7 +161,31 @@ const updateJobService = (job_id, updates) => __awaiter(void 0, void 0, void 0, 
         if (!updatedJob) {
             throw new custom_error_1.CustomError('Failed to retrieve updated job', http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR);
         }
+        try {
+            yield database_1.DB.ActivityLogs.create({
+                user_id: null,
+                action: 'UPDATE',
+                entity_type: 'Job',
+                entity_id: updatedJob.job_id,
+                description: `Job updated: ${updatedJob.job_title || updatedJob.job_id}`,
+            });
+        }
+        catch (e) {
+            // swallow logging errors
+        }
         return updatedJob;
+    }
+    try {
+        yield database_1.DB.ActivityLogs.create({
+            user_id: null,
+            action: 'UPDATE',
+            entity_type: 'Job',
+            entity_id: job_id,
+            description: `Job updated: ${job_id}`,
+        });
+    }
+    catch (e) {
+        // swallow logging errors
     }
     return updated;
 });

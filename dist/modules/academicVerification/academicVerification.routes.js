@@ -52,6 +52,11 @@ router.post('/:id/reupload', auth_middleware_1.authMiddleware, (0, role_middlewa
  */
 router.patch('/:id/review', auth_middleware_1.authMiddleware, (0, role_middleware_1.PermissionChecker)('/academic-verifications', 'edit'), academicVerification_controller_1.reviewAcademicDoc);
 /**
+ * 9. Download / View academic document (MUST be BEFORE /:id route)
+ * Permission: view
+ */
+router.get('/:id/document', auth_middleware_1.authMiddleware, (0, role_middleware_1.PermissionChecker)('/academic-verifications', 'view'), academicVerification_controller_1.getAcademicVerificationDocument);
+/**
  * 5. Get academic verification by ID
  * Permission: view
  */
@@ -71,4 +76,9 @@ router.get('/', auth_middleware_1.authMiddleware, (0, role_middleware_1.Permissi
  * Permission: view
  */
 router.get('/pending/list', auth_middleware_1.authMiddleware, (0, role_middleware_1.PermissionChecker)('/academic-verifications', 'view'), academicVerification_controller_1.getPendingAcademicVerifications);
+/**
+ * 9. Get academic verification document (view/download)
+ * Permission: view
+ */
+router.get('/:id/document', auth_middleware_1.authMiddleware, (0, role_middleware_1.PermissionChecker)('/academic-verifications', 'view'), academicVerification_controller_1.getAcademicVerificationDocument);
 exports.default = router;
