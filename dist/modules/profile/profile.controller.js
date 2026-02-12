@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getFullProfile = exports.updateExtendedProfile = exports.getExtendedProfile = exports.deleteAccomplishment = exports.updateAccomplishment = exports.getAccomplishments = exports.addAccomplishment = exports.deleteProject = exports.updateProject = exports.getProjects = exports.addProject = exports.deleteEducation = exports.updateEducation = exports.getEducations = exports.addEducation = exports.deleteEmployment = exports.updateEmployment = exports.getEmployments = exports.addEmployment = exports.deleteSkill = exports.updateSkill = exports.getSkills = exports.addBulkSkills = exports.addSkill = void 0;
+exports.uploadProfileImage = exports.getFullProfile = exports.updateExtendedProfile = exports.getExtendedProfile = exports.deleteAccomplishment = exports.updateAccomplishment = exports.getAccomplishments = exports.addAccomplishment = exports.deleteProject = exports.updateProject = exports.getProjects = exports.addProject = exports.deleteEducation = exports.updateEducation = exports.getEducations = exports.addEducation = exports.deleteEmployment = exports.updateEmployment = exports.getEmployments = exports.addEmployment = exports.deleteSkill = exports.updateSkill = exports.getSkills = exports.addBulkSkills = exports.addSkill = void 0;
 const http_status_codes_1 = require("http-status-codes");
 const responseFormat_1 = require("../../exception/responseFormat");
 const profile_service_1 = require("./profile.service");
@@ -450,3 +450,24 @@ const getFullProfile = (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
 });
 exports.getFullProfile = getFullProfile;
+// ====================== PROFILE IMAGE ======================
+const uploadProfileImage = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.user_id;
+        if (!user_id) {
+            response.errorResponse(res, http_status_codes_1.StatusCodes.UNAUTHORIZED, false, 'User not authenticated');
+            return;
+        }
+        if (!req.file) {
+            response.errorResponse(res, http_status_codes_1.StatusCodes.BAD_REQUEST, false, 'No image file provided');
+            return;
+        }
+        const result = yield (0, profile_service_1.uploadProfileImageService)(user_id, req.file);
+        response.response(res, true, http_status_codes_1.StatusCodes.OK, result, 'Profile image uploaded successfully');
+    }
+    catch (error) {
+        response.errorResponse(res, error.status || http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, false, error.message);
+    }
+});
+exports.uploadProfileImage = uploadProfileImage;

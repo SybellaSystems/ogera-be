@@ -14,6 +14,11 @@
             "date": 1769464800919,
             "name": "/home/pacific/Desktop/sybella_system/ogera-be/src/logs/api/api-2026-01-27.log",
             "hash": "5c4acf518a32efdd952008980aa6f36a7bbae0f89d6386294f53bc9037e3a55f"
+        },
+        {
+            "date": 1770918324719,
+            "name": "/home/pacific/Desktop/sybella_system/ogera-be/src/logs/api/api-2026-02-12.log",
+            "hash": "4149329d658e281d53199dfed18117dba4ebcbf7dfced581446fe2ffc101ec7e"
         }
     ],
     "hashType": "sha256"

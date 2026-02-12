@@ -49,6 +49,10 @@ function default_1(sequelize) {
             defaultValue: sequelize_1.Sequelize.literal("NOW()"),
             allowNull: false,
         },
+        completed_at: {
+            type: sequelize_1.DataTypes.DATE,
+            allowNull: true,
+        },
         reviewed_at: {
             type: sequelize_1.DataTypes.DATE,
             allowNull: true,

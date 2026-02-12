@@ -34,6 +34,14 @@ const userAccomplishment_model_1 = __importDefault(require("./models/userAccompl
 const userExtendedProfile_model_1 = __importDefault(require("./models/userExtendedProfile.model"));
 const course_model_1 = __importDefault(require("./models/course.model"));
 const courseStep_model_1 = __importDefault(require("./models/courseStep.model"));
+const courseProgress_model_1 = __importDefault(require("./models/courseProgress.model"));
+const activityLog_model_1 = __importDefault(require("./models/activityLog.model"));
+const transaction_model_1 = __importDefault(require("./models/transaction.model"));
+const interview_model_1 = __importDefault(require("./models/interview.model"));
+const dispute_model_1 = __importDefault(require("./models/dispute.model"));
+const disputeEvidence_model_1 = __importDefault(require("./models/disputeEvidence.model"));
+const disputeMessage_model_1 = __importDefault(require("./models/disputeMessage.model"));
+const disputeTimeline_model_1 = __importDefault(require("./models/disputeTimeline.model"));
 const index_1 = require("../association/index");
 const config_1 = require("../config");
 // Fix IPv6 timeout issues by forcing IPv4 DNS resolution
@@ -49,6 +57,26 @@ dns_1.default.lookup = function (hostname, options, callback) {
 };
 // Extract endpoint ID for Neon (everything before first dot)
 const endpointId = (config_1.DB_HOST === null || config_1.DB_HOST === void 0 ? void 0 : config_1.DB_HOST.split('.')[0]) || '';
+// Determine if SSL should be used
+// SSL is required for cloud databases (Neon, AWS RDS, etc.) but not for local databases
+const useSSL = process.env.DB_USE_SSL === 'true' ||
+    (config_1.DB_HOST && !config_1.DB_HOST.includes('localhost') && !config_1.DB_HOST.includes('127.0.0.1'));
+// Build dialect options conditionally
+const dialectOptions = {};
+if (useSSL) {
+    dialectOptions.ssl = {
+        require: true,
+        rejectUnauthorized: false,
+    };
+    // Add endpoint parameter for Neon SNI support
+    if (endpointId) {
+        dialectOptions.options = `endpoint=${endpointId}`;
+    }
+    logger_1.default.info('🔒 SSL enabled for database connection');
+}
+else {
+    logger_1.default.info('🔓 SSL disabled for local database connection');
+}
 const sequelize = new sequelize_1.default.Sequelize(config_1.DB_NAME, config_1.DB_USERNAME, config_1.DB_PASSWORD, {
     dialect: config_1.DB_DIALECT,
     host: config_1.DB_HOST,
@@ -63,12 +91,7 @@ const sequelize = new sequelize_1.default.Sequelize(config_1.DB_NAME, config_1.D
     pool: { min: 0, max: 5 },
     logging: (query, time) => logger_1.default.info(time + 'ms ' + query),
     benchmark: true,
-    dialectOptions: Object.assign({ ssl: {
-            require: true,
-            rejectUnauthorized: false,
-        } }, (endpointId && {
-        options: `endpoint=${endpointId}`,
-    })),
+    dialectOptions,
 });
 // Test DB connection with improved error handling
 sequelize
@@ -108,6 +131,75 @@ const UserAccomplishments = (0, userAccomplishment_model_1.default)(sequelize);
 const UserExtendedProfiles = (0, userExtendedProfile_model_1.default)(sequelize);
 const Courses = (0, course_model_1.default)(sequelize);
 const CourseSteps = (0, courseStep_model_1.default)(sequelize);
+const CourseProgress = (0, courseProgress_model_1.default)(sequelize);
+const ActivityLogs = (0, activityLog_model_1.default)(sequelize);
+const Transactions = (0, transaction_model_1.default)(sequelize);
+const Interviews = (0, interview_model_1.default)(sequelize);
+const Disputes = (0, dispute_model_1.default)(sequelize);
+const DisputeEvidence = (0, disputeEvidence_model_1.default)(sequelize);
+const DisputeMessages = (0, disputeMessage_model_1.default)(sequelize);
+const DisputeTimeline = (0, disputeTimeline_model_1.default)(sequelize);
+// Attach hooks to ensure key events are logged to activity_logs when created
+try {
+    if (Transactions && ActivityLogs) {
+        Transactions.afterCreate((tx) => __awaiter(void 0, void 0, void 0, function* () {
+            try {
+                yield ActivityLogs.create({
+                    user_id: tx.user_id || null,
+                    action: 'payment_completed',
+                    entity_type: 'Transaction',
+                    entity_id: tx.id,
+                    description: `Payment of ${tx.amount} ${tx.currency}`,
+                    created_at: tx.created_at || new Date(),
+                });
+            }
+            catch (e) {
+                logger_1.default.warn('Failed to write transaction activity log:', e);
+            }
+        }));
+    }
+    if (Interviews && ActivityLogs) {
+        Interviews.afterCreate((iv) => __awaiter(void 0, void 0, void 0, function* () {
+            try {
+                yield ActivityLogs.create({
+                    user_id: iv.student_id || null,
+                    action: 'interview_scheduled',
+                    entity_type: 'Interview',
+                    entity_id: iv.id,
+                    description: `Interview scheduled at ${iv.scheduled_at}`,
+                    created_at: iv.created_at || new Date(),
+                });
+            }
+            catch (e) {
+                logger_1.default.warn('Failed to write interview activity log:', e);
+            }
+        }));
+    }
+    {
+        // JobApplications model may not yet be exported to DB variable, attach via sequelize model name
+        const JobAppsModel = sequelize.models['job_applications'] || sequelize.models['JobApplications'];
+        if (JobAppsModel) {
+            JobAppsModel.afterCreate((app) => __awaiter(void 0, void 0, void 0, function* () {
+                try {
+                    yield ActivityLogs.create({
+                        user_id: app.student_id || null,
+                        action: 'job_application',
+                        entity_type: 'JobApplication',
+                        entity_id: app.application_id || app.id,
+                        description: `Applied to job ${app.job_id}`,
+                        created_at: app.applied_at || new Date(),
+                    });
+                }
+                catch (e) {
+                    logger_1.default.warn('Failed to write job application activity log:', e);
+                }
+            }));
+        }
+    }
+}
+catch (hookErr) {
+    logger_1.default.warn('Failed to attach model hooks for activity logging:', hookErr);
+}
 // Apply Associations
 (0, index_1.setupAssociations)();
 // Helper function to check and add missing columns safely
@@ -346,6 +438,17 @@ const ensureUserTableColumns = () => __awaiter(void 0, void 0, void 0, function*
         logger_1.default.info('Users table does not exist, will be created by sync');
         return;
     }
+    // Add legacy id column if missing (used by some parts of the codebase)
+    yield ensureColumnExists('users', 'id', {
+        type: sequelize_1.default.DataTypes.UUID,
+        allowNull: true, // keep nullable for existing rows; model will populate for new ones
+    });
+    // Add legacy name column if missing (used for backward‑compatibility)
+    yield ensureColumnExists('users', 'name', {
+        type: sequelize_1.default.DataTypes.STRING(255),
+        allowNull: true,
+        defaultValue: '',
+    });
     // Add role_id if missing
     yield ensureColumnExists('users', 'role_id', {
         type: sequelize_1.default.DataTypes.UUID,
@@ -605,6 +708,14 @@ exports.DB = {
     UserExtendedProfiles,
     Courses,
     CourseSteps,
+    CourseProgress,
+    ActivityLogs,
+    Transactions,
+    Interviews,
+    Disputes,
+    DisputeEvidence,
+    DisputeMessages,
+    DisputeTimeline,
     sequelize,
     Sequelize: sequelize_1.default,
 };

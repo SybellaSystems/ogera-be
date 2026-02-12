@@ -67,7 +67,7 @@ export interface CreateDisputeRequest {
     type: DisputeType;
     title: string;
     description: string;
-    evidence_files?: File[];
+    evidence_files?: Express.Multer.File[];
     priority?: DisputePriority;
 }
 

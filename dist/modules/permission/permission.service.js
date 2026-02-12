@@ -105,5 +105,15 @@ class PermissionService {
             return this.repo.deletePermission(id);
         });
     }
+    getPermissionByApiName(api_name) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const permission = yield this.repo.getPermissionByApiName(api_name);
+            if (!permission)
+                return null;
+            return Object.assign(Object.assign({}, permission.toJSON()), { permission: typeof permission.permission === 'string'
+                    ? JSON.parse(permission.permission)
+                    : permission.permission });
+        });
+    }
 }
 exports.PermissionService = PermissionService;

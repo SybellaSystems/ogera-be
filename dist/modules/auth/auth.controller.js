@@ -48,7 +48,15 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const { user, accessToken, refreshToken, two_fa_enabled } = yield (0, auth_service_1.loginUser)(req.body);
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
-            secure: false,
+            // secure: false,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+        // 2. The Hint Cookie (NOT httpOnly - so JS can read it) ⭐
+        res.cookie('isLoggedIn', 'true', {
+            httpOnly: false, // Accessible by frontend
+            secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
@@ -64,13 +72,15 @@ const refreshAccessToken = (req, res) => __awaiter(void 0, void 0, void 0, funct
     try {
         const refreshToken = req.cookies.refreshToken;
         if (!refreshToken) {
-            response.errorResponse(res, 401, false, 'Refresh token missing');
+            // response.errorResponse(res, 401, false, 'Refresh token missing');
+            response.errorResponse(res, http_status_codes_1.StatusCodes.UNAUTHORIZED, false, 'No session found');
             return;
         }
         const { newAccessToken, newRefreshToken } = yield (0, auth_service_1.refreshTokenService)(refreshToken);
         res.cookie('refreshToken', newRefreshToken, {
             httpOnly: true,
-            secure: false,
+            // secure: false,
+            secure: process.env.NODE_ENV === 'production', // Only true in production
             sameSite: 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
@@ -86,6 +96,7 @@ const logout = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         yield (0, auth_service_1.logoutUser)();
         res.clearCookie('refreshToken');
+        res.clearCookie('isLoggedIn'); // Clear the hint ⭐
         response.response(res, true, http_status_codes_1.StatusCodes.OK, {}, 'Logged out successfully');
     }
     catch (error) {

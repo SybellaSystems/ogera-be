@@ -183,6 +183,19 @@ const applyForJobService = (job_id, student_id, applicationData) => __awaiter(vo
             console.error('Failed to create notification:', error);
         }
     }
+    // Write activity log for application (audit)
+    try {
+        yield database_1.DB.ActivityLogs.create({
+            user_id: student_id || null,
+            action: 'job_application',
+            entity_type: 'JobApplication',
+            entity_id: application.application_id,
+            description: `Student ${student_id} applied to job ${job_id}`,
+        });
+    }
+    catch (e) {
+        // Swallow logging errors
+    }
     return normalizeApplicationResumeUrl(result);
 });
 exports.applyForJobService = applyForJobService;

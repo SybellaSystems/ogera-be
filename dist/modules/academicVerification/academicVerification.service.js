@@ -186,6 +186,19 @@ const reviewAcademicDocService = (id, data, admin_id) => __awaiter(void 0, void 
     if (!updated) {
         throw new custom_error_1.CustomError('Failed to retrieve updated verification', http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR);
     }
+    // Log activity: APPROVE or REJECT
+    try {
+        yield database_1.DB.ActivityLogs.create({
+            user_id: admin_id || null,
+            action: status === 'accepted' ? 'APPROVE' : 'REJECT',
+            entity_type: 'Verification',
+            entity_id: id,
+            description: `Verification ${status === 'accepted' ? 'approved' : 'rejected'} for user ${updated.user_id}`,
+        });
+    }
+    catch (e) {
+        // ignore logging errors
+    }
     return updated;
 });
 exports.reviewAcademicDocService = reviewAcademicDocService;

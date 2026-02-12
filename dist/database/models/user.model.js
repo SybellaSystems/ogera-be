@@ -13,6 +13,22 @@ function default_1(sequelize) {
             defaultValue: sequelize_1.DataTypes.UUIDV4,
             primaryKey: true,
         },
+        // Some DB setups have an `id` column (legacy). Ensure we populate it on create
+        id: {
+            type: sequelize_1.DataTypes.UUID,
+            allowNull: false,
+            defaultValue: sequelize_1.DataTypes.UUIDV4,
+            // keep as a regular column (not primaryKey) so existing code using `user_id` remains valid
+            field: 'id',
+        },
+        // Legacy `name` column: ensure it's populated to avoid NOT NULL constraint errors
+        name: {
+            type: sequelize_1.DataTypes.STRING(255),
+            allowNull: false,
+            defaultValue: '',
+            comment: 'Legacy name column (kept for compatibility with older DB schemas)',
+            field: 'name',
+        },
         email: {
             type: sequelize_1.DataTypes.STRING(255),
             allowNull: false,
@@ -73,6 +89,10 @@ function default_1(sequelize) {
             type: sequelize_1.DataTypes.STRING(255),
             allowNull: true,
             comment: 'Preferred work location for students',
+        },
+        profile_image_url: {
+            type: sequelize_1.DataTypes.STRING(500),
+            allowNull: true,
         },
         /* ⭐ LEGAL FIELDS */
         terms_accepted: {
@@ -141,6 +161,31 @@ function default_1(sequelize) {
         timestamps: true,
         createdAt: 'created_at',
         updatedAt: 'updated_at',
+        hooks: {
+            beforeCreate: (instance) => {
+                // Populate legacy `name` column from `full_name` if available
+                try {
+                    const fullName = instance.getDataValue('full_name') || instance.getDataValue('fullName') || instance.getDataValue('full_name');
+                    if (fullName) {
+                        instance.setDataValue('name', fullName);
+                    }
+                }
+                catch (e) {
+                    // swallow - defensive
+                }
+            },
+            beforeUpdate: (instance) => {
+                try {
+                    const fullName = instance.getDataValue('full_name') || instance.getDataValue('fullName');
+                    if (fullName) {
+                        instance.setDataValue('name', fullName);
+                    }
+                }
+                catch (e) {
+                    // swallow
+                }
+            },
+        },
     });
     return UserModel;
 }

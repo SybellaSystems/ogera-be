@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteCourse = exports.updateCourse = exports.getCourseById = exports.getAllCourses = exports.createCourse = void 0;
+exports.downloadCourseContent = exports.uploadCourseContent = exports.deleteCourse = exports.updateCourse = exports.getCourseById = exports.getAllCourses = exports.createCourse = void 0;
 const http_status_codes_1 = require("http-status-codes");
 const responseFormat_1 = require("../../exception/responseFormat");
 const messages_1 = require("../../utils/messages");
@@ -72,3 +72,51 @@ const deleteCourse = (req, res, next) => __awaiter(void 0, void 0, void 0, funct
     }
 });
 exports.deleteCourse = deleteCourse;
+const uploadCourseContent = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    try {
+        if (!req.user) {
+            response.errorResponse(res, http_status_codes_1.StatusCodes.UNAUTHORIZED, false, 'User not authenticated');
+            return;
+        }
+        const files = req.files;
+        const pdfFile = (_a = files === null || files === void 0 ? void 0 : files.pdf) === null || _a === void 0 ? void 0 : _a[0];
+        const imageFile = (_b = files === null || files === void 0 ? void 0 : files.image) === null || _b === void 0 ? void 0 : _b[0];
+        const file = pdfFile || imageFile;
+        if (!file) {
+            response.errorResponse(res, http_status_codes_1.StatusCodes.BAD_REQUEST, false, 'PDF or image file is required');
+            return;
+        }
+        const result = yield (0, course_service_1.uploadCourseContentService)(file);
+        response.response(res, true, http_status_codes_1.StatusCodes.CREATED, result, 'Course content uploaded successfully');
+    }
+    catch (error) {
+        response.errorResponse(res, error.status || http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, false, error.message);
+    }
+});
+exports.uploadCourseContent = uploadCourseContent;
+const downloadCourseContent = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        if (!req.user) {
+            response.errorResponse(res, http_status_codes_1.StatusCodes.UNAUTHORIZED, false, 'User not authenticated');
+            return;
+        }
+        const { path: filePath } = req.query;
+        if (!filePath || typeof filePath !== 'string') {
+            response.errorResponse(res, http_status_codes_1.StatusCodes.BAD_REQUEST, false, 'File path is required');
+            return;
+        }
+        const fileData = yield (0, course_service_1.downloadCourseContentService)(filePath);
+        // Set appropriate headers for file viewing/downloading
+        const decodedPath = decodeURIComponent(filePath);
+        const fileName = decodedPath.split('/').pop() || 'course-content.pdf';
+        res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+        res.setHeader('Content-Type', fileData.contentType);
+        // Send file
+        res.send(fileData.buffer);
+    }
+    catch (error) {
+        response.errorResponse(res, error.status || http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, false, error.message);
+    }
+});
+exports.downloadCourseContent = downloadCourseContent;
