@@ -6,10 +6,12 @@ import {
     registerUser,
     addUser,
     loginUser,
-    generate2FAUser,
+    setup2FAService,
+    verify2FAService,
+    disable2FAService,
+    verifyLogin2FAService,
     refreshTokenService,
     logoutUser,
-    verify2FAUser,
     forgotPasswordService,
     verifyResetOTPService,
     resetPasswordService,
@@ -93,8 +95,25 @@ export const addUserController = async (
 // -------------------- LOGIN --------------------
 export const login = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { user, accessToken, refreshToken, two_fa_enabled } =
-            await loginUser(req.body);
+        const result: any = await loginUser(req.body);
+
+        // If 2FA is enabled, require step-2 verification before issuing tokens/cookies
+        if (result?.requires2FA) {
+            response.response(
+                res,
+                true,
+                StatusCodes.OK,
+                {
+                    requires2FA: true,
+                    twoFactorToken: result.twoFactorToken,
+                    user: result.user,
+                },
+                '2FA verification required',
+            );
+            return;
+        }
+
+        const { user, accessToken, refreshToken } = result;
 
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
@@ -115,7 +134,145 @@ export const login = async (req: Request, res: Response): Promise<void> => {
             res,
             true,
             StatusCodes.OK,
-            { user, accessToken, two_fa_enabled },
+            { user, accessToken },
+            'User logged in successfully',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// -------------------- 2FA SETUP --------------------
+export const setup2FA = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = req.user?.user_id;
+        if (!userId) {
+            response.errorResponse(
+                res,
+                StatusCodes.UNAUTHORIZED,
+                false,
+                'User not authenticated',
+            );
+            return;
+        }
+
+        const data = await setup2FAService(userId);
+        response.response(res, true, StatusCodes.OK, data, '2FA setup successful');
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// -------------------- 2FA VERIFY (ENABLE) --------------------
+export const verify2FA = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = req.user?.user_id;
+        if (!userId) {
+            response.errorResponse(
+                res,
+                StatusCodes.UNAUTHORIZED,
+                false,
+                'User not authenticated',
+            );
+            return;
+        }
+
+        const { token } = req.body;
+        if (!token) {
+            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'Token is required');
+            return;
+        }
+
+        await verify2FAService(userId, token);
+        response.response(res, true, StatusCodes.OK, {}, '2FA enabled successfully');
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// -------------------- 2FA DISABLE --------------------
+export const disable2FA = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = req.user?.user_id;
+        if (!userId) {
+            response.errorResponse(
+                res,
+                StatusCodes.UNAUTHORIZED,
+                false,
+                'User not authenticated',
+            );
+            return;
+        }
+
+        const { password, token } = req.body;
+        if (!password) {
+            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'Password is required');
+            return;
+        }
+
+        await disable2FAService(userId, password, token);
+        response.response(res, true, StatusCodes.OK, {}, '2FA disabled successfully');
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// -------------------- 2FA VERIFY LOGIN (STEP 2) --------------------
+export const verifyLogin2FA = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { twoFactorToken, token } = req.body;
+        if (!twoFactorToken) {
+            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'twoFactorToken is required');
+            return;
+        }
+        if (!token) {
+            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'Token is required');
+            return;
+        }
+
+        const { user, accessToken, refreshToken } = await verifyLogin2FAService(
+            twoFactorToken,
+            token,
+        );
+
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+        res.cookie('isLoggedIn', 'true', {
+            httpOnly: false,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            { user, accessToken },
             'User logged in successfully',
         );
     } catch (error: any) {
@@ -184,54 +341,6 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
             StatusCodes.OK,
             {},
             'Logged out successfully',
-        );
-    } catch (error: any) {
-        response.errorResponse(
-            res,
-            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
-            false,
-            error.message,
-        );
-    }
-};
-
-// -------------------- 2FA SETUP --------------------
-export const setup2FA = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { user_id, email } = req.body;
-
-        const result = await generate2FAUser(user_id, email);
-
-        response.response(
-            res,
-            true,
-            StatusCodes.OK,
-            result,
-            '2FA setup successful',
-        );
-    } catch (error: any) {
-        response.errorResponse(
-            res,
-            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
-            false,
-            error.message,
-        );
-    }
-};
-
-// -------------------- 2FA VERIFY --------------------
-export const verify2FA = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { user_id, token } = req.body;
-
-        const result = await verify2FAUser(user_id, token);
-
-        response.response(
-            res,
-            true,
-            StatusCodes.OK,
-            result,
-            '2FA verified successfully',
         );
     } catch (error: any) {
         response.errorResponse(
@@ -1038,3 +1147,4 @@ export const verifyPhone = async (
         );
     }
 };
+

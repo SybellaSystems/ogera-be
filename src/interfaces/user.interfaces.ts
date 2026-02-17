@@ -32,6 +32,9 @@ export interface User {
     phone_verification_otp?: string | null;
     phone_verification_otp_expiry?: Date | null;
 
+    login_2fa_otp?: string | null;
+    login_2fa_otp_expiry?: Date | null;
+
     created_at: Date;
     updated_at: Date;
 }

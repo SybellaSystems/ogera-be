@@ -3,10 +3,12 @@ import {
     register,
     addUserController,
     login,
-    refreshAccessToken,
-    logout,
     setup2FA,
     verify2FA,
+    disable2FA,
+    verifyLogin2FA,
+    refreshAccessToken,
+    logout,
     forgotPassword,
     verifyResetOTP,
     resetPassword,
@@ -50,8 +52,11 @@ authRouter.get('/refresh', refreshAccessToken);
 // Optional: Add authMiddleware for secure logout (recommended)
 authRouter.post('/logout', authMiddleware, logout);
 
-authRouter.post('/2fa/setup', setup2FA);
-authRouter.post('/2fa/verify', verify2FA);
+// 2FA routes
+authRouter.post('/2fa/setup', authMiddleware, setup2FA);
+authRouter.post('/2fa/verify', authMiddleware, verify2FA);
+authRouter.post('/2fa/disable', authMiddleware, disable2FA);
+authRouter.post('/2fa/verify-login', verifyLogin2FA);
 
 authRouter.get('/me', authMiddleware, async (req, res) => {
     try {
