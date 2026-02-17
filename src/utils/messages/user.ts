@@ -11,13 +11,9 @@ export const UserMessages = {
         'The provided user ID is invalid. Please check and try again.',
     EMAIL_ALREADY_REGISTERED:
         'The provided email address is already registered. Please use a different email.',
-    TWO_FA_REQUIRED: 'Two-factor authentication is required for this action.',
-    TWO_FA_ENABLED: 'Two-factor authentication has been successfully enabled.',
     INVALID_OTP: 'Invalid OTP',
     LOGGED_IN: 'User logged in successfully.',
     LOGGED_OUT: 'User logged out successfully.',
-    TWO_FA_NOT_FOUND: '2FA secret not found',
-    TWO_FA_FAILED: 'Failed to generate otpauth URL for 2FA',
     FIELD: 'Please fill all input fields.',
     EMAIL_REQUIRED: 'Email is required.',
     OTP_SUCCESS: 'OTP sent to email successfully.',

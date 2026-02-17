@@ -3,10 +3,10 @@ import { hash, compareSync } from 'bcrypt';
 import { CustomError } from '@/utils/custom-error';
 import { StatusCodes } from 'http-status-codes';
 import { Messages } from '@/utils/messages';
-import { generate2FASecret, verifyOTP, enable2FA } from '@/utils/2fa';
 import { generateNumericOTP } from '@/utils/otp';
 import { sendMail } from '@/utils/mailer';
 import { sendOTPSMS } from '@/utils/sms';
+import { verifyCaptcha } from '@/utils/captcha';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { JWT_ACCESS_TOKEN_SECRET as JWT_SECRET, FRONTEND_URL } from '@/config';
 import {
@@ -242,6 +242,15 @@ export const addUser = async (data: any) => {
 
 // -------------------- LOGIN USER --------------------
 export const loginUser = async (body: any) => {
+    // Verify CAPTCHA token before processing login
+    if (body.captchaToken) {
+        await verifyCaptcha(body.captchaToken);
+    } else {
+        console.warn('⚠️ [LOGIN] No CAPTCHA token provided - consider requiring it');
+        // Optionally uncomment to require CAPTCHA:
+        // throw new CustomError('CAPTCHA verification is required', StatusCodes.BAD_REQUEST);
+    }
+
     const user = await repo.findUserByEmail(body.email);
     if (!user)
         throw new CustomError('Invalid credentials', StatusCodes.UNAUTHORIZED);
@@ -259,20 +268,6 @@ export const loginUser = async (body: any) => {
 
     const payload = { user_id: user.user_id, role: role.roleName };
 
-    // ---------- 2FA CHECK ----------
-    if (user.two_fa_enabled) {
-        if (!body.otp) {
-            throw new CustomError(
-                '2FA OTP Required',
-                StatusCodes.PARTIAL_CONTENT,
-            );
-        }
-
-        const otpValid = await verifyOTP(user.user_id, body.otp);
-        if (!otpValid)
-            throw new CustomError('Invalid 2FA OTP', StatusCodes.BAD_REQUEST);
-    }
-
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload); // stateless
 
@@ -280,7 +275,6 @@ export const loginUser = async (body: any) => {
         user,
         accessToken,
         refreshToken,
-        two_fa_enabled: user.two_fa_enabled,
     };
 };
 
@@ -307,25 +301,6 @@ export const refreshTokenService = async (refreshToken: string) => {
 export const logoutUser = async () => {
     // Stateless logout → clear cookie only
     return { message: 'Logged out successfully' };
-};
-
-// -------------------- 2FA SETUP --------------------
-export const generate2FAUser = async (user_id: string, email: string) => {
-    const user = await repo.findUserById(user_id);
-    if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
-
-    const { secret, qrCodeUrl } = await generate2FASecret(user_id, email);
-    return { secret, qrCodeUrl };
-};
-
-// -------------------- 2FA VERIFY --------------------
-export const verify2FAUser = async (user_id: string, token: string) => {
-    const valid = await verifyOTP(user_id, token);
-    if (!valid) throw new CustomError('Invalid OTP', StatusCodes.BAD_REQUEST);
-
-    await enable2FA(user_id);
-
-    return { success: true };
 };
 
 // -------------------- FORGOT PASSWORD --------------------

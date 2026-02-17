@@ -6,10 +6,8 @@ import {
     registerUser,
     addUser,
     loginUser,
-    generate2FAUser,
     refreshTokenService,
     logoutUser,
-    verify2FAUser,
     forgotPasswordService,
     verifyResetOTPService,
     resetPasswordService,
@@ -93,7 +91,7 @@ export const addUserController = async (
 // -------------------- LOGIN --------------------
 export const login = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { user, accessToken, refreshToken, two_fa_enabled } =
+        const { user, accessToken, refreshToken } =
             await loginUser(req.body);
 
         res.cookie('refreshToken', refreshToken, {
@@ -115,7 +113,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
             res,
             true,
             StatusCodes.OK,
-            { user, accessToken, two_fa_enabled },
+            { user, accessToken },
             'User logged in successfully',
         );
     } catch (error: any) {
@@ -184,54 +182,6 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
             StatusCodes.OK,
             {},
             'Logged out successfully',
-        );
-    } catch (error: any) {
-        response.errorResponse(
-            res,
-            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
-            false,
-            error.message,
-        );
-    }
-};
-
-// -------------------- 2FA SETUP --------------------
-export const setup2FA = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { user_id, email } = req.body;
-
-        const result = await generate2FAUser(user_id, email);
-
-        response.response(
-            res,
-            true,
-            StatusCodes.OK,
-            result,
-            '2FA setup successful',
-        );
-    } catch (error: any) {
-        response.errorResponse(
-            res,
-            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
-            false,
-            error.message,
-        );
-    }
-};
-
-// -------------------- 2FA VERIFY --------------------
-export const verify2FA = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { user_id, token } = req.body;
-
-        const result = await verify2FAUser(user_id, token);
-
-        response.response(
-            res,
-            true,
-            StatusCodes.OK,
-            result,
-            '2FA verified successfully',
         );
     } catch (error: any) {
         response.errorResponse(
@@ -1038,3 +988,4 @@ export const verifyPhone = async (
         );
     }
 };
+

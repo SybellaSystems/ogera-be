@@ -5,8 +5,6 @@ import {
     login,
     refreshAccessToken,
     logout,
-    setup2FA,
-    verify2FA,
     forgotPassword,
     verifyResetOTP,
     resetPassword,
@@ -49,9 +47,6 @@ authRouter.post('/login', login);
 authRouter.get('/refresh', refreshAccessToken);
 // Optional: Add authMiddleware for secure logout (recommended)
 authRouter.post('/logout', authMiddleware, logout);
-
-authRouter.post('/2fa/setup', setup2FA);
-authRouter.post('/2fa/verify', verify2FA);
 
 authRouter.get('/me', authMiddleware, async (req, res) => {
     try {

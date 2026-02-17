@@ -645,6 +645,18 @@ const ensureUserTableColumns = async () => {
         allowNull: true,
     });
 
+    // Add login_2fa_otp if missing
+    await ensureColumnExists('users', 'login_2fa_otp', {
+        type: Sequelize.DataTypes.STRING(10),
+        allowNull: true,
+    });
+
+    // Add login_2fa_otp_expiry if missing
+    await ensureColumnExists('users', 'login_2fa_otp_expiry', {
+        type: Sequelize.DataTypes.DATE,
+        allowNull: true,
+    });
+
     // Handle role_type column - rename from 'role' if it exists, or add if missing
     try {
         const tableDescription = await queryInterface.describeTable('users');
