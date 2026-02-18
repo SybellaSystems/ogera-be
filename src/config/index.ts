@@ -29,6 +29,8 @@ export const {
     AWS_S3_BUCKET_NAME,
 } = process.env;
 
+export const S3_ENDPOINT = process.env.S3_ENDPOINT;
+
 // Storage configuration
 export const STORAGE_CONFIG = {
     useLocalStorage: USE_LOCAL_STORAGE === 'true',
@@ -38,6 +40,7 @@ export const STORAGE_CONFIG = {
         secretAccessKey: AWS_SECRET_ACCESS_KEY,
         region: AWS_REGION || 'us-east-1',
         bucketName: AWS_S3_BUCKET_NAME,
+        endpoint: S3_ENDPOINT,
     },
 };
 

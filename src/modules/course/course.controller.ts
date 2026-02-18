@@ -14,6 +14,8 @@ import {
     completeCourseService,
     getEnrollmentsPendingReviewService,
     updateCertificateStatusService,
+    uploadCourseVideoService,
+    streamCourseVideoService,
 } from './course.service';
 
 const response = new ResponseFormat();
@@ -318,6 +320,77 @@ export const getEnrollmentsPendingReview = async (
             enrollments,
             'Pending reviews fetched',
         );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+const parseRangeHeader = (
+    rangeHeader: string | undefined,
+    totalLength: number,
+): { start: number; end: number } | null => {
+    if (!rangeHeader?.startsWith('bytes=')) return null;
+    const parts = rangeHeader.slice(6).split('-');
+    const start = parseInt(parts[0] || '0', 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : totalLength - 1;
+    if (isNaN(start) || start < 0 || end >= totalLength) return null;
+    return { start: Math.min(start, totalLength - 1), end: Math.min(end, totalLength - 1) };
+};
+
+export const uploadCourseVideo = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const file = (req as any).file;
+        if (!file) {
+            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'No video file provided');
+            return;
+        }
+        const result = await uploadCourseVideoService(file);
+        response.response(res, true, StatusCodes.OK, result, 'Video uploaded successfully');
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+export const streamCourseVideo = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const pathParam = req.query.path as string;
+        if (!pathParam) {
+            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'Path parameter required');
+            return;
+        }
+        const result = await streamCourseVideoService(pathParam);
+        if (!result) {
+            response.errorResponse(res, StatusCodes.NOT_FOUND, false, 'Video not found');
+            return;
+        }
+        const { buffer, mimeType, fileName } = result;
+        const totalLength = buffer.length;
+        res.setHeader('Content-Type', mimeType);
+        res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+        res.setHeader('Accept-Ranges', 'bytes');
+        const range = parseRangeHeader(req.headers.range as string | undefined, totalLength);
+        if (range) {
+            const { start, end } = range;
+            const chunk = buffer.subarray(start, end + 1);
+            res.setHeader('Content-Range', `bytes ${start}-${end}/${totalLength}`);
+            res.setHeader('Content-Length', String(chunk.length));
+            res.status(206);
+            res.send(chunk);
+        } else {
+            res.setHeader('Content-Length', String(totalLength));
+            res.status(200);
+            res.send(buffer);
+        }
     } catch (error: any) {
         response.errorResponse(
             res,

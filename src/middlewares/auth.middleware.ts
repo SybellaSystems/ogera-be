@@ -40,3 +40,33 @@ export const authMiddleware = (
     throw new CustomError("Invalid or expired access token", 401);
   }
 };
+
+export const authMiddlewareOrQueryToken = (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) => {
+  let token: string | undefined;
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith("Bearer ")) {
+    token = authHeader.split(" ")[1];
+  } else if (typeof req.query.token === "string") {
+    token = req.query.token;
+  }
+  if (!token) {
+    throw new CustomError("Access denied. No token provided", 401);
+  }
+  try {
+    const decoded = verifyAccessToken(token);
+    if (!decoded.user_id || !decoded.role) {
+      throw new CustomError("Invalid token payload", 401);
+    }
+    req.user = {
+      user_id: decoded.user_id as string,
+      role: decoded.role as string,
+    };
+    next();
+  } catch (err) {
+    throw new CustomError("Invalid or expired access token", 401);
+  }
+};

@@ -1,4 +1,5 @@
 import express from 'express';
+import multer from 'multer';
 import {
     createCourse,
     getAllCourses,
@@ -11,8 +12,13 @@ import {
     completeCourse,
     getEnrollmentsPendingReview,
     updateCertificateStatus,
+    uploadCourseVideo,
+    streamCourseVideo,
 } from './course.controller';
-import { authMiddleware } from '@/middlewares/auth.middleware';
+import {
+    authMiddleware,
+    authMiddlewareOrQueryToken,
+} from '@/middlewares/auth.middleware';
 import {
     PermissionChecker,
     courseAdminOrSuperadminOnly,
@@ -20,8 +26,27 @@ import {
 
 const courseRouter = express.Router();
 
-// Must be before /:id so "my-enrollments" and "enrollments" are not parsed as id
+const videoUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 500 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+        const allowed = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'];
+        if (allowed.includes(file.mimetype)) cb(null, true);
+        else cb(new Error('Only MP4, WebM, OGG, MOV videos are allowed'));
+    },
+});
+
 courseRouter.get('/my-enrollments', authMiddleware, getMyEnrollments);
+
+courseRouter.post(
+    '/upload-video',
+    authMiddleware,
+    courseAdminOrSuperadminOnly,
+    videoUpload.single('video'),
+    uploadCourseVideo,
+);
+
+courseRouter.get('/videos/stream', authMiddlewareOrQueryToken, streamCourseVideo);
 
 courseRouter.get(
     '/enrollments/pending-review',

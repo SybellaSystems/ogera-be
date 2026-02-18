@@ -13,6 +13,10 @@ const s3Client =
     STORAGE_CONFIG.s3.accessKeyId && STORAGE_CONFIG.s3.secretAccessKey
         ? new S3Client({
               region: STORAGE_CONFIG.s3.region,
+              ...(STORAGE_CONFIG.s3.endpoint && {
+                  endpoint: STORAGE_CONFIG.s3.endpoint,
+              }),
+              forcePathStyle: false,
               credentials: {
                   accessKeyId: STORAGE_CONFIG.s3.accessKeyId,
                   secretAccessKey: STORAGE_CONFIG.s3.secretAccessKey,
