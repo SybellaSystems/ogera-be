@@ -44,7 +44,8 @@ const upload = multer({
 jobApplicationRouter.post(
     '/upload-resume',
     authMiddleware,
-    PermissionChecker('/job-applications', 'create'),
+    // Job applications live under the Jobs module in the UI/permissions
+    PermissionChecker('/jobs', 'view'),
     upload.single('resume'),
     uploadResume,
 );
@@ -53,7 +54,7 @@ jobApplicationRouter.post(
 jobApplicationRouter.get(
     '/resumes/download',
     authMiddleware,
-    PermissionChecker('/job-applications', 'view'),
+    PermissionChecker('/jobs', 'view'),
     downloadResume,
 );
 
@@ -61,7 +62,7 @@ jobApplicationRouter.get(
 jobApplicationRouter.get(
     '/jobs/:job_id/check-application',
     authMiddleware,
-    PermissionChecker('/job-applications', 'view'),
+    PermissionChecker('/jobs', 'view'),
     checkStudentApplication,
 );
 
@@ -69,7 +70,7 @@ jobApplicationRouter.get(
 jobApplicationRouter.post(
     '/jobs/:job_id/apply',
     authMiddleware,
-    PermissionChecker('/job-applications', 'create'),
+    PermissionChecker('/jobs', 'view'),
     applyForJob,
 );
 
@@ -77,7 +78,7 @@ jobApplicationRouter.post(
 jobApplicationRouter.get(
     '/jobs/:job_id/applications',
     authMiddleware,
-    PermissionChecker('/job-applications', 'view'),
+    PermissionChecker('/jobs', 'view'),
     getJobApplications,
 );
 
@@ -85,7 +86,7 @@ jobApplicationRouter.get(
 jobApplicationRouter.get(
     '/employer/applications',
     authMiddleware,
-    PermissionChecker('/job-applications', 'view'),
+    PermissionChecker('/jobs', 'view'),
     getEmployerApplications,
 );
 
@@ -93,7 +94,7 @@ jobApplicationRouter.get(
 jobApplicationRouter.get(
     '/student/applications',
     authMiddleware,
-    PermissionChecker('/job-applications', 'view'),
+    PermissionChecker('/jobs', 'view'),
     getStudentApplications,
 );
 
@@ -101,7 +102,7 @@ jobApplicationRouter.get(
 jobApplicationRouter.get(
     '/applications/:application_id',
     authMiddleware,
-    PermissionChecker('/job-applications', 'view'),
+    PermissionChecker('/jobs', 'view'),
     getApplicationById,
 );
 
@@ -109,7 +110,7 @@ jobApplicationRouter.get(
 jobApplicationRouter.patch(
     '/applications/:application_id/status',
     authMiddleware,
-    PermissionChecker('/job-applications', 'edit'),
+    PermissionChecker('/jobs', 'edit'),
     updateApplicationStatus,
 );
 
