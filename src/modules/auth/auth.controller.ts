@@ -30,6 +30,10 @@ import {
     updateSubAdminService,
     deleteSubAdminService,
     deleteUserService,
+    sendLostAuthenticatorOTPService,
+    verifyLostAuthenticatorOTPAndDisable2FAService,
+    setup2FAWithTokenService,
+    verify2FAWithTokenService,
 } from './auth.service';
 
 const response = new ResponseFormat();
@@ -227,6 +231,167 @@ export const disable2FA = async (req: Request, res: Response): Promise<void> => 
 
         await disable2FAService(userId, password, token);
         response.response(res, true, StatusCodes.OK, {}, '2FA disabled successfully');
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// -------------------- LOST AUTHENTICATOR: SEND EMAIL OTP --------------------
+export const sendLostAuthenticatorOTP = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'Email is required',
+            );
+            return;
+        }
+
+        const result = await sendLostAuthenticatorOTPService(email);
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            result,
+            'OTP sent to your email',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// -------------------- LOST AUTHENTICATOR: VERIFY EMAIL OTP AND DISABLE 2FA --------------------
+export const verifyLostAuthenticatorOTPAndDisable2FA = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const { otp, recoveryToken } = req.body;
+        if (!otp) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'OTP is required',
+            );
+            return;
+        }
+        if (!recoveryToken) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'Recovery token is required',
+            );
+            return;
+        }
+
+        const result = await verifyLostAuthenticatorOTPAndDisable2FAService(
+            otp,
+            recoveryToken,
+        );
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            result,
+            '2FA disabled successfully. Please setup new 2FA.',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// -------------------- LOST AUTHENTICATOR: SETUP 2FA WITH TOKEN --------------------
+export const setup2FAWithToken = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const { setupToken } = req.body;
+        if (!setupToken) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'Setup token is required',
+            );
+            return;
+        }
+
+        const result = await setup2FAWithTokenService(setupToken);
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            result,
+            '2FA setup successful',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// -------------------- LOST AUTHENTICATOR: VERIFY 2FA WITH TOKEN --------------------
+export const verify2FAWithToken = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const { setupToken, token } = req.body;
+        if (!setupToken) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'Setup token is required',
+            );
+            return;
+        }
+        if (!token) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                '2FA token is required',
+            );
+            return;
+        }
+
+        const result = await verify2FAWithTokenService(setupToken, token);
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            result,
+            '2FA verified and enabled successfully',
+        );
     } catch (error: any) {
         response.errorResponse(
             res,
