@@ -164,6 +164,23 @@ const repo = {
         });
     },
 
+    findCompletedEnrollmentsByUser: async (user_id: string) => {
+        return await DB.CourseEnrollments.findAll({
+            where: {
+                user_id,
+                completed_at: { [Op.not]: null } as any,
+            },
+            include: [
+                {
+                    model: DB.Courses,
+                    as: 'course',
+                    attributes: ['course_id', 'course_name', 'category', 'estimated_hours'],
+                },
+            ],
+            order: [['completed_at', 'DESC']],
+        });
+    },
+
     findEnrollmentsPendingReview: async () => {
         return await DB.CourseEnrollments.findAll({
             where: {

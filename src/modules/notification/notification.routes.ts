@@ -5,6 +5,8 @@ import {
   markNotificationAsRead,
   markAllNotificationsAsRead,
   deleteNotification,
+  getUnreadCourseChatCount,
+  markCourseChatAsRead,
 } from './notification.controller';
 import { authMiddleware } from '@/middlewares/auth.middleware';
 import { PermissionChecker } from '@/middlewares/role.middleware';
@@ -25,6 +27,20 @@ notificationRouter.get(
   authMiddleware,
   PermissionChecker('/notifications', 'view'),
   getUnreadNotificationCount
+);
+
+// Unread count for course support chat (optional course_id for badge)
+notificationRouter.get(
+  '/unread/course-chat',
+  authMiddleware,
+  getUnreadCourseChatCount
+);
+
+// Mark course support chat as read when user opens the panel
+notificationRouter.patch(
+  '/read-course-chat',
+  authMiddleware,
+  markCourseChatAsRead
 );
 
 // Mark notification as read

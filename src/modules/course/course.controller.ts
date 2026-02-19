@@ -12,10 +12,12 @@ import {
     getMyEnrollmentsService,
     getEnrollmentService,
     completeCourseService,
+    getStudentCompletedCoursesService,
     getEnrollmentsPendingReviewService,
     updateCertificateStatusService,
     uploadCourseVideoService,
     streamCourseVideoService,
+    getCourseChatHistoryService,
 } from './course.service';
 
 const response = new ResponseFormat();
@@ -307,6 +309,30 @@ export const completeCourse = async (
     }
 };
 
+export const getStudentCompletedCourses = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const { user_id } = req.params;
+        const courses = await getStudentCompletedCoursesService(user_id as string);
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            courses,
+            'Completed courses fetched',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
 export const getEnrollmentsPendingReview = async (
     req: Request,
     res: Response,
@@ -330,27 +356,31 @@ export const getEnrollmentsPendingReview = async (
     }
 };
 
-const parseRangeHeader = (
-    rangeHeader: string | undefined,
-    totalLength: number,
-): { start: number; end: number } | null => {
-    if (!rangeHeader?.startsWith('bytes=')) return null;
-    const parts = rangeHeader.slice(6).split('-');
-    const start = parseInt(parts[0] || '0', 10);
-    const end = parts[1] ? parseInt(parts[1], 10) : totalLength - 1;
-    if (isNaN(start) || start < 0 || end >= totalLength) return null;
-    return { start: Math.min(start, totalLength - 1), end: Math.min(end, totalLength - 1) };
-};
+// ---------- Video upload & stream ----------
 
-export const uploadCourseVideo = async (req: Request, res: Response): Promise<void> => {
+export const uploadCourseVideo = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
         const file = (req as any).file;
         if (!file) {
-            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'No video file provided');
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'No video file provided',
+            );
             return;
         }
         const result = await uploadCourseVideoService(file);
-        response.response(res, true, StatusCodes.OK, result, 'Video uploaded successfully');
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            result,
+            'Video uploaded successfully',
+        );
     } catch (error: any) {
         response.errorResponse(
             res,
@@ -361,36 +391,38 @@ export const uploadCourseVideo = async (req: Request, res: Response): Promise<vo
     }
 };
 
-export const streamCourseVideo = async (req: Request, res: Response): Promise<void> => {
+export const streamCourseVideo = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
-        const pathParam = req.query.path as string;
-        if (!pathParam) {
-            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'Path parameter required');
+        const path = req.query.path as string;
+        if (!path) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'Path parameter required',
+            );
             return;
         }
-        const result = await streamCourseVideoService(pathParam);
+        const result = await streamCourseVideoService(path);
         if (!result) {
-            response.errorResponse(res, StatusCodes.NOT_FOUND, false, 'Video not found');
+            response.errorResponse(
+                res,
+                StatusCodes.NOT_FOUND,
+                false,
+                'Video not found',
+            );
             return;
         }
-        const { buffer, mimeType, fileName } = result;
-        const totalLength = buffer.length;
-        res.setHeader('Content-Type', mimeType);
-        res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+        res.setHeader('Content-Type', result.mimeType);
+        res.setHeader(
+            'Content-Disposition',
+            `inline; filename="${result.fileName}"`,
+        );
         res.setHeader('Accept-Ranges', 'bytes');
-        const range = parseRangeHeader(req.headers.range as string | undefined, totalLength);
-        if (range) {
-            const { start, end } = range;
-            const chunk = buffer.subarray(start, end + 1);
-            res.setHeader('Content-Range', `bytes ${start}-${end}/${totalLength}`);
-            res.setHeader('Content-Length', String(chunk.length));
-            res.status(206);
-            res.send(chunk);
-        } else {
-            res.setHeader('Content-Length', String(totalLength));
-            res.status(200);
-            res.send(buffer);
-        }
+        res.send(result.buffer);
     } catch (error: any) {
         response.errorResponse(
             res,
@@ -428,6 +460,45 @@ export const updateCertificateStatus = async (
             StatusCodes.OK,
             enrollment,
             'Certificate status updated',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+export const getCourseChatHistory = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const user_id = (req as any).user?.user_id;
+        const role = (req as any).user?.role;
+        if (!user_id) {
+            response.errorResponse(
+                res,
+                StatusCodes.UNAUTHORIZED,
+                false,
+                'User not authenticated',
+            );
+            return;
+        }
+        const { id: course_id } = req.params;
+        const messages = await getCourseChatHistoryService(
+            course_id as string,
+            user_id,
+            role as string,
+        );
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            messages,
+            'Chat history fetched',
         );
     } catch (error: any) {
         response.errorResponse(

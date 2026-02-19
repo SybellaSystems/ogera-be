@@ -15,6 +15,7 @@ import { UserExtendedProfileModel } from '@/database/models/userExtendedProfile.
 import { CourseModel } from '@/database/models/course.model';
 import { CourseStepModel } from '@/database/models/courseStep.model';
 import { CourseEnrollmentModel } from '@/database/models/courseEnrollment.model';
+import { CourseChatMessageModel } from '@/database/models/courseChatMessage.model';
 
 export const setupAssociations = () => {
     // ====================== USER ↔ ROLE ======================
@@ -314,6 +315,35 @@ export const setupAssociations = () => {
     CourseEnrollmentModel.belongsTo(CourseModel, {
         foreignKey: 'course_id',
         as: 'course',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // ====================== COURSE CHAT MESSAGES ======================
+    CourseModel.hasMany(CourseChatMessageModel, {
+        foreignKey: 'course_id',
+        as: 'chatMessages',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    CourseChatMessageModel.belongsTo(CourseModel, {
+        foreignKey: 'course_id',
+        as: 'course',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    UserModel.hasMany(CourseChatMessageModel, {
+        foreignKey: 'user_id',
+        as: 'courseChatMessages',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    CourseChatMessageModel.belongsTo(UserModel, {
+        foreignKey: 'user_id',
+        as: 'user',
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
     });

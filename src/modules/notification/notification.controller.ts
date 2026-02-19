@@ -7,6 +7,8 @@ import {
   markNotificationAsReadService,
   markAllNotificationsAsReadService,
   deleteNotificationService,
+  getUnreadCourseChatCountService,
+  markCourseChatAsReadService,
 } from './notification.service';
 
 const response = new ResponseFormat();
@@ -199,6 +201,94 @@ export const deleteNotification = async (
       StatusCodes.OK,
       result,
       'Notification deleted successfully'
+    );
+  } catch (error: any) {
+    response.errorResponse(
+      res,
+      error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+      false,
+      error.message
+    );
+  }
+};
+
+// Unread count for course support chat (for badge on Course Support button)
+export const getUnreadCourseChatCount = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      response.errorResponse(
+        res,
+        StatusCodes.UNAUTHORIZED,
+        false,
+        'User not authenticated'
+      );
+      return;
+    }
+    const course_id = req.query.course_id as string;
+    if (!course_id) {
+      response.errorResponse(
+        res,
+        StatusCodes.BAD_REQUEST,
+        false,
+        'course_id query required'
+      );
+      return;
+    }
+    const result = await getUnreadCourseChatCountService(req.user.user_id, course_id);
+    response.response(
+      res,
+      true,
+      StatusCodes.OK,
+      result,
+      'Unread course chat count'
+    );
+  } catch (error: any) {
+    response.errorResponse(
+      res,
+      error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+      false,
+      error.message
+    );
+  }
+};
+
+// Mark course support chat notifications as read (when user opens the chat panel)
+export const markCourseChatAsRead = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      response.errorResponse(
+        res,
+        StatusCodes.UNAUTHORIZED,
+        false,
+        'User not authenticated'
+      );
+      return;
+    }
+    const course_id = (req.query.course_id || req.body?.course_id) as string;
+    if (!course_id) {
+      response.errorResponse(
+        res,
+        StatusCodes.BAD_REQUEST,
+        false,
+        'course_id required'
+      );
+      return;
+    }
+    const result = await markCourseChatAsReadService(req.user.user_id, course_id);
+    response.response(
+      res,
+      true,
+      StatusCodes.OK,
+      result,
+      'Course chat marked as read'
     );
   } catch (error: any) {
     response.errorResponse(

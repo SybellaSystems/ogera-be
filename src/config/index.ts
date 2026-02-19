@@ -21,6 +21,8 @@ export const {
     DB_DIALECT,
 } = process.env;
 
+export const DB_SSL = process.env.DB_SSL === 'true';
+
 export const {
     USE_LOCAL_STORAGE,
     AWS_ACCESS_KEY_ID,
@@ -48,15 +50,22 @@ export const STORAGE_CONFIG = {
 export const EMAIL_CONFIG = {
     // SMTP Configuration
     smtp: {
-        host: process.env.SMTP_HOST || process.env.EMAIL_HOST || 'smtp.gmail.com',
-        port: parseInt(process.env.SMTP_PORT || process.env.EMAIL_PORT || '587', 10),
-        secure: process.env.SMTP_SECURE === 'true' || process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
+        host:
+            process.env.SMTP_HOST || process.env.EMAIL_HOST || 'smtp.gmail.com',
+        port: parseInt(
+            process.env.SMTP_PORT || process.env.EMAIL_PORT || '587',
+            10,
+        ),
+        secure:
+            process.env.SMTP_SECURE === 'true' ||
+            process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
         auth: {
             user: process.env.SMTP_USER || process.env.EMAIL_USER || '',
             pass: process.env.SMTP_PASS || process.env.EMAIL_PASS || '',
         },
         // Optional: Service name (gmail, outlook, etc.) - if provided, nodemailer will use default settings
-        service: process.env.SMTP_SERVICE || process.env.EMAIL_SERVICE || undefined,
+        service:
+            process.env.SMTP_SERVICE || process.env.EMAIL_SERVICE || undefined,
     },
     // Email sender information
     from: {
@@ -69,7 +78,10 @@ export const EMAIL_CONFIG = {
 
 // SMS Configuration
 export const SMS_CONFIG = {
-    provider: (process.env.SMS_PROVIDER || 'console') as 'twilio' | 'console' | 'none',
+    provider: (process.env.SMS_PROVIDER || 'console') as
+        | 'twilio'
+        | 'console'
+        | 'none',
     twilio: {
         accountSid: process.env.TWILIO_ACCOUNT_SID || '',
         authToken: process.env.TWILIO_AUTH_TOKEN || '',

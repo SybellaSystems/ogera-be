@@ -14,6 +14,8 @@ import {
     updateCertificateStatus,
     uploadCourseVideo,
     streamCourseVideo,
+    getStudentCompletedCourses,
+    getCourseChatHistory,
 } from './course.controller';
 import {
     authMiddleware,
@@ -30,13 +32,24 @@ const videoUpload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 500 * 1024 * 1024 },
     fileFilter: (_req, file, cb) => {
-        const allowed = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'];
+        const allowed = [
+            'video/mp4',
+            'video/webm',
+            'video/ogg',
+            'video/quicktime',
+        ];
         if (allowed.includes(file.mimetype)) cb(null, true);
         else cb(new Error('Only MP4, WebM, OGG, MOV videos are allowed'));
     },
 });
 
 courseRouter.get('/my-enrollments', authMiddleware, getMyEnrollments);
+
+courseRouter.get(
+    '/student/:user_id/completed',
+    authMiddleware,
+    getStudentCompletedCourses,
+);
 
 courseRouter.post(
     '/upload-video',
@@ -46,7 +59,11 @@ courseRouter.post(
     uploadCourseVideo,
 );
 
-courseRouter.get('/videos/stream', authMiddlewareOrQueryToken, streamCourseVideo);
+courseRouter.get(
+    '/videos/stream',
+    authMiddlewareOrQueryToken,
+    streamCourseVideo,
+);
 
 courseRouter.get(
     '/enrollments/pending-review',
@@ -81,6 +98,8 @@ courseRouter.get(
 courseRouter.post('/:id/enroll', authMiddleware, enrollCourse);
 
 courseRouter.get('/:id/enrollment', authMiddleware, getEnrollment);
+
+courseRouter.get('/:id/chat', authMiddleware, getCourseChatHistory);
 
 courseRouter.post('/:id/complete', authMiddleware, completeCourse);
 

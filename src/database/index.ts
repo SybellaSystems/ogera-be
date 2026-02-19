@@ -21,6 +21,7 @@ import userExtendedProfileModel from './models/userExtendedProfile.model';
 import courseModel from './models/course.model';
 import courseStepModel from './models/courseStep.model';
 import courseEnrollmentModel from './models/courseEnrollment.model';
+import courseChatMessageModel from './models/courseChatMessage.model';
 import { setupAssociations } from '@/association/index';
 
 import {
@@ -61,7 +62,8 @@ const sequelize = new Sequelize.Sequelize(DB_NAME!, DB_USERNAME!, DB_PASSWORD, {
         freezeTableName: true,
     },
     pool: { min: 0, max: 5 },
-    logging: (query, time) => logger.info(time + 'ms ' + query),
+    // Disable per-query logging to avoid terminal flood (e.g. from repeated enrollment checks)
+    logging: process.env.LOG_SQL === 'true' ? (query: string, time: number) => logger.info(time + 'ms ' + query) : false,
     benchmark: true,
     dialectOptions: {
         // Only use SSL when DB_SSL=true (e.g. Neon). Local PostgreSQL often does not support SSL.
@@ -120,6 +122,7 @@ const UserExtendedProfiles = userExtendedProfileModel(sequelize);
 const Courses = courseModel(sequelize);
 const CourseSteps = courseStepModel(sequelize);
 const CourseEnrollments = courseEnrollmentModel(sequelize);
+const CourseChatMessages = courseChatMessageModel(sequelize);
 
 // Apply Associations
 setupAssociations();
@@ -597,6 +600,13 @@ const ensureUserTableColumns = async () => {
         allowNull: true,
     });
 
+    // SRS: User balance - loaded from employer payments, used for courses/platform services
+    await ensureColumnExists('users', 'balance', {
+        type: Sequelize.DataTypes.DECIMAL(14, 2),
+        allowNull: true,
+        defaultValue: 0,
+    });
+
     // Handle role_type column - rename from 'role' if it exists, or add if missing
     try {
         const tableDescription = await queryInterface.describeTable('users');
@@ -833,6 +843,7 @@ export const DB = {
     Courses,
     CourseSteps,
     CourseEnrollments,
+    CourseChatMessages,
     sequelize,
     Sequelize,
 };

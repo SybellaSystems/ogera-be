@@ -83,3 +83,13 @@ export interface CourseEnrollment {
     created_at: Date;
     updated_at: Date;
 }
+
+/** Real-time course chat: student ↔ employer/superadmin. */
+export interface CourseChatMessage {
+    message_id: string;
+    course_id: string;
+    user_id: string;
+    role: string;
+    content: string;
+    created_at: Date;
+}
