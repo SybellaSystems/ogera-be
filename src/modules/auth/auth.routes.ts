@@ -7,6 +7,10 @@ import {
     verify2FA,
     disable2FA,
     verifyLogin2FA,
+    sendLostAuthenticatorOTP,
+    verifyLostAuthenticatorOTPAndDisable2FA,
+    setup2FAWithToken,
+    verify2FAWithToken,
     refreshAccessToken,
     logout,
     forgotPassword,
@@ -57,6 +61,11 @@ authRouter.post('/2fa/setup', authMiddleware, setup2FA);
 authRouter.post('/2fa/verify', authMiddleware, verify2FA);
 authRouter.post('/2fa/disable', authMiddleware, disable2FA);
 authRouter.post('/2fa/verify-login', verifyLogin2FA);
+// Lost authenticator routes
+authRouter.post('/2fa/lost-authenticator/send-otp', sendLostAuthenticatorOTP);
+authRouter.post('/2fa/lost-authenticator/verify-and-disable', verifyLostAuthenticatorOTPAndDisable2FA);
+authRouter.post('/2fa/lost-authenticator/setup', setup2FAWithToken);
+authRouter.post('/2fa/lost-authenticator/verify', verify2FAWithToken);
 
 authRouter.get('/me', authMiddleware, async (req, res) => {
     try {

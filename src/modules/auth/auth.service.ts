@@ -365,6 +365,94 @@ export const setup2FAService = async (user_id: string) => {
     };
 };
 
+// -------------------- 2FA SETUP WITH TOKEN (FOR LOST AUTHENTICATOR) --------------------
+export const setup2FAWithTokenService = async (setupToken: string) => {
+    const decoded = jwt.verify(
+        setupToken,
+        JWT_SECRET as string,
+    ) as JwtPayload & { user_id?: string; email?: string; type?: string };
+
+    if (decoded.type !== 'lost_authenticator_setup' || !decoded.user_id) {
+        throw new CustomError('Invalid setup token', StatusCodes.BAD_REQUEST);
+    }
+
+    const user = await repo.findUserById(decoded.user_id);
+    if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+
+    // Check if 2FA is already enabled (shouldn't be after recovery, but check anyway)
+    if (user.two_fa_enabled && user.two_fa_secret) {
+        throw new CustomError(
+            '2FA is already enabled for this account',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+
+    const secret = speakeasy.generateSecret({
+        name: `Ogera (${user.email})`,
+        issuer: 'Ogera',
+    });
+
+    if (!secret.base32 || !secret.otpauth_url) {
+        throw new CustomError(
+            'Failed to generate 2FA secret',
+            StatusCodes.INTERNAL_SERVER_ERROR,
+        );
+    }
+
+    await repo.updateUser(decoded.user_id, {
+        two_fa_secret: encryptSecret(secret.base32),
+        two_fa_enabled: false,
+    });
+
+    const qrCode = await QRCode.toDataURL(secret.otpauth_url);
+
+    return {
+        qrCode,
+        secret: secret.base32,
+        user_id: decoded.user_id,
+    };
+};
+
+// -------------------- VERIFY 2FA WITH TOKEN (FOR LOST AUTHENTICATOR) --------------------
+export const verify2FAWithTokenService = async (
+    setupToken: string,
+    token: string,
+) => {
+    const decoded = jwt.verify(
+        setupToken,
+        JWT_SECRET as string,
+    ) as JwtPayload & { user_id?: string; type?: string };
+
+    if (decoded.type !== 'lost_authenticator_setup' || !decoded.user_id) {
+        throw new CustomError('Invalid setup token', StatusCodes.BAD_REQUEST);
+    }
+
+    const user = await repo.findUserById(decoded.user_id);
+    if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+
+    if (!user.two_fa_secret) {
+        throw new CustomError(
+            '2FA secret not found. Please setup 2FA first.',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+
+    const secret = decryptSecret(user.two_fa_secret);
+    const verified = speakeasy.totp.verify({
+        secret,
+        encoding: 'base32',
+        token,
+        window: 1,
+    });
+
+    if (!verified) {
+        throw new CustomError('Invalid 2FA token', StatusCodes.BAD_REQUEST);
+    }
+
+    await repo.updateUser(decoded.user_id, { two_fa_enabled: true });
+    return { success: true, user_id: decoded.user_id };
+};
+
 // -------------------- 2FA VERIFY (ENABLE) --------------------
 export const verify2FAService = async (user_id: string, token: string) => {
     const user = await repo.findUserById(user_id);
@@ -438,6 +526,97 @@ export const disable2FAService = async (
     });
 
     return { success: true };
+};
+
+// -------------------- LOST AUTHENTICATOR: SEND EMAIL OTP --------------------
+export const sendLostAuthenticatorOTPService = async (email: string) => {
+    const user = await repo.findUserByEmail(email);
+    if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+
+    if (!user.two_fa_enabled) {
+        throw new CustomError(
+            '2FA is not enabled for this account',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+
+    const otp = generateNumericOTP(4);
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await repo.updateUser(user.user_id, {
+        reset_otp: otp,
+        reset_otp_expiry: otpExpiry,
+    });
+
+    const recoveryToken = jwt.sign(
+        { email, type: 'lost_authenticator' },
+        JWT_SECRET as string,
+        { expiresIn: '15m' },
+    );
+
+    const { html, text } = EmailTemplete(otp, otpExpiry);
+
+    await sendMail({
+        to: email,
+        subject: 'Lost Authenticator Recovery - OTP',
+        text,
+        html,
+    });
+
+    return { recoveryToken };
+};
+
+// -------------------- LOST AUTHENTICATOR: VERIFY EMAIL OTP AND DISABLE 2FA --------------------
+export const verifyLostAuthenticatorOTPAndDisable2FAService = async (
+    otp: string,
+    recoveryToken: string,
+) => {
+    const decoded = jwt.verify(
+        recoveryToken,
+        JWT_SECRET as string,
+    ) as ResetTokenPayload & { type?: string };
+
+    if (decoded.type !== 'lost_authenticator') {
+        throw new CustomError('Invalid recovery token', StatusCodes.BAD_REQUEST);
+    }
+
+    const user = await repo.findUserByEmail(decoded.email);
+    if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+
+    if (!user.two_fa_enabled) {
+        throw new CustomError(
+            '2FA is not enabled for this account',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+
+    if (user.reset_otp !== otp) {
+        throw new CustomError('Invalid OTP', StatusCodes.BAD_REQUEST);
+    }
+
+    if (
+        !user.reset_otp_expiry ||
+        Date.now() > user.reset_otp_expiry.getTime()
+    ) {
+        throw new CustomError('OTP expired', StatusCodes.BAD_REQUEST);
+    }
+
+    // Disable 2FA without requiring 2FA token (since user lost authenticator)
+    await repo.updateUser(user.user_id, {
+        two_fa_enabled: false,
+        two_fa_secret: null as any,
+        reset_otp: null,
+        reset_otp_expiry: null,
+    });
+
+    // Generate a token for setting up new 2FA
+    const setupToken = jwt.sign(
+        { user_id: user.user_id, email: user.email, type: 'lost_authenticator_setup' },
+        JWT_SECRET as string,
+        { expiresIn: '30m' },
+    );
+
+    return { setupToken, user: sanitizeUser(user) };
 };
 
 // -------------------- 2FA VERIFY LOGIN (STEP 2) --------------------
