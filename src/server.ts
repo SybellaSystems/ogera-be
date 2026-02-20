@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from "cookie-parser";  
+import { createServer } from 'http';
 import router from '@routes/routes';
 import logger from '@utils/logger';
 import { DB } from '@database/index';
@@ -11,8 +12,10 @@ import { apiLimiter } from './middlewares/rateLimiter.middleware';
 import { helmetMiddleware } from './middlewares/helmet.middleware';
 import { requestLoggerMiddleware } from './middlewares/requestLogger.middleware';
 import { initializeSMSProvider } from './utils/sms';
+import { initializeSocket } from './utils/socket';
 
 const appServer = express();
+const httpServer = createServer(appServer);
 const port = PORT;
 
 const corsOptions = {
@@ -63,7 +66,11 @@ DB.sequelize
     .authenticate()
     .then(() => {
         logger.info('Database connected successfully!');
-        appServer.listen(port, () => {
+        
+        // Initialize Socket.IO
+        initializeSocket(httpServer);
+        
+        httpServer.listen(port, () => {
             logger.info(`Server is running on http://localhost:${port}`);
         });
     })

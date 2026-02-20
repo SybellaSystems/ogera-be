@@ -12,6 +12,8 @@ const repo = {
         priority?: DisputePriority;
         type?: string;
         reported_by?: 'student' | 'employer';
+        student_id?: string;
+        employer_id?: string;
         page?: number;
         limit?: number;
     }) => {
@@ -27,6 +29,8 @@ const repo = {
         if (filters?.priority) whereClause.priority = filters.priority;
         if (filters?.type) whereClause.type = filters.type;
         if (filters?.reported_by) whereClause.reported_by = filters.reported_by;
+        if (filters?.student_id) whereClause.student_id = filters.student_id;
+        if (filters?.employer_id) whereClause.employer_id = filters.employer_id;
 
         const page = filters?.page || 1;
         const limit = filters?.limit || 10;
@@ -117,7 +121,15 @@ const repo = {
     },
 
     findDisputesByUser: async (user_id: string, role: 'student' | 'employer') => {
-        const whereClause: any = role === 'student' ? { student_id: user_id } : { employer_id: user_id };
+        // Filter by both role and reported_by to show only disputes created by the user
+        const whereClause: any = {
+            reported_by: role,
+        };
+        if (role === 'student') {
+            whereClause.student_id = user_id;
+        } else {
+            whereClause.employer_id = user_id;
+        }
         
         return await DB.Disputes.findAll({
             where: whereClause,
@@ -218,6 +230,19 @@ const repo = {
         return await DB.DisputeMessages.create(messageData);
     },
 
+    getMessageById: async (message_id: string) => {
+        return await DB.DisputeMessages.findOne({
+            where: { message_id },
+            include: [
+                {
+                    model: DB.Users,
+                    as: 'sender',
+                    attributes: ['user_id', 'full_name', 'email'],
+                },
+            ],
+        });
+    },
+
     getDisputeMessages: async (dispute_id: string, userRole?: string) => {
         const whereClause: any = { dispute_id };
         // Students and employers can't see internal moderator messages
@@ -270,24 +295,24 @@ const repo = {
     findDisputesNeedingEscalation: async () => {
         const now = new Date();
         const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        const fortyHoursAgo = new Date(now.getTime() - 40 * 60 * 60 * 1000);
+        const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
 
         // Disputes with no response for 24+ hours (need reassignment)
         const needsReassignment = await DB.Disputes.findAll({
             where: {
-                status: { [Op.in]: ['Open', 'Under Review'] },
+                status: { [Op.in]: ['Open', 'Under Review', 'Mediation'] },
                 moderator_id: { [Op.ne]: null },
                 last_response_at: { [Op.lt]: twentyFourHoursAgo },
                 auto_escalated_at: null,
             },
         });
 
-        // Disputes with no response for 40+ hours (need superadmin escalation)
+        // Disputes with no response for 48+ hours (need superadmin escalation)
         const needsEscalation = await DB.Disputes.findAll({
             where: {
-                status: { [Op.in]: ['Open', 'Under Review'] },
+                status: { [Op.in]: ['Open', 'Under Review', 'Mediation'] },
                 moderator_id: { [Op.ne]: null },
-                last_response_at: { [Op.lt]: fortyHoursAgo },
+                last_response_at: { [Op.lt]: fortyEightHoursAgo },
                 auto_escalated_at: null,
             },
         });
