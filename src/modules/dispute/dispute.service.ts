@@ -11,10 +11,11 @@ import {
     DisputeStatus,
     DisputePriority,
 } from '@/interfaces/dispute.interfaces';
-import { uploadFile } from '@/utils/storage.service';
+import { saveFile } from '@/utils/storage.service';
 import { createNotificationService } from '../notification/notification.service';
 import { sendMail } from '@/utils/mailer';
 import logger from '@/utils/logger';
+import { emitToDispute } from '@/utils/socket';
 
 // Create a new dispute
 export const createDisputeService = async (
@@ -109,7 +110,7 @@ export const createDisputeService = async (
     if (data.evidence_files && data.evidence_files.length > 0) {
         for (const file of data.evidence_files) {
             try {
-                const uploadResult = await uploadFile(file, 'dispute-evidence');
+                const uploadResult = await saveFile(file, 'dispute-evidence');
                 await repo.addEvidence({
                     dispute_id: dispute.dispute_id,
                     uploaded_by: user_id,
@@ -133,26 +134,53 @@ export const createDisputeService = async (
     return await repo.findDisputeById(dispute.dispute_id);
 };
 
-// Auto-assign moderator
+// Auto-assign moderator using Round Robin
 const autoAssignModerator = async (dispute_id: string) => {
-    // Find admins with dispute permission (roleType 'admin', not superadmin)
-    const admins = await DB.Users.findAll({
+    // Find all admins with roleType 'admin' (not superadmin)
+    const allAdmins = await DB.Users.findAll({
         include: [
             {
                 model: DB.Roles,
                 as: 'role',
                 where: {
-                    roleType: 'admin', // Only assign to regular admins, not superadmin
+                    roleType: 'admin',
                 },
-                attributes: ['roleName', 'roleType'],
+                attributes: ['roleName', 'roleType', 'permission_json'],
             },
         ],
         attributes: ['user_id', 'full_name', 'email'],
     });
 
-    // If no regular admins, fall back to superadmin
+    // Filter admins that have dispute route permission
+    const disputeAdmins: any[] = [];
+    for (const admin of allAdmins) {
+        const role = admin.role;
+        if (!role) continue;
+
+        // Parse permission_json
+        const permissions: any[] =
+            typeof role.permission_json === 'string'
+                ? JSON.parse(role.permission_json)
+                : role.permission_json || [];
+
+        // Check if admin has dispute route permission (view or edit)
+        const hasDisputePermission = permissions.some((perm: any) => {
+            const permRoute = perm.route || '';
+            const permActions = perm.permission || {};
+            return (
+                (permRoute === '/disputes' || permRoute.startsWith('/disputes')) &&
+                (permActions.view === true || permActions.edit === true)
+            );
+        });
+
+        if (hasDisputePermission) {
+            disputeAdmins.push(admin);
+        }
+    }
+
+    // If no admins with dispute permission, fall back to superadmin
     let moderator: any;
-    if (admins.length === 0) {
+    if (disputeAdmins.length === 0) {
         const superAdmins = await DB.Users.findAll({
             include: [
                 {
@@ -173,8 +201,22 @@ const autoAssignModerator = async (dispute_id: string) => {
         }
         moderator = superAdmins[0];
     } else {
-        // Prefer regular admins over superadmin
-        moderator = admins[0];
+        // Round Robin: Get count of disputes assigned to each admin, then assign to the one with least
+        const adminDisputeCounts = await Promise.all(
+            disputeAdmins.map(async (admin) => {
+                const count = await DB.Disputes.count({
+                    where: {
+                        moderator_id: admin.user_id,
+                        status: { [Op.in]: ['Open', 'Under Review', 'Mediation'] },
+                    },
+                });
+                return { admin, count };
+            })
+        );
+
+        // Sort by count (ascending) and pick the first one (least disputes)
+        adminDisputeCounts.sort((a, b) => a.count - b.count);
+        moderator = adminDisputeCounts[0].admin;
     }
 
     await repo.assignModerator(dispute_id, moderator.user_id);
@@ -277,14 +319,55 @@ const notifyDisputeParties = async (dispute_id: string, event: string) => {
 };
 
 // Get all disputes with filters
-export const getAllDisputesService = async (filters?: {
-    status?: DisputeStatus | DisputeStatus[];
-    priority?: DisputePriority;
-    type?: string;
-    page?: number;
-    limit?: number;
-}) => {
-    const { rows, count } = await repo.findAllDisputes(filters);
+export const getAllDisputesService = async (
+    filters?: {
+        status?: DisputeStatus | DisputeStatus[];
+        priority?: DisputePriority;
+        type?: string;
+        page?: number;
+        limit?: number;
+    },
+    user_id?: string,
+    userRole?: string,
+) => {
+    // If user is student or employer, filter to only disputes they created (reported_by)
+    let whereClause: any = {};
+    if (user_id && userRole) {
+        const normalizedRole = userRole.toLowerCase();
+        if (normalizedRole === 'student' || normalizedRole === 'employer') {
+            // Check if user is admin/superadmin by roleType
+            const user = await DB.Users.findOne({
+                where: { user_id },
+                include: [
+                    {
+                        model: DB.Roles,
+                        as: 'role',
+                        attributes: ['roleName', 'roleType'],
+                    },
+                ],
+            });
+
+            const isAdmin = user?.role?.roleType === 'admin' || user?.role?.roleType === 'superAdmin';
+            
+            // If not admin/superadmin, filter to only disputes they created
+            if (!isAdmin) {
+                whereClause.reported_by = normalizedRole;
+                if (normalizedRole === 'student') {
+                    whereClause.student_id = user_id;
+                } else {
+                    whereClause.employer_id = user_id;
+                }
+            }
+        }
+    }
+
+    // Merge with existing filters
+    const finalFilters = {
+        ...filters,
+        ...whereClause,
+    };
+
+    const { rows, count } = await repo.findAllDisputes(finalFilters);
     return {
         data: rows,
         pagination: {
@@ -324,10 +407,13 @@ export const getDisputeByIdService = async (dispute_id: string, user_id?: string
 
             const isAdmin = user?.role?.roleType === 'admin' || user?.role?.roleType === 'superAdmin';
             
-            // If not admin/superadmin, check if user is student or employer involved in dispute
+            // If not admin/superadmin, check if user created the dispute
             if (!isAdmin) {
-                if (dispute.student_id !== user_id && dispute.employer_id !== user_id) {
-                    throw new CustomError('Access denied', StatusCodes.FORBIDDEN);
+                if (dispute.reported_by === 'student' && dispute.student_id !== user_id) {
+                    throw new CustomError('Access denied: You can only view disputes you created', StatusCodes.FORBIDDEN);
+                }
+                if (dispute.reported_by === 'employer' && dispute.employer_id !== user_id) {
+                    throw new CustomError('Access denied: You can only view disputes you created', StatusCodes.FORBIDDEN);
                 }
             }
         }
@@ -381,11 +467,6 @@ export const updateDisputeService = async (
         }
     }
 
-    const dispute = await repo.findDisputeById(dispute_id);
-    if (!dispute) {
-        throw new CustomError('Dispute not found', StatusCodes.NOT_FOUND);
-    }
-
     const updates: Partial<Dispute> = {};
     if (data.status) updates.status = data.status;
     if (data.priority) updates.priority = data.priority;
@@ -427,6 +508,11 @@ export const resolveDisputeService = async (
     user_id: string,
     userRole: string,
 ) => {
+    const dispute = await repo.findDisputeById(dispute_id);
+    if (!dispute) {
+        throw new CustomError('Dispute not found', StatusCodes.NOT_FOUND);
+    }
+
     // Superadmin can always resolve disputes
     if (userRole?.toLowerCase() === 'superadmin') {
         // Allow - superadmin bypasses all checks
@@ -448,6 +534,11 @@ export const resolveDisputeService = async (
         // Students and employers are blocked by middleware, but this is an extra safety check
         if (!user?.role || (user.role.roleType !== 'admin' && user.role.roleType !== 'superAdmin')) {
             throw new CustomError('Only admins with dispute permission can resolve disputes', StatusCodes.FORBIDDEN);
+        }
+
+        // Check if admin is assigned to this dispute (unless superadmin)
+        if (dispute.moderator_id && dispute.moderator_id !== user_id) {
+            throw new CustomError('Only the assigned moderator can resolve this dispute', StatusCodes.FORBIDDEN);
         }
     }
 
@@ -512,8 +603,21 @@ export const addDisputeMessageService = async (
         isModerator = user?.role?.roleType === 'admin' || user?.role?.roleType === 'superAdmin';
     }
     
-    if (!isModerator && dispute.student_id !== user_id && dispute.employer_id !== user_id) {
-        throw new CustomError('Access denied', StatusCodes.FORBIDDEN);
+    // Students and employers can only message disputes they created (reported_by)
+    if (!isModerator) {
+        if (dispute.reported_by === 'student' && dispute.student_id !== user_id) {
+            throw new CustomError('Access denied: You can only message disputes you created', StatusCodes.FORBIDDEN);
+        }
+        if (dispute.reported_by === 'employer' && dispute.employer_id !== user_id) {
+            throw new CustomError('Access denied: You can only message disputes you created', StatusCodes.FORBIDDEN);
+        }
+    } else {
+        // Moderators can only message if they are assigned (unless superadmin)
+        if (userRole?.toLowerCase() !== 'superadmin') {
+            if (dispute.moderator_id && dispute.moderator_id !== user_id) {
+                throw new CustomError('Access denied: Only the assigned moderator can message this dispute', StatusCodes.FORBIDDEN);
+            }
+        }
     }
 
     const senderType = isModerator ? 'moderator' : (userRole === 'student' ? 'student' : 'employer');
@@ -539,6 +643,24 @@ export const addDisputeMessageService = async (
         related_id: dispute_id,
     });
 
+    // Emit real-time message to dispute room via Socket.IO
+    try {
+        // Get full message with sender details
+        const fullMessage = await repo.getMessageById((message as any).message_id || (message as any).dataValues?.message_id);
+        if (fullMessage) {
+            emitToDispute(dispute_id, 'new_message', {
+                message: fullMessage.toJSON ? fullMessage.toJSON() : fullMessage,
+            });
+        } else {
+            // Fallback: emit with basic message data
+            emitToDispute(dispute_id, 'new_message', {
+                message: message.toJSON ? message.toJSON() : message,
+            });
+        }
+    } catch (error) {
+        logger.error('Failed to emit socket message:', error);
+    }
+
     return message;
 };
 
@@ -554,12 +676,15 @@ export const uploadEvidenceService = async (
         throw new CustomError('Dispute not found', StatusCodes.NOT_FOUND);
     }
 
-    // Verify user has access
-    if (dispute.student_id !== user_id && dispute.employer_id !== user_id) {
-        throw new CustomError('Access denied', StatusCodes.FORBIDDEN);
+    // Verify user has access - only the user who created the dispute can upload evidence
+    if (dispute.reported_by === 'student' && dispute.student_id !== user_id) {
+        throw new CustomError('Access denied: You can only upload evidence to disputes you created', StatusCodes.FORBIDDEN);
+    }
+    if (dispute.reported_by === 'employer' && dispute.employer_id !== user_id) {
+        throw new CustomError('Access denied: You can only upload evidence to disputes you created', StatusCodes.FORBIDDEN);
     }
 
-    const uploadResult = await uploadFile(file, 'dispute-evidence');
+    const uploadResult = await saveFile(file, 'dispute-evidence');
     const evidence = await repo.addEvidence({
         dispute_id,
         uploaded_by: user_id,
@@ -589,22 +714,86 @@ export const checkAutoEscalationService = async () => {
     for (const dispute of needsReassignment) {
         if (!dispute.moderator_id) continue;
 
-        const moderators = await repo.findAvailableModerators();
-        const newModerator = moderators.find(m => m.user_id !== dispute.moderator_id);
-        
-        if (newModerator) {
+        // Find all admins with dispute permission (same logic as autoAssignModerator)
+        const allAdmins = await DB.Users.findAll({
+            include: [
+                {
+                    model: DB.Roles,
+                    as: 'role',
+                    where: {
+                        roleType: 'admin',
+                    },
+                    attributes: ['roleName', 'roleType', 'permission_json'],
+                },
+            ],
+            attributes: ['user_id', 'full_name', 'email'],
+        });
+
+        // Filter admins that have dispute route permission
+        const disputeAdmins: any[] = [];
+        for (const admin of allAdmins) {
+            const role = admin.role;
+            if (!role) continue;
+
+            // Parse permission_json
+            const permissions: any[] =
+                typeof role.permission_json === 'string'
+                    ? JSON.parse(role.permission_json)
+                    : role.permission_json || [];
+
+            // Check if admin has dispute route permission
+            const hasDisputePermission = permissions.some((perm: any) => {
+                const permRoute = perm.route || '';
+                const permActions = perm.permission || {};
+                return (
+                    (permRoute === '/disputes' || permRoute.startsWith('/disputes')) &&
+                    (permActions.view === true || permActions.edit === true)
+                );
+            });
+
+            if (hasDisputePermission && admin.user_id !== dispute.moderator_id) {
+                disputeAdmins.push(admin);
+            }
+        }
+
+        // Use Round Robin to find next available moderator
+        if (disputeAdmins.length > 0) {
+            const adminDisputeCounts = await Promise.all(
+                disputeAdmins.map(async (admin) => {
+                    const count = await DB.Disputes.count({
+                        where: {
+                            moderator_id: admin.user_id,
+                            status: { [Op.in]: ['Open', 'Under Review', 'Mediation'] },
+                        },
+                    });
+                    return { admin, count };
+                })
+            );
+
+            adminDisputeCounts.sort((a, b) => a.count - b.count);
+            const newModerator = adminDisputeCounts[0].admin;
+
             await repo.assignModerator(dispute.dispute_id, newModerator.user_id);
             await repo.addTimelineEvent({
                 dispute_id: dispute.dispute_id,
                 action: 'moderator_reassigned',
                 performed_by: newModerator.user_id,
                 performed_by_type: 'moderator',
-                details: 'Auto-reassigned due to 24hr no response',
+                details: `Auto-reassigned to ${newModerator.full_name} due to 24hr no response`,
+            });
+
+            // Notify new moderator
+            await createNotificationService({
+                user_id: newModerator.user_id,
+                type: 'system',
+                title: 'Dispute Reassigned',
+                message: 'A dispute has been reassigned to you due to no response from previous moderator.',
+                related_id: dispute.dispute_id,
             });
         }
     }
 
-    // Escalate disputes with no response for 40+ hours
+    // Escalate disputes with no response for 48+ hours to superadmin
     for (const dispute of needsEscalation) {
         // Find senior admin (superadmin)
         const seniorAdmin = await DB.Users.findOne({
@@ -618,15 +807,23 @@ export const checkAutoEscalationService = async () => {
         });
 
         if (seniorAdmin) {
-            const feePenalty = dispute.escrow_amount ? dispute.escrow_amount * 0.1 : 0; // 10% fee
-            await repo.escalateDispute(dispute.dispute_id, seniorAdmin.user_id, feePenalty);
+            await repo.escalateDispute(dispute.dispute_id, seniorAdmin.user_id, 0);
             
             await repo.addTimelineEvent({
                 dispute_id: dispute.dispute_id,
                 action: 'dispute_escalated',
                 performed_by: seniorAdmin.user_id,
                 performed_by_type: 'moderator',
-                details: `Escalated to superadmin after 40 hours - 10% fee penalty applied: $${feePenalty}`,
+                details: `Escalated to superadmin after 48 hours of no response`,
+            });
+
+            // Notify superadmin
+            await createNotificationService({
+                user_id: seniorAdmin.user_id,
+                type: 'system',
+                title: 'Dispute Escalated',
+                message: 'A dispute has been escalated to you after 48 hours of no response.',
+                related_id: dispute.dispute_id,
             });
 
             await notifyDisputeParties(dispute.dispute_id, 'escalated');

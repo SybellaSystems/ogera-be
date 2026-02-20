@@ -71,6 +71,8 @@ export const createDispute = async (req: Request, res: Response): Promise<void> 
 export const getAllDisputes = async (req: Request, res: Response): Promise<void> => {
     try {
         const { status, priority, type, page, limit } = req.query;
+        const user_id = req.user?.user_id;
+        const userRole = req.user?.role?.toLowerCase();
         
         // Handle multiple status values (for In Progress page)
         let statusFilter: any = status;
@@ -80,13 +82,17 @@ export const getAllDisputes = async (req: Request, res: Response): Promise<void>
             statusFilter = status;
         }
         
-        const result = await getAllDisputesService({
-            status: statusFilter as any,
-            priority: priority as any,
-            type: type as string,
-            page: page ? parseInt(page as string) : undefined,
-            limit: limit ? parseInt(limit as string) : undefined,
-        });
+        const result = await getAllDisputesService(
+            {
+                status: statusFilter as any,
+                priority: priority as any,
+                type: type as string,
+                page: page ? parseInt(page as string) : undefined,
+                limit: limit ? parseInt(limit as string) : undefined,
+            },
+            user_id,
+            userRole,
+        );
 
         response.response(
             res,
