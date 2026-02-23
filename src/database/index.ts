@@ -486,6 +486,20 @@ const ensureCourseTableColumns = async () => {
     });
 };
 
+// Course chat: one thread per student (conversation_user_id)
+const ensureCourseChatMessageColumns = async () => {
+    try {
+        await sequelize.getQueryInterface().describeTable('course_chat_messages');
+    } catch (err) {
+        logger.info('course_chat_messages table does not exist, will be created by sync');
+        return;
+    }
+    await ensureColumnExists('course_chat_messages', 'conversation_user_id', {
+        type: Sequelize.DataTypes.UUID,
+        allowNull: true,
+    });
+};
+
 // Function to ensure all required user table columns exist
 const ensureUserTableColumns = async () => {
     const queryInterface = sequelize.getQueryInterface();
@@ -722,6 +736,9 @@ const ensureUserTableColumns = async () => {
         logger.info('Ensuring courses table columns exist...');
         await ensureCourseTableColumns();
 
+        logger.info('Ensuring course_chat_messages table columns exist...');
+        await ensureCourseChatMessageColumns();
+
         // Fix any NULL role_type values BEFORE syncing
         logger.info('Checking for NULL role_type values...');
         const fixSuccess = await fixNullRoleTypeValues();
@@ -806,6 +823,7 @@ const ensureUserTableColumns = async () => {
         await ensureUserTableColumns();
         await ensureJobCategoriesTableColumns();
         await ensureCourseTableColumns();
+        await ensureCourseChatMessageColumns();
     } catch (err: any) {
         logger.error(
             '❌ Error during database initialization:',
@@ -816,6 +834,7 @@ const ensureUserTableColumns = async () => {
             await ensureUserTableColumns();
             await ensureJobCategoriesTableColumns();
             await ensureCourseTableColumns();
+            await ensureCourseChatMessageColumns();
             await fixNullRoleTypeValues();
         } catch (finalErr) {
             logger.warn('⚠️  Could not complete final column checks');

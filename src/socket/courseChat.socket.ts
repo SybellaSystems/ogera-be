@@ -46,21 +46,31 @@ export function setupCourseChatSocket(io: SocketIOServer): void {
 
         socket.on(
             'course:join',
-            async (payload: { courseId: string }, callback) => {
+            async (
+                payload: { courseId: string; conversationUserId?: string },
+                callback,
+            ) => {
                 const courseId = payload?.courseId;
                 if (!courseId) {
                     callback?.({ ok: false, message: 'courseId required' });
                     return;
                 }
-                const room = COURSE_ROOM_PREFIX + courseId;
-                if (joinedRooms.has(room)) {
-                    callback?.({ ok: true });
-                    return;
-                }
                 try {
                     if (isSupportRole(role)) {
-                        socket.join(room);
-                        joinedRooms.add(room);
+                        const room = COURSE_ROOM_PREFIX + courseId;
+                        if (!joinedRooms.has(room)) {
+                            socket.join(room);
+                            joinedRooms.add(room);
+                        }
+                        const convUserId = payload?.conversationUserId;
+                        if (convUserId) {
+                            const threadRoom =
+                                COURSE_ROOM_PREFIX + courseId + ':' + convUserId;
+                            if (!joinedRooms.has(threadRoom)) {
+                                socket.join(threadRoom);
+                                joinedRooms.add(threadRoom);
+                            }
+                        }
                         callback?.({ ok: true });
                         return;
                     }
@@ -74,8 +84,12 @@ export function setupCourseChatSocket(io: SocketIOServer): void {
                         });
                         return;
                     }
-                    socket.join(room);
-                    joinedRooms.add(room);
+                    const room =
+                        COURSE_ROOM_PREFIX + courseId + ':' + user_id;
+                    if (!joinedRooms.has(room)) {
+                        socket.join(room);
+                        joinedRooms.add(room);
+                    }
                     callback?.({ ok: true });
                 } catch (err) {
                     logger.error('course:join error', err);
@@ -87,10 +101,14 @@ export function setupCourseChatSocket(io: SocketIOServer): void {
         socket.on(
             'course:message',
             async (
-                payload: { courseId: string; content: string },
+                payload: {
+                    courseId: string;
+                    content: string;
+                    replyToUserId?: string;
+                },
                 callback,
             ) => {
-                const { courseId, content } = payload || {};
+                const { courseId, content, replyToUserId } = payload || {};
                 if (!courseId || typeof content !== 'string') {
                     callback?.({
                         ok: false,
@@ -104,10 +122,22 @@ export function setupCourseChatSocket(io: SocketIOServer): void {
                     return;
                 }
                 try {
-                    if (!isSupportRole(role)) {
-                        const enrollment = await DB.CourseEnrollments.findOne({
-                            where: { course_id: courseId, user_id },
-                        });
+                    let conversation_user_id: string;
+                    if (isSupportRole(role)) {
+                        if (!replyToUserId) {
+                            callback?.({
+                                ok: false,
+                                message:
+                                    'Support must specify replyToUserId (student)',
+                            });
+                            return;
+                        }
+                        conversation_user_id = replyToUserId;
+                    } else {
+                        const enrollment =
+                            await DB.CourseEnrollments.findOne({
+                                where: { course_id: courseId, user_id },
+                            });
                         if (!enrollment) {
                             callback?.({
                                 ok: false,
@@ -115,23 +145,31 @@ export function setupCourseChatSocket(io: SocketIOServer): void {
                             });
                             return;
                         }
+                        conversation_user_id = user_id;
                     }
                     const message = await DB.CourseChatMessages.create({
                         course_id: courseId,
                         user_id,
                         role,
                         content: trimmed,
+                        conversation_user_id,
                     });
                     const plain = message.get({ plain: true });
-                    io.to(COURSE_ROOM_PREFIX + courseId).emit(
-                        'course:message',
-                        plain,
-                    );
+                    const studentRoom =
+                        COURSE_ROOM_PREFIX + courseId + ':' + conversation_user_id;
+                    io.to(studentRoom).emit('course:message', plain);
+                    if (!isSupportRole(role)) {
+                        io.to(COURSE_ROOM_PREFIX + courseId).emit(
+                            'course:message',
+                            plain,
+                        );
+                    }
                     try {
                         const course = await DB.Courses.findByPk(courseId, {
                             attributes: ['course_name'],
                         });
-                        const course_name = (course as any)?.course_name || 'Course';
+                        const course_name =
+                            (course as any)?.course_name || 'Course';
                         await notifyCourseChatMessage(
                             courseId,
                             course_name,

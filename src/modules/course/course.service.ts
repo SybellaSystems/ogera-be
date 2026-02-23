@@ -369,10 +369,38 @@ export const getCourseChatHistoryService = async (
             );
         }
     }
+    const where: { course_id: string; conversation_user_id?: string } = {
+        course_id,
+    };
+    if (!isSupport) {
+        where.conversation_user_id = user_id;
+    }
     const messages = await DB.CourseChatMessages.findAll({
-        where: { course_id },
+        where,
         order: [['created_at', 'ASC']],
         limit: 500,
     });
-    return messages.map((m) => m.get({ plain: true }));
+    const plainMessages = messages.map((m) => m.get({ plain: true }));
+
+    if (!isSupport) {
+        return plainMessages as any;
+    }
+
+    const conversationUserIds = [
+        ...new Set(
+            plainMessages
+                .map((m: any) => m.conversation_user_id)
+                .filter(Boolean),
+        ),
+    ] as string[];
+    const participants =
+        conversationUserIds.length === 0
+            ? []
+            : await DB.Users.findAll({
+                  where: { user_id: conversationUserIds },
+                  attributes: ['user_id', 'full_name'],
+                  raw: true,
+              });
+
+    return { messages: plainMessages, participants };
 };

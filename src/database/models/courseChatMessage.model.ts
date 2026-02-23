@@ -15,6 +15,7 @@ export class CourseChatMessageModel
     public user_id!: string;
     public role!: string;
     public content!: string;
+    public conversation_user_id!: string | null;
     public readonly created_at!: Date;
 }
 
@@ -46,6 +47,12 @@ export default function (sequelize: Sequelize): typeof CourseChatMessageModel {
                 type: DataTypes.TEXT,
                 allowNull: false,
             },
+            conversation_user_id: {
+                type: DataTypes.UUID,
+                allowNull: true,
+                references: { model: 'users', key: 'user_id' },
+                onDelete: 'SET NULL',
+            },
             created_at: {
                 type: DataTypes.DATE,
                 defaultValue: Sequelize.literal('NOW()'),
@@ -57,7 +64,10 @@ export default function (sequelize: Sequelize): typeof CourseChatMessageModel {
             createdAt: 'created_at',
             updatedAt: false,
             timestamps: true,
-            indexes: [{ fields: ['course_id', 'created_at'] }],
+            indexes: [
+                { fields: ['course_id', 'created_at'] },
+                { fields: ['course_id', 'conversation_user_id', 'created_at'] },
+            ],
         },
     );
 

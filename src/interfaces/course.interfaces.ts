@@ -84,12 +84,14 @@ export interface CourseEnrollment {
     updated_at: Date;
 }
 
-/** Real-time course chat: student ↔ employer/superadmin. */
+/** Real-time course chat: student ↔ employer/superadmin. One thread per student (conversation_user_id). */
 export interface CourseChatMessage {
     message_id: string;
     course_id: string;
     user_id: string;
     role: string;
     content: string;
+    /** Student whose thread this message belongs to. Student messages: their user_id; support replies: target student. */
+    conversation_user_id?: string | null;
     created_at: Date;
 }
