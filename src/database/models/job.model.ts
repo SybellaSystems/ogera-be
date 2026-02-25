@@ -7,6 +7,9 @@ export type JobCreationAttributes = Optional<
     | 'job_id'
     | 'applications'
     | 'status'
+    | 'funding_status'
+    | 'momo_reference_id'
+    | 'momo_paid_at'
     | 'description'
     | 'requirements'
     | 'skills'
@@ -31,6 +34,9 @@ export class JobModel extends Model<Job, JobCreationAttributes> implements Job {
     public employment_type?: string;
     public experience_level?: string;
     public status!: 'Pending' | 'Active' | 'Inactive' | 'Completed';
+    public funding_status?: 'Unfunded' | 'Pending' | 'Funded';
+    public momo_reference_id?: string | null;
+    public momo_paid_at?: Date | null;
     public readonly created_at!: Date;
     public readonly updated_at!: Date;
 
@@ -103,6 +109,19 @@ export default function (sequelize: Sequelize): typeof JobModel {
                 type: DataTypes.ENUM('Pending', 'Active', 'Inactive', 'Completed'),
                 allowNull: false,
                 defaultValue: 'Active',
+            },
+            funding_status: {
+                type: DataTypes.STRING(20),
+                allowNull: true,
+                defaultValue: 'Unfunded',
+            },
+            momo_reference_id: {
+                type: DataTypes.STRING(64),
+                allowNull: true,
+            },
+            momo_paid_at: {
+                type: DataTypes.DATE,
+                allowNull: true,
             },
             created_at: {
                 type: DataTypes.DATE,

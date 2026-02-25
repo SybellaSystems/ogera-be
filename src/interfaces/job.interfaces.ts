@@ -13,6 +13,9 @@ export interface Job {
   employment_type?: string;
   experience_level?: string;
   status: "Pending" | "Active" | "Inactive" | "Completed";
+  funding_status?: "Unfunded" | "Pending" | "Funded";
+  momo_reference_id?: string | null;
+  momo_paid_at?: Date | null;
   created_at: Date;
   updated_at: Date;
 }

@@ -72,6 +72,18 @@ export const PESAPAL_CONFIG = {
     baseUrl: process.env.BASE_URL || 'http://localhost:5000',
 };
 
+// MTN MoMo API Configuration (Ogera_Get_Paid / Collection)
+export const MOMO_CONFIG = {
+    baseUrl: process.env.MOMO_BASE_URL || 'https://sandbox.momodeveloper.mtn.com',
+    subscriptionKey: process.env.MOMO_SUBSCRIPTION_KEY || '',
+    apiUserId: process.env.MOMO_USER_ID || '',
+    apiKey: process.env.MOMO_API_KEY || '',
+    targetEnvironment: process.env.MOMO_TARGET_ENV || 'sandbox',
+    // Service fee for job funding: percentage (e.g. 5 = 5%) or 0
+    serviceFeePercent: parseFloat(process.env.MOMO_SERVICE_FEE_PERCENT || '0'),
+    currency: process.env.MOMO_CURRENCY || 'EUR',
+};
+
 // SMS Configuration
 export const SMS_CONFIG = {
     provider: (process.env.SMS_PROVIDER || 'console') as 'twilio' | 'console' | 'none',
