@@ -116,7 +116,7 @@ export const createJobService = async (
                 action: 'CREATE',
                 entity_type: 'Job',
                 entity_id: createdJob.job_id,
-                description: `Job created: ${createdJob.job_title || createdJob.title || createdJob.job_id}`,
+                description: `Job created: ${createdJob.job_title || createdJob.job_id}`,
             } as any);
         } catch (e) {
             // swallow logging errors
@@ -205,7 +205,7 @@ export const updateJobService = async (
                         action: 'UPDATE',
                         entity_type: 'Job',
                         entity_id: updatedJob.job_id,
-                        description: `Job updated: ${updatedJob.job_title || updatedJob.title || updatedJob.job_id}`,
+                        description: `Job updated: ${updatedJob.job_title || updatedJob.job_id}`,
                     } as any);
                 } catch (e) {
                     // swallow logging errors

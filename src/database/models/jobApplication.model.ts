@@ -5,7 +5,7 @@ import { UserModel } from "./user.model";
 
 export type JobApplicationCreationAttributes = Optional<
   JobApplication,
-  "application_id" | "status" | "reviewed_at" | "reviewed_by" | "created_at" | "updated_at"
+  "application_id" | "status" | "completed_at" | "reviewed_at" | "reviewed_by" | "created_at" | "updated_at"
 >;
 
 export class JobApplicationModel

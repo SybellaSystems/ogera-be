@@ -215,7 +215,7 @@ const repo = {
               [Op.gte]: start,
               [Op.lt]: end,
             },
-          },
+          } as any,
         });
         logger.info(`[Dashboard] Student ${studentId} jobs completed between ${start.toISOString()} and ${end.toISOString()}: ${count}`);
         return Number(count ?? 0);

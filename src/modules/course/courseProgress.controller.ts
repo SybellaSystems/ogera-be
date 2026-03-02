@@ -96,7 +96,7 @@ export const markStepIncomplete = async (
             res,
             true,
             StatusCodes.OK,
-            result,
+            result ?? {},
             'Step marked as incomplete',
         );
     } catch (error: any) {
@@ -125,7 +125,7 @@ export const getCourseProgress = async (
             return;
         }
 
-        const { course_id } = req.params;
+        const course_id = typeof req.params.course_id === 'string' ? req.params.course_id : req.params.course_id?.[0];
         const user_id = req.user.user_id;
 
         if (!course_id) {
@@ -172,7 +172,7 @@ export const getCourseCompletion = async (
             return;
         }
 
-        const { course_id } = req.params;
+        const course_id = typeof req.params.course_id === 'string' ? req.params.course_id : req.params.course_id?.[0];
         const user_id = req.user.user_id;
 
         if (!course_id) {
@@ -254,7 +254,7 @@ export const checkCourseStarted = async (
             return;
         }
 
-        const { course_id } = req.params;
+        const course_id = typeof req.params.course_id === 'string' ? req.params.course_id : req.params.course_id?.[0];
         const user_id = req.user.user_id;
 
         if (!course_id) {
@@ -301,7 +301,7 @@ export const getCourseStudents = async (
             return;
         }
 
-        const { course_id } = req.params;
+        const course_id = typeof req.params.course_id === 'string' ? req.params.course_id : req.params.course_id?.[0];
 
         if (!course_id) {
             response.errorResponse(
@@ -385,7 +385,7 @@ export const getCourseSpecificStatistics = async (
             return;
         }
 
-        const { course_id } = req.params;
+        const course_id = typeof req.params.course_id === 'string' ? req.params.course_id : req.params.course_id?.[0];
 
         if (!course_id) {
             response.errorResponse(
