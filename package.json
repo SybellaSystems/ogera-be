@@ -6,7 +6,7 @@
     "scripts": {
         "test": "jest",
         "test:watch": "jest --watch",
-        "start": "npm run build && node dist/server.js",
+        "start": "node dist/server.js",
         "dev": "nodemon",
         "clean": "node -e \"const fs=require('fs'),p='dist';fs.existsSync(p)&&fs.rmSync(p,{recursive:true});console.log('Dist cleaned.')\"",
         "build": "tsc && tsc-alias && echo 'Build Finished! 👍'",

@@ -16,7 +16,8 @@ import { initializeSocket } from './utils/socket';
 
 const appServer = express();
 const httpServer = createServer(appServer);
-const port = PORT;
+// const port = PORT;
+const port = process.env.PORT || 5000;
 
 const corsOptions = {
     origin: 'http://localhost:5173',
@@ -71,7 +72,8 @@ DB.sequelize
         initializeSocket(httpServer);
         
         httpServer.listen(port, () => {
-            logger.info(`Server is running on http://localhost:${port}`);
+            // logger.info(`Server is running on http://localhost:${port}`);
+            logger.info(`Server is running on port ${port}`);
         });
     })
     .catch(error => {
