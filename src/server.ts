@@ -19,10 +19,23 @@ const httpServer = createServer(appServer);
 // const port = PORT;
 const port = process.env.PORT || 5000;
 
-const corsOptions = {
-    origin: 'http://localhost:5173',
+const allowedOrigins = [
+    'http://localhost:5173',
+    'https://ogera-frontend-hguj.vercel.app'
+];
+
+appServer.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
-};
+}));
+
+appServer.options('*', cors());
 
 helmetMiddleware(appServer);
 
@@ -34,8 +47,7 @@ initializeSMSProvider(SMS_CONFIG.provider, {
 });
 
 // Enable CORS
-appServer.use(cors(corsOptions));
-appServer.options('*', cors(corsOptions));
+
 
 // Body parsers (must be before logging middleware to capture request body)
 appServer.use(express.json());
