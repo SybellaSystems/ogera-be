@@ -11,7 +11,12 @@ import {
 
 const response = new ResponseFormat();
 
-// Get all notifications for the authenticated user
+/**
+ * GET /notifications
+ * Fetches all notification data from the database for the authenticated user.
+ * Query: ?is_read=true|false (optional), ?limit=number (optional; omit for all).
+ * Response: { success, status, message, data: Notification[] }
+ */
 export const getNotifications = async (
   req: Request,
   res: Response,
@@ -29,20 +34,28 @@ export const getNotifications = async (
     }
 
     const { is_read, limit } = req.query;
-    const options: any = {};
+    const options: { is_read?: boolean; limit?: number } = {};
     if (is_read !== undefined) {
       options.is_read = is_read === 'true';
     }
     if (limit) {
-      options.limit = parseInt(limit as string, 10);
+      const parsed = parseInt(limit as string, 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        options.limit = Math.min(parsed, 5000);
+      }
     }
 
-    const notifications = await getNotificationsService(req.user.user_id, options);
+    const notifications = await getNotificationsService(
+      req.user.user_id,
+      options,
+      req.user.role
+    );
+    const list = Array.isArray(notifications) ? notifications : [];
     response.response(
       res,
       true,
       StatusCodes.OK,
-      notifications,
+      list,
       'Notifications retrieved successfully'
     );
   } catch (error: any) {
@@ -154,7 +167,10 @@ export const markAllNotificationsAsRead = async (
       return;
     }
 
-    const result = await markAllNotificationsAsReadService(req.user.user_id);
+    const result = await markAllNotificationsAsReadService(
+      req.user.user_id,
+      req.user.role
+    );
     response.response(
       res,
       true,

@@ -14,11 +14,16 @@ export const createNotificationService = async (notificationData: {
   return await repo.createNotification(notificationData);
 };
 
-// Get all notifications for a user
+// Get all notifications for a user; superAdmin gets all notifications from the table
 export const getNotificationsService = async (
   user_id: string,
-  options?: { is_read?: boolean; limit?: number }
+  options?: { is_read?: boolean; limit?: number },
+  role?: string
 ) => {
+  const isSuperAdmin = role?.toLowerCase() === 'superadmin';
+  if (isSuperAdmin) {
+    return await repo.findAllNotifications(options);
+  }
   return await repo.findNotificationsByUserId(user_id, options);
 };
 
@@ -41,8 +46,11 @@ export const markNotificationAsReadService = async (
 };
 
 // Mark all notifications as read
-export const markAllNotificationsAsReadService = async (user_id: string) => {
-  const count = await repo.markAllAsRead(user_id);
+export const markAllNotificationsAsReadService = async (user_id: string, role?: string) => {
+  const isSuperAdmin = role?.toLowerCase() === 'superadmin';
+  const count = isSuperAdmin
+    ? await repo.markAllAsReadAll()
+    : await repo.markAllAsRead(user_id);
   return { count };
 };
 
