@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import repo from './notification.repo';
 import { CustomError } from '@/utils/custom-error';
 import { StatusCodes } from 'http-status-codes';
@@ -99,5 +100,71 @@ export const createApplicationStatusNotification = async (
     message: `${emoji} Your application for "${job_title}" has been ${statusText}`,
     related_id: application_id,
   });
+};
+
+// ----- Course support chat notifications -----
+
+export const getUnreadCourseChatCountService = async (user_id: string, course_id: string) => {
+  const count = await repo.countUnreadCourseChat(user_id, course_id);
+  return { count };
+};
+
+export const markCourseChatAsReadService = async (user_id: string, course_id: string) => {
+  const count = await repo.markCourseChatAsRead(user_id, course_id);
+  return { count };
+};
+
+/** Notify recipients when a course chat message is sent. Student → superadmin/courseadmin; Admin → enrolled students. */
+export const notifyCourseChatMessage = async (
+  course_id: string,
+  course_name: string,
+  sender_user_id: string,
+  sender_role: string,
+  content_preview: string
+) => {
+  const preview = content_preview.length > 80 ? content_preview.slice(0, 77) + '...' : content_preview;
+  const isSupport = ['superadmin', 'admin', 'courseadmin', 'employer'].some(
+    (r) => sender_role?.toLowerCase() === r.toLowerCase()
+  );
+
+  if (isSupport) {
+    const enrollments = await DB.CourseEnrollments.findAll({
+      where: { course_id },
+      attributes: ['user_id'],
+    });
+    const recipientIds = enrollments
+      .map((e) => (e as any).user_id)
+      .filter((id) => id !== sender_user_id);
+    for (const recipient_id of recipientIds) {
+      await createNotificationService({
+        user_id: recipient_id,
+        type: 'system',
+        title: 'Course support: New reply',
+        message: `Support replied in "${course_name}": ${preview}`,
+        related_id: course_id,
+      });
+    }
+  } else {
+    const roles = await DB.Roles.findAll({
+      where: { roleName: { [Op.in]: ['superadmin', 'courseadmin'] } },
+      attributes: ['id'],
+    });
+    const roleIds = roles.map((r) => (r as any).id);
+    if (roleIds.length === 0) return;
+    const users = await DB.Users.findAll({
+      where: { role_id: roleIds },
+      attributes: ['user_id'],
+    });
+    const recipientIds = users.map((u) => (u as any).user_id).filter((id) => id !== sender_user_id);
+    for (const recipient_id of recipientIds) {
+      await createNotificationService({
+        user_id: recipient_id,
+        type: 'system',
+        title: 'Course support: Student needs help',
+        message: `A student sent a message in "${course_name}": ${preview}`,
+        related_id: course_id,
+      });
+    }
+  }
 };
 

@@ -139,12 +139,27 @@ const repo = {
     return rows;
   },
 
-  // Mark all notifications as read for all users (superadmin only)
-  markAllAsReadAll: async () => {
+  /** Course chat: count unread notifications for a course (title "Course support:...", related_id = course_id). */
+  countUnreadCourseChat: async (user_id: string, course_id: string) => {
+    return await DB.Notifications.count({
+      where: {
+        user_id,
+        is_read: false,
+        related_id: course_id,
+        title: { [Op.like]: 'Course support:%' },
+      },
+    });
+  },
+
+  /** Mark all course-chat notifications for this course as read. */
+  markCourseChatAsRead: async (user_id: string, course_id: string) => {
     const [rows] = await DB.Notifications.update(
       { is_read: true },
       {
         where: {
+          user_id,
+          related_id: course_id,
+          title: { [Op.like]: 'Course support:%' },
           is_read: false,
         },
       }
