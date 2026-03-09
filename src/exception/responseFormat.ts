@@ -5,7 +5,7 @@ export class ResponseFormat {
     res: Response,
     success: boolean,
     status: number,
-    data: object,
+    data: object | null,
     message: string
   ): Response{
     return res.status(status).send({

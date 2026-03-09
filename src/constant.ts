@@ -4,9 +4,3 @@ export const JWT = {
   DEFAULT_ALGO: "HS256",
 };
 
-export const TWO_FA = {
-  APP_NAME: "Ogera", 
-  WINDOW: 1, 
-};
-
-

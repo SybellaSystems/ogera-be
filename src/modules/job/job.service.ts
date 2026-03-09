@@ -30,7 +30,7 @@ export const createJobService = async (
         throw new CustomError('User not found', StatusCodes.NOT_FOUND);
     }
 
-    const roleType = user.role.roleType;
+        const roleType = user.role.roleType;
     const roleName = user.role.roleName.toLowerCase();
 
     // Only employer and superadmin can create jobs
@@ -57,6 +57,16 @@ export const createJobService = async (
     if (!jobData.category) {
         throw new CustomError('Category is required', StatusCodes.BAD_REQUEST);
     }
+    
+    // Validate that the category exists in the database
+    const categoryExists = await jobCategoryRepo.findCategoryByName(jobData.category.trim());
+    if (!categoryExists) {
+        throw new CustomError(
+            'Invalid category. Please select a valid category from the list.',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+    
     if (!jobData.budget) {
         throw new CustomError('Budget is required', StatusCodes.BAD_REQUEST);
     }
@@ -103,7 +113,18 @@ export const createJobService = async (
             StatusCodes.INTERNAL_SERVER_ERROR,
         );
     }
-    return createdJob;
+        try {
+            await DB.ActivityLogs.create({
+                user_id: user_id || null,
+                action: 'CREATE',
+                entity_type: 'Job',
+                entity_id: createdJob.job_id,
+                description: `Job created: ${createdJob.job_title || createdJob.job_id}`,
+            } as any);
+        } catch (e) {
+            // swallow logging errors
+        }
+        return createdJob;
 };
 
 export const getAllJobsService = async (status?: string) => {
@@ -140,6 +161,17 @@ export const updateJobService = async (
         }
         updates.employer_id = employer.user_id;
         delete updates.employer_name;
+    }
+
+    // Validate category if it's being updated
+    if (updates.category) {
+        const categoryExists = await jobCategoryRepo.findCategoryByName(updates.category.trim());
+        if (!categoryExists) {
+            throw new CustomError(
+                'Invalid category. Please select a valid category from the list.',
+                StatusCodes.BAD_REQUEST,
+            );
+        }
     }
 
     const { questions, ...jobUpdates } = updates;
@@ -191,11 +223,34 @@ export const updateJobService = async (
                 'Failed to retrieve updated job',
                 StatusCodes.INTERNAL_SERVER_ERROR,
             );
-        }
-        return updatedJob;
+                }
+                try {
+                    await DB.ActivityLogs.create({
+                        user_id: null,
+                        action: 'UPDATE',
+                        entity_type: 'Job',
+                        entity_id: updatedJob.job_id,
+                        description: `Job updated: ${updatedJob.job_title || updatedJob.job_id}`,
+                    } as any);
+                } catch (e) {
+                    // swallow logging errors
+                }
+                return updatedJob;
     }
 
-    return updated;
+        try {
+            await DB.ActivityLogs.create({
+                user_id: null,
+                action: 'UPDATE',
+                entity_type: 'Job',
+                entity_id: job_id,
+                description: `Job updated: ${job_id}`,
+            } as any);
+        } catch (e) {
+            // swallow logging errors
+        }
+
+        return updated;
 };
 
 export const deleteJobService = async (job_id: string) => {

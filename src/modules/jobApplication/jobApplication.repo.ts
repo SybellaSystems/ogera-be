@@ -113,9 +113,12 @@ const repo = {
     });
   },
 
-  findAllApplicationsByStudent: async (student_id: string) => {
+  findAllApplicationsByStudent: async (
+    student_id: string,
+    status?: "Pending" | "Accepted" | "Rejected"
+  ) => {
     return await DB.JobApplications.findAll({
-      where: { student_id },
+      where: { student_id, ...(status ? { status } : {}) },
       include: [
         {
           model: DB.Jobs,
@@ -164,8 +167,12 @@ const repo = {
     });
   },
 
-  findAllApplicationsForEmployer: async (employer_id: string) => {
+  findAllApplicationsForEmployer: async (
+    employer_id: string,
+    status?: "Pending" | "Accepted" | "Rejected"
+  ) => {
     return await DB.JobApplications.findAll({
+      ...(status ? { where: { status } } : {}),
       include: [
         {
           model: DB.Jobs,

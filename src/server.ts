@@ -3,6 +3,7 @@ import express from 'express';
 import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
 import cookieParser from "cookie-parser";  
+import { createServer } from 'http';
 import router from '@routes/routes';
 import logger from '@utils/logger';
 import { DB } from '@database/index';
@@ -22,7 +23,9 @@ const corsOrigin = FRONTEND_URL || 'http://localhost:5173';
 const corsOptions = {
     origin: corsOrigin,
     credentials: true,
-};
+}));
+
+appServer.options('*', cors());
 
 helmetMiddleware(appServer);
 
@@ -34,8 +37,7 @@ initializeSMSProvider(SMS_CONFIG.provider, {
 });
 
 // Enable CORS
-appServer.use(cors(corsOptions));
-appServer.options('*', cors(corsOptions));
+
 
 // Body parsers (must be before logging middleware to capture request body)
 appServer.use(express.json());

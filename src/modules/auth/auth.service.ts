@@ -3,10 +3,10 @@ import { hash, compareSync } from 'bcrypt';
 import { CustomError } from '@/utils/custom-error';
 import { StatusCodes } from 'http-status-codes';
 import { Messages } from '@/utils/messages';
-import { generate2FASecret, verifyOTP, enable2FA } from '@/utils/2fa';
 import { generateNumericOTP } from '@/utils/otp';
 import { sendMail } from '@/utils/mailer';
 import { sendOTPSMS } from '@/utils/sms';
+import { verifyCaptcha } from '@/utils/captcha';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { JWT_ACCESS_TOKEN_SECRET as JWT_SECRET, FRONTEND_URL } from '@/config';
 import {
@@ -17,15 +17,43 @@ import { PaginationQuery } from '@/interfaces/pagination.interfaces';
 import { User } from '@/interfaces/user.interfaces';
 import { DB } from '@/database';
 import { Op } from 'sequelize';
+import speakeasy from 'speakeasy';
+import QRCode from 'qrcode';
 import {
     generateAccessToken,
     generateRefreshToken,
     verifyRefreshToken,
 } from '@/middlewares/jwt.service';
 import { RoleType } from '@/interfaces/role.interfaces';
+import { decryptSecret, encryptSecret } from '@/utils/2fa.encryption';
 
 interface ResetTokenPayload extends JwtPayload {
     email: string;
+}
+
+type SafeUser = Partial<User> & { user_id: string; email: string };
+
+const sanitizeUser = (user: any): SafeUser => {
+    const u = typeof user?.toJSON === 'function' ? user.toJSON() : { ...user };
+    const sensitiveKeys = [
+        'password_hash',
+        'two_fa_secret',
+        'reset_otp',
+        'reset_otp_expiry',
+        'phone_verification_otp',
+        'phone_verification_otp_expiry',
+        'login_2fa_otp',
+        'login_2fa_otp_expiry',
+        'email_verification_token',
+        'email_verification_token_expiry',
+    ];
+    for (const k of sensitiveKeys) delete (u as any)[k];
+    return u as SafeUser;
+};
+
+interface TwoFALoginTokenPayload extends JwtPayload {
+    user_id: string;
+    type: '2fa_login';
 }
 
 // Helper function to map roleName to roleType
@@ -114,6 +142,32 @@ export const registerUser = async (data: any) => {
         privacy_accepted_at: new Date(),
     });
 
+        // Log activity: Admin added user
+        try {
+            await DB.ActivityLogs.create({
+                user_id: null,
+                action: 'CREATE',
+                entity_type: 'User',
+                entity_id: user.user_id,
+                description: `User added by admin: ${user.email}`,
+            } as any);
+        } catch (e) {
+            // swallow
+        }
+
+        // Log activity: CREATE User
+        try {
+            await DB.ActivityLogs.create({
+                user_id: null,
+                action: 'CREATE',
+                entity_type: 'User',
+                entity_id: user.user_id,
+                description: `User registered: ${user.email}`,
+            } as any);
+        } catch (e) {
+            // swallow
+        }
+
     // Send verification email
     const frontendUrl = FRONTEND_URL || 'http://localhost:5173';
     const verificationLink = `${frontendUrl}/auth/verify-email?token=${verificationToken}`;
@@ -134,7 +188,7 @@ export const registerUser = async (data: any) => {
         console.error('Failed to send verification email:', error);
     }
 
-    return { user };
+    return { user: sanitizeUser(user) };
 };
 
 // -------------------- ADD USER (ADMIN/SUPERADMIN) --------------------
@@ -211,11 +265,20 @@ export const addUser = async (data: any) => {
         console.error('Failed to send verification email:', error);
     }
 
-    return { user };
+    return { user: sanitizeUser(user) };
 };
 
 // -------------------- LOGIN USER --------------------
 export const loginUser = async (body: any) => {
+    // Verify CAPTCHA token before processing login
+    if (body.captchaToken) {
+        await verifyCaptcha(body.captchaToken);
+    } else {
+        console.warn('⚠️ [LOGIN] No CAPTCHA token provided - consider requiring it');
+        // Optionally uncomment to require CAPTCHA:
+        // throw new CustomError('CAPTCHA verification is required', StatusCodes.BAD_REQUEST);
+    }
+
     const user = await repo.findUserByEmail(body.email);
     if (!user)
         throw new CustomError('Invalid credentials', StatusCodes.UNAUTHORIZED);
@@ -223,6 +286,28 @@ export const loginUser = async (body: any) => {
     const validPassword = compareSync(body.password, user.password_hash);
     if (!validPassword)
         throw new CustomError('Invalid credentials', StatusCodes.UNAUTHORIZED);
+
+    // If user has 2FA enabled, require TOTP verification before issuing tokens
+    if (user.two_fa_enabled) {
+        if (!user.two_fa_secret) {
+            throw new CustomError(
+                '2FA is enabled but secret is missing. Please disable and re-enable 2FA.',
+                StatusCodes.BAD_REQUEST,
+            );
+        }
+
+        const twoFactorToken = jwt.sign(
+            { user_id: user.user_id, type: '2fa_login' },
+            JWT_SECRET as string,
+            { expiresIn: '5m' },
+        );
+
+        return {
+            requires2FA: true,
+            twoFactorToken,
+            user: sanitizeUser(user),
+        };
+    }
 
     const role = await DB.Roles.findOne({ where: { id: user.role_id } });
     if (!role)
@@ -233,28 +318,365 @@ export const loginUser = async (body: any) => {
 
     const payload = { user_id: user.user_id, role: role.roleName };
 
-    // ---------- 2FA CHECK ----------
-    if (user.two_fa_enabled) {
-        if (!body.otp) {
-            throw new CustomError(
-                '2FA OTP Required',
-                StatusCodes.PARTIAL_CONTENT,
-            );
-        }
-
-        const otpValid = await verifyOTP(user.user_id, body.otp);
-        if (!otpValid)
-            throw new CustomError('Invalid 2FA OTP', StatusCodes.BAD_REQUEST);
-    }
-
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload); // stateless
 
     return {
-        user,
+        user: sanitizeUser(user),
         accessToken,
         refreshToken,
-        two_fa_enabled: user.two_fa_enabled,
+    };
+};
+
+// -------------------- 2FA SETUP --------------------
+export const setup2FAService = async (user_id: string) => {
+    const user = await repo.findUserById(user_id);
+    if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+
+    if (user.two_fa_enabled) {
+        throw new CustomError(
+            '2FA is already enabled for this account',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+
+    const secret = speakeasy.generateSecret({
+        name: `Ogera (${user.email})`,
+        issuer: 'Ogera',
+    });
+
+    if (!secret.base32 || !secret.otpauth_url) {
+        throw new CustomError(
+            'Failed to generate 2FA secret',
+            StatusCodes.INTERNAL_SERVER_ERROR,
+        );
+    }
+
+    await repo.updateUser(user_id, {
+        two_fa_secret: encryptSecret(secret.base32),
+        two_fa_enabled: false,
+    });
+
+    const qrCode = await QRCode.toDataURL(secret.otpauth_url);
+
+    return {
+        qrCode,
+        secret: secret.base32,
+    };
+};
+
+// -------------------- 2FA SETUP WITH TOKEN (FOR LOST AUTHENTICATOR) --------------------
+export const setup2FAWithTokenService = async (setupToken: string) => {
+    const decoded = jwt.verify(
+        setupToken,
+        JWT_SECRET as string,
+    ) as JwtPayload & { user_id?: string; email?: string; type?: string };
+
+    if (decoded.type !== 'lost_authenticator_setup' || !decoded.user_id) {
+        throw new CustomError('Invalid setup token', StatusCodes.BAD_REQUEST);
+    }
+
+    const user = await repo.findUserById(decoded.user_id);
+    if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+
+    // Check if 2FA is already enabled (shouldn't be after recovery, but check anyway)
+    if (user.two_fa_enabled && user.two_fa_secret) {
+        throw new CustomError(
+            '2FA is already enabled for this account',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+
+    const secret = speakeasy.generateSecret({
+        name: `Ogera (${user.email})`,
+        issuer: 'Ogera',
+    });
+
+    if (!secret.base32 || !secret.otpauth_url) {
+        throw new CustomError(
+            'Failed to generate 2FA secret',
+            StatusCodes.INTERNAL_SERVER_ERROR,
+        );
+    }
+
+    await repo.updateUser(decoded.user_id, {
+        two_fa_secret: encryptSecret(secret.base32),
+        two_fa_enabled: false,
+    });
+
+    const qrCode = await QRCode.toDataURL(secret.otpauth_url);
+
+    return {
+        qrCode,
+        secret: secret.base32,
+        user_id: decoded.user_id,
+    };
+};
+
+// -------------------- VERIFY 2FA WITH TOKEN (FOR LOST AUTHENTICATOR) --------------------
+export const verify2FAWithTokenService = async (
+    setupToken: string,
+    token: string,
+) => {
+    const decoded = jwt.verify(
+        setupToken,
+        JWT_SECRET as string,
+    ) as JwtPayload & { user_id?: string; type?: string };
+
+    if (decoded.type !== 'lost_authenticator_setup' || !decoded.user_id) {
+        throw new CustomError('Invalid setup token', StatusCodes.BAD_REQUEST);
+    }
+
+    const user = await repo.findUserById(decoded.user_id);
+    if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+
+    if (!user.two_fa_secret) {
+        throw new CustomError(
+            '2FA secret not found. Please setup 2FA first.',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+
+    const secret = decryptSecret(user.two_fa_secret);
+    const verified = speakeasy.totp.verify({
+        secret,
+        encoding: 'base32',
+        token,
+        window: 1,
+    });
+
+    if (!verified) {
+        throw new CustomError('Invalid 2FA token', StatusCodes.BAD_REQUEST);
+    }
+
+    await repo.updateUser(decoded.user_id, { two_fa_enabled: true });
+    return { success: true, user_id: decoded.user_id };
+};
+
+// -------------------- 2FA VERIFY (ENABLE) --------------------
+export const verify2FAService = async (user_id: string, token: string) => {
+    const user = await repo.findUserById(user_id);
+    if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+
+    if (!user.two_fa_secret) {
+        throw new CustomError(
+            '2FA secret not found. Please setup 2FA first.',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+
+    const secret = decryptSecret(user.two_fa_secret);
+    const verified = speakeasy.totp.verify({
+        secret,
+        encoding: 'base32',
+        token,
+        window: 1,
+    });
+
+    if (!verified) {
+        throw new CustomError('Invalid 2FA token', StatusCodes.BAD_REQUEST);
+    }
+
+    await repo.updateUser(user_id, { two_fa_enabled: true });
+    return { success: true };
+};
+
+// -------------------- 2FA DISABLE --------------------
+export const disable2FAService = async (
+    user_id: string,
+    password: string,
+    token?: string,
+) => {
+    const user = await repo.findUserById(user_id);
+    if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+
+    const validPassword = compareSync(password, user.password_hash);
+    if (!validPassword) {
+        throw new CustomError('Invalid password', StatusCodes.UNAUTHORIZED);
+    }
+
+    if (user.two_fa_enabled) {
+        if (!token) {
+            throw new CustomError(
+                '2FA token is required to disable 2FA',
+                StatusCodes.BAD_REQUEST,
+            );
+        }
+        if (!user.two_fa_secret) {
+            throw new CustomError(
+                '2FA secret missing. Please contact support.',
+                StatusCodes.BAD_REQUEST,
+            );
+        }
+        const secret = decryptSecret(user.two_fa_secret);
+        const verified = speakeasy.totp.verify({
+            secret,
+            encoding: 'base32',
+            token,
+            window: 1,
+        });
+        if (!verified) {
+            throw new CustomError('Invalid 2FA token', StatusCodes.BAD_REQUEST);
+        }
+    }
+
+    await repo.updateUser(user_id, {
+        two_fa_enabled: false,
+        two_fa_secret: null as any,
+    });
+
+    return { success: true };
+};
+
+// -------------------- LOST AUTHENTICATOR: SEND EMAIL OTP --------------------
+export const sendLostAuthenticatorOTPService = async (email: string) => {
+    const user = await repo.findUserByEmail(email);
+    if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+
+    if (!user.two_fa_enabled) {
+        throw new CustomError(
+            '2FA is not enabled for this account',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+
+    const otp = generateNumericOTP(4);
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await repo.updateUser(user.user_id, {
+        reset_otp: otp,
+        reset_otp_expiry: otpExpiry,
+    });
+
+    const recoveryToken = jwt.sign(
+        { email, type: 'lost_authenticator' },
+        JWT_SECRET as string,
+        { expiresIn: '15m' },
+    );
+
+    const { html, text } = EmailTemplete(otp, otpExpiry);
+
+    await sendMail({
+        to: email,
+        subject: 'Lost Authenticator Recovery - OTP',
+        text,
+        html,
+    });
+
+    return { recoveryToken };
+};
+
+// -------------------- LOST AUTHENTICATOR: VERIFY EMAIL OTP AND DISABLE 2FA --------------------
+export const verifyLostAuthenticatorOTPAndDisable2FAService = async (
+    otp: string,
+    recoveryToken: string,
+) => {
+    const decoded = jwt.verify(
+        recoveryToken,
+        JWT_SECRET as string,
+    ) as ResetTokenPayload & { type?: string };
+
+    if (decoded.type !== 'lost_authenticator') {
+        throw new CustomError('Invalid recovery token', StatusCodes.BAD_REQUEST);
+    }
+
+    const user = await repo.findUserByEmail(decoded.email);
+    if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+
+    if (!user.two_fa_enabled) {
+        throw new CustomError(
+            '2FA is not enabled for this account',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+
+    if (user.reset_otp !== otp) {
+        throw new CustomError('Invalid OTP', StatusCodes.BAD_REQUEST);
+    }
+
+    if (
+        !user.reset_otp_expiry ||
+        Date.now() > user.reset_otp_expiry.getTime()
+    ) {
+        throw new CustomError('OTP expired', StatusCodes.BAD_REQUEST);
+    }
+
+    // Disable 2FA without requiring 2FA token (since user lost authenticator)
+    await repo.updateUser(user.user_id, {
+        two_fa_enabled: false,
+        two_fa_secret: null as any,
+        reset_otp: null,
+        reset_otp_expiry: null,
+    });
+
+    // Generate a token for setting up new 2FA
+    const setupToken = jwt.sign(
+        { user_id: user.user_id, email: user.email, type: 'lost_authenticator_setup' },
+        JWT_SECRET as string,
+        { expiresIn: '30m' },
+    );
+
+    return { setupToken, user: sanitizeUser(user) };
+};
+
+// -------------------- 2FA VERIFY LOGIN (STEP 2) --------------------
+export const verifyLogin2FAService = async (
+    twoFactorToken: string,
+    token: string,
+) => {
+    let decoded: TwoFALoginTokenPayload;
+    try {
+        decoded = jwt.verify(
+            twoFactorToken,
+            JWT_SECRET as string,
+        ) as TwoFALoginTokenPayload;
+    } catch {
+        throw new CustomError(
+            'Invalid or expired 2FA session',
+            StatusCodes.UNAUTHORIZED,
+        );
+    }
+
+    if (decoded.type !== '2fa_login' || !decoded.user_id) {
+        throw new CustomError('Invalid 2FA session', StatusCodes.UNAUTHORIZED);
+    }
+
+    const user = await repo.findUserById(decoded.user_id);
+    if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+
+    if (!user.two_fa_enabled || !user.two_fa_secret) {
+        throw new CustomError(
+            '2FA not enabled for this account',
+            StatusCodes.BAD_REQUEST,
+        );
+    }
+
+    const secret = decryptSecret(user.two_fa_secret);
+    const verified = speakeasy.totp.verify({
+        secret,
+        encoding: 'base32',
+        token,
+        window: 1,
+    });
+    if (!verified) {
+        throw new CustomError('Invalid 2FA token', StatusCodes.BAD_REQUEST);
+    }
+
+    const role = await DB.Roles.findOne({ where: { id: user.role_id } });
+    if (!role)
+        throw new CustomError(
+            'User role not found',
+            StatusCodes.INTERNAL_SERVER_ERROR,
+        );
+
+    const payload = { user_id: user.user_id, role: role.roleName };
+    const accessToken = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
+
+    return {
+        user: sanitizeUser(user),
+        accessToken,
+        refreshToken,
     };
 };
 
@@ -281,25 +703,6 @@ export const refreshTokenService = async (refreshToken: string) => {
 export const logoutUser = async () => {
     // Stateless logout → clear cookie only
     return { message: 'Logged out successfully' };
-};
-
-// -------------------- 2FA SETUP --------------------
-export const generate2FAUser = async (user_id: string, email: string) => {
-    const user = await repo.findUserById(user_id);
-    if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
-
-    const { secret, qrCodeUrl } = await generate2FASecret(user_id, email);
-    return { secret, qrCodeUrl };
-};
-
-// -------------------- 2FA VERIFY --------------------
-export const verify2FAUser = async (user_id: string, token: string) => {
-    const valid = await verifyOTP(user_id, token);
-    if (!valid) throw new CustomError('Invalid OTP', StatusCodes.BAD_REQUEST);
-
-    await enable2FA(user_id);
-
-    return { success: true };
 };
 
 // -------------------- FORGOT PASSWORD --------------------
@@ -505,6 +908,8 @@ export const verifyEmailService = async (token: string) => {
             type: string;
         };
 
+        console.log('🔍 [VERIFY EMAIL] Decoded token payload:', decoded);
+
         if (decoded.type !== 'email_verification') {
             throw new CustomError(
                 'Invalid token type',
@@ -515,6 +920,15 @@ export const verifyEmailService = async (token: string) => {
         const user = await repo.findUserByEmail(decoded.email);
         if (!user)
             throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+
+        // Debug info to assist in development: log whether stored token matches and expiry
+        console.log('🔍 [VERIFY EMAIL] Stored token present:', !!user.email_verification_token);
+        console.log(
+            '🔍 [VERIFY EMAIL] Stored token (truncated):',
+            user.email_verification_token ? user.email_verification_token.slice(0, 30) + '...' : null,
+        );
+        console.log('🔍 [VERIFY EMAIL] Provided token (truncated):', token.slice(0, 30) + '...');
+        console.log('🔍 [VERIFY EMAIL] Token expiry:', user.email_verification_token_expiry);
 
         // Check if token matches and is not expired
         if (user.email_verification_token !== token) {
@@ -799,7 +1213,7 @@ export const createSubAdmin = async (
         privacy_accepted_at: new Date(),
     });
 
-    return { user };
+    return { user: sanitizeUser(user) };
 };
 
 // -------------------- GET ALL SUBADMINS (SUPERADMIN ONLY) --------------------

@@ -28,10 +28,11 @@ const s3Client =
  * Ensure local storage directory exists
  */
 const ensureLocalStorageDir = (): void => {
-    if (!fs.existsSync(STORAGE_CONFIG.localStoragePath)) {
-        fs.mkdirSync(STORAGE_CONFIG.localStoragePath, { recursive: true });
+    const absPath = path.resolve(STORAGE_CONFIG.localStoragePath);
+    if (!fs.existsSync(absPath)) {
+        fs.mkdirSync(absPath, { recursive: true });
         logger.info(
-            `Created local storage directory: ${STORAGE_CONFIG.localStoragePath}`,
+            `Created local storage directory: ${absPath}`,
         );
     }
 };
@@ -45,13 +46,14 @@ const saveToLocalStorage = async (
 ): Promise<{ path: string; storageType: string }> => {
     ensureLocalStorageDir();
 
-    const folderPath = path.join(STORAGE_CONFIG.localStoragePath, folder);
+    const absDirPath = path.resolve(STORAGE_CONFIG.localStoragePath);
+    const folderPath = path.join(absDirPath, folder);
     if (!fs.existsSync(folderPath)) {
         fs.mkdirSync(folderPath, { recursive: true });
     }
 
     const fileName = `${Date.now()}-${file.originalname}`;
-    const filePath = path.join(folderPath, fileName);
+    const filePath = path.resolve(folderPath, fileName);
 
     fs.writeFileSync(filePath, file.buffer);
 
@@ -119,13 +121,48 @@ const getS3FileUrl = async (key: string): Promise<string> => {
 };
 
 /**
+ * Resolve file path - converts relative to absolute if needed
+ */
+const resolveFilePath = (filePath: string): string => {
+    const isAbsolute = path.isAbsolute(filePath);
+    console.log(`[STORAGE] resolveFilePath input: ${filePath}, isAbsolute: ${isAbsolute}`);
+    
+    if (isAbsolute) {
+        console.log(`[STORAGE] Path is already absolute, returning as-is`);
+        return filePath;
+    }
+    
+    // If relative, resolve against project root
+    const resolved = path.resolve(process.cwd(), filePath);
+    console.log(`[STORAGE] Resolved relative path. CWD: ${process.cwd()}, Result: ${resolved}`);
+    return resolved;
+};
+
+/**
  * Get file from local storage
  */
 export const getLocalFile = (filePath: string): Buffer | null => {
-    if (!fs.existsSync(filePath)) {
+    const resolvedPath = resolveFilePath(filePath);
+    console.log(`[STORAGE] getLocalFile: checking ${resolvedPath}`);
+    
+    const exists = fs.existsSync(resolvedPath);
+    console.log(`[STORAGE] File exists at ${resolvedPath}: ${exists}`);
+    
+    if (!exists) {
+        logger.warn(`File not found at: ${resolvedPath} (original: ${filePath})`);
+        console.error(`[STORAGE] ERROR: File does not exist at ${resolvedPath}`);
         return null;
     }
-    return fs.readFileSync(filePath);
+    
+    try {
+        const buffer = fs.readFileSync(resolvedPath);
+        console.log(`[STORAGE] Successfully read file. Size: ${buffer.length} bytes`);
+        return buffer;
+    } catch (err: any) {
+        console.error(`[STORAGE] Error reading file: ${err.message}`);
+        logger.error(`Error reading file at ${resolvedPath}: ${err.message}`);
+        return null;
+    }
 };
 
 /**
@@ -171,9 +208,10 @@ export const deleteFile = async (
         // S3 delete implementation can be added if needed
         logger.info(`File deletion from S3 requested: ${filePath}`);
     } else {
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-            logger.info(`File deleted from local storage: ${filePath}`);
+        const resolvedPath = resolveFilePath(filePath);
+        if (fs.existsSync(resolvedPath)) {
+            fs.unlinkSync(resolvedPath);
+            logger.info(`File deleted from local storage: ${resolvedPath}`);
         }
     }
 };

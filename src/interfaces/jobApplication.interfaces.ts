@@ -6,6 +6,7 @@ export interface JobApplication {
   cover_letter?: string;
   resume_url?: string;
   applied_at: Date;
+  completed_at?: Date;
   reviewed_at?: Date;
   reviewed_by?: string;
   created_at: Date;

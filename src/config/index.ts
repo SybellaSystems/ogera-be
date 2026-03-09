@@ -76,6 +76,14 @@ export const EMAIL_CONFIG = {
     frontendUrl: FRONTEND_URL || 'http://localhost:5173',
 };
 
+// Pesapal Payment Configuration
+export const PESAPAL_CONFIG = {
+    consumerKey: process.env.PESAPAL_CONSUMER_KEY || '',
+    consumerSecret: process.env.PESAPAL_CONSUMER_SECRET || '',
+    isSandbox: process.env.PESAPAL_SANDBOX !== 'false', // Default to sandbox for safety
+    baseUrl: process.env.BASE_URL || 'http://localhost:5000',
+};
+
 // SMS Configuration
 export const SMS_CONFIG = {
     provider: (process.env.SMS_PROVIDER || 'console') as

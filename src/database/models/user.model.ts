@@ -28,6 +28,8 @@ export type UserCreationAttributes = Optional<
     | 'phone_verified'
     | 'phone_verification_otp'
     | 'phone_verification_otp_expiry'
+    | 'login_2fa_otp'
+    | 'login_2fa_otp_expiry'
     | 'role_type'
 >;
 
@@ -87,6 +89,24 @@ export default function (sequelize: Sequelize): typeof UserModel {
                 type: DataTypes.UUID,
                 defaultValue: DataTypes.UUIDV4,
                 primaryKey: true,
+            },
+
+            // Some DB setups have an `id` column (legacy). Ensure we populate it on create
+            id: {
+                type: DataTypes.UUID,
+                allowNull: false,
+                defaultValue: DataTypes.UUIDV4,
+                // keep as a regular column (not primaryKey) so existing code using `user_id` remains valid
+                field: 'id',
+            },
+
+            // Legacy `name` column: ensure it's populated to avoid NOT NULL constraint errors
+            name: {
+                type: DataTypes.STRING(255),
+                allowNull: false,
+                defaultValue: '',
+                comment: 'Legacy name column (kept for compatibility with older DB schemas)',
+                field: 'name',
             },
 
             email: {
@@ -256,6 +276,29 @@ export default function (sequelize: Sequelize): typeof UserModel {
             timestamps: true,
             createdAt: 'created_at',
             updatedAt: 'updated_at',
+            hooks: {
+                beforeCreate: (instance: any) => {
+                    // Populate legacy `name` column from `full_name` if available
+                    try {
+                        const fullName = instance.getDataValue('full_name') || instance.getDataValue('fullName') || instance.getDataValue('full_name');
+                        if (fullName) {
+                            instance.setDataValue('name', fullName);
+                        }
+                    } catch (e) {
+                        // swallow - defensive
+                    }
+                },
+                beforeUpdate: (instance: any) => {
+                    try {
+                        const fullName = instance.getDataValue('full_name') || instance.getDataValue('fullName');
+                        if (fullName) {
+                            instance.setDataValue('name', fullName);
+                        }
+                    } catch (e) {
+                        // swallow
+                    }
+                },
+            },
         },
     );
 

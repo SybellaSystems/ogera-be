@@ -133,7 +133,7 @@ export const deleteCourse = async (
     req: Request,
     res: Response,
     next: NextFunction,
-) => {
+): Promise<void> => {
     try {
         const { id } = req.params;
         const result = await deleteCourseService(id as string);

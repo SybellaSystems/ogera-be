@@ -6,10 +6,12 @@ import {
     registerUser,
     addUser,
     loginUser,
-    generate2FAUser,
+    setup2FAService,
+    verify2FAService,
+    disable2FAService,
+    verifyLogin2FAService,
     refreshTokenService,
     logoutUser,
-    verify2FAUser,
     forgotPasswordService,
     verifyResetOTPService,
     resetPasswordService,
@@ -28,6 +30,10 @@ import {
     updateSubAdminService,
     deleteSubAdminService,
     deleteUserService,
+    sendLostAuthenticatorOTPService,
+    verifyLostAuthenticatorOTPAndDisable2FAService,
+    setup2FAWithTokenService,
+    verify2FAWithTokenService,
 } from './auth.service';
 
 const response = new ResponseFormat();
@@ -93,12 +99,37 @@ export const addUserController = async (
 // -------------------- LOGIN --------------------
 export const login = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { user, accessToken, refreshToken, two_fa_enabled } =
-            await loginUser(req.body);
+        const result: any = await loginUser(req.body);
+
+        // If 2FA is enabled, require step-2 verification before issuing tokens/cookies
+        if (result?.requires2FA) {
+            response.response(
+                res,
+                true,
+                StatusCodes.OK,
+                {
+                    requires2FA: true,
+                    twoFactorToken: result.twoFactorToken,
+                    user: result.user,
+                },
+                '2FA verification required',
+            );
+            return;
+        }
+
+        const { user, accessToken, refreshToken } = result;
 
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
-            secure: false,
+            // secure: false,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+        // 2. The Hint Cookie (NOT httpOnly - so JS can read it) ⭐
+        res.cookie('isLoggedIn', 'true', {
+            httpOnly: false, // Accessible by frontend
+            secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
@@ -107,7 +138,306 @@ export const login = async (req: Request, res: Response): Promise<void> => {
             res,
             true,
             StatusCodes.OK,
-            { user, accessToken, two_fa_enabled },
+            { user, accessToken },
+            'User logged in successfully',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// -------------------- 2FA SETUP --------------------
+export const setup2FA = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = req.user?.user_id;
+        if (!userId) {
+            response.errorResponse(
+                res,
+                StatusCodes.UNAUTHORIZED,
+                false,
+                'User not authenticated',
+            );
+            return;
+        }
+
+        const data = await setup2FAService(userId);
+        response.response(res, true, StatusCodes.OK, data, '2FA setup successful');
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// -------------------- 2FA VERIFY (ENABLE) --------------------
+export const verify2FA = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = req.user?.user_id;
+        if (!userId) {
+            response.errorResponse(
+                res,
+                StatusCodes.UNAUTHORIZED,
+                false,
+                'User not authenticated',
+            );
+            return;
+        }
+
+        const { token } = req.body;
+        if (!token) {
+            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'Token is required');
+            return;
+        }
+
+        await verify2FAService(userId, token);
+        response.response(res, true, StatusCodes.OK, {}, '2FA enabled successfully');
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// -------------------- 2FA DISABLE --------------------
+export const disable2FA = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = req.user?.user_id;
+        if (!userId) {
+            response.errorResponse(
+                res,
+                StatusCodes.UNAUTHORIZED,
+                false,
+                'User not authenticated',
+            );
+            return;
+        }
+
+        const { password, token } = req.body;
+        if (!password) {
+            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'Password is required');
+            return;
+        }
+
+        await disable2FAService(userId, password, token);
+        response.response(res, true, StatusCodes.OK, {}, '2FA disabled successfully');
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// -------------------- LOST AUTHENTICATOR: SEND EMAIL OTP --------------------
+export const sendLostAuthenticatorOTP = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'Email is required',
+            );
+            return;
+        }
+
+        const result = await sendLostAuthenticatorOTPService(email);
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            result,
+            'OTP sent to your email',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// -------------------- LOST AUTHENTICATOR: VERIFY EMAIL OTP AND DISABLE 2FA --------------------
+export const verifyLostAuthenticatorOTPAndDisable2FA = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const { otp, recoveryToken } = req.body;
+        if (!otp) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'OTP is required',
+            );
+            return;
+        }
+        if (!recoveryToken) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'Recovery token is required',
+            );
+            return;
+        }
+
+        const result = await verifyLostAuthenticatorOTPAndDisable2FAService(
+            otp,
+            recoveryToken,
+        );
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            result,
+            '2FA disabled successfully. Please setup new 2FA.',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// -------------------- LOST AUTHENTICATOR: SETUP 2FA WITH TOKEN --------------------
+export const setup2FAWithToken = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const { setupToken } = req.body;
+        if (!setupToken) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'Setup token is required',
+            );
+            return;
+        }
+
+        const result = await setup2FAWithTokenService(setupToken);
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            result,
+            '2FA setup successful',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// -------------------- LOST AUTHENTICATOR: VERIFY 2FA WITH TOKEN --------------------
+export const verify2FAWithToken = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const { setupToken, token } = req.body;
+        if (!setupToken) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'Setup token is required',
+            );
+            return;
+        }
+        if (!token) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                '2FA token is required',
+            );
+            return;
+        }
+
+        const result = await verify2FAWithTokenService(setupToken, token);
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            result,
+            '2FA verified and enabled successfully',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// -------------------- 2FA VERIFY LOGIN (STEP 2) --------------------
+export const verifyLogin2FA = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { twoFactorToken, token } = req.body;
+        if (!twoFactorToken) {
+            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'twoFactorToken is required');
+            return;
+        }
+        if (!token) {
+            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'Token is required');
+            return;
+        }
+
+        const { user, accessToken, refreshToken } = await verifyLogin2FAService(
+            twoFactorToken,
+            token,
+        );
+
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+        res.cookie('isLoggedIn', 'true', {
+            httpOnly: false,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            { user, accessToken },
             'User logged in successfully',
         );
     } catch (error: any) {
@@ -128,7 +458,8 @@ export const refreshAccessToken = async (
     try {
         const refreshToken = req.cookies.refreshToken;
         if (!refreshToken) {
-            response.errorResponse(res, 401, false, 'Refresh token missing');
+            // response.errorResponse(res, 401, false, 'Refresh token missing');
+            response.errorResponse(res, StatusCodes.UNAUTHORIZED, false, 'No session found');
             return;
         }
 
@@ -138,7 +469,8 @@ export const refreshAccessToken = async (
 
         res.cookie('refreshToken', newRefreshToken, {
             httpOnly: true,
-            secure: false,
+            // secure: false,
+            secure: process.env.NODE_ENV === 'production', // Only true in production
             sameSite: 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
@@ -166,6 +498,7 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
         await logoutUser();
 
         res.clearCookie('refreshToken');
+        res.clearCookie('isLoggedIn'); // Clear the hint ⭐
 
         response.response(
             res,
@@ -173,54 +506,6 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
             StatusCodes.OK,
             {},
             'Logged out successfully',
-        );
-    } catch (error: any) {
-        response.errorResponse(
-            res,
-            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
-            false,
-            error.message,
-        );
-    }
-};
-
-// -------------------- 2FA SETUP --------------------
-export const setup2FA = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { user_id, email } = req.body;
-
-        const result = await generate2FAUser(user_id, email);
-
-        response.response(
-            res,
-            true,
-            StatusCodes.OK,
-            result,
-            '2FA setup successful',
-        );
-    } catch (error: any) {
-        response.errorResponse(
-            res,
-            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
-            false,
-            error.message,
-        );
-    }
-};
-
-// -------------------- 2FA VERIFY --------------------
-export const verify2FA = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { user_id, token } = req.body;
-
-        const result = await verify2FAUser(user_id, token);
-
-        response.response(
-            res,
-            true,
-            StatusCodes.OK,
-            result,
-            '2FA verified successfully',
         );
     } catch (error: any) {
         response.errorResponse(
@@ -1027,3 +1312,4 @@ export const verifyPhone = async (
         );
     }
 };
+

@@ -11,6 +11,8 @@ import {
   getAllAcademicVerificationsService,
   getPendingAcademicVerificationsService,
 } from './academicVerification.service';
+import { getFileUrl, getLocalFile } from '@/utils/storage.service';
+import * as path from 'path';
 
 const response = new ResponseFormat();
 
@@ -50,6 +52,81 @@ export const uploadAcademicDoc = async (req: any, res: Response): Promise<void> 
       'Academic document uploaded successfully. Status: pending'
     );
   } catch (error: any) {
+    response.errorResponse(
+      res,
+      error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+      false,
+      error.message
+    );
+  }
+};
+
+  // -------------------- DOWNLOAD / VIEW DOCUMENT --------------------
+  export const getAcademicVerificationDocument = async (req: any, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.user_id;
+      const role = req.user?.role;
+
+    console.log(`[VIEW_DOC] Request for doc ID: ${id}, User: ${userId}, Role: ${role}`);
+
+    const verification = await getAcademicVerificationByIdService(id);
+    console.log(`[VIEW_DOC] Verification found. Storage type: ${verification.storage_type}, Path: ${verification.document_path}`);
+
+    // Students can only access their own document
+    if (role === 'student' && verification.user_id !== userId) {
+      response.errorResponse(
+        res,
+        StatusCodes.FORBIDDEN,
+        false,
+        'You can only view your own academic verification document'
+      );
+      return;
+    }
+
+    const { storage_type, document_path } = verification as any;
+
+    if (storage_type === 's3') {
+      // Return presigned URL so frontend can open it directly
+      const url = await getFileUrl(document_path, 's3');
+      console.log(`[VIEW_DOC] S3 URL generated: ${url}`);
+      res.status(StatusCodes.OK).json({ success: true, url });
+      return;
+    }
+
+    // Local storage: stream the file as binary
+    console.log(`[VIEW_DOC] Attempting to fetch local file: ${document_path}`);
+    const fileBuffer = getLocalFile(document_path);
+    if (!fileBuffer) {
+      console.error(`[VIEW_DOC] File buffer is null for path: ${document_path}`);
+      response.errorResponse(
+        res,
+        StatusCodes.NOT_FOUND,
+        false,
+        'Document file not found on server'
+      );
+      return;
+    }
+
+    // Determine content type from extension (basic mapping)
+    const ext = path.extname(document_path || '').toLowerCase();
+    const mimeMap: Record<string, string> = {
+      '.pdf': 'application/pdf',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.doc': 'application/msword',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    };
+
+    const contentType = mimeMap[ext] || 'application/octet-stream';
+    console.log(`[VIEW_DOC] Sending file with content type: ${contentType}, size: ${fileBuffer.length} bytes`);
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', 'inline');
+    res.status(StatusCodes.OK).send(fileBuffer);
+  } catch (error: any) {
+    console.error(`[VIEW_DOC] Error:`, error);
     response.errorResponse(
       res,
       error.status || StatusCodes.INTERNAL_SERVER_ERROR,

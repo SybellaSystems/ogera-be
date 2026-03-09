@@ -50,6 +50,28 @@ dns.lookup = function (hostname: any, options: any, callback: any) {
 // Extract endpoint ID for Neon (everything before first dot)
 const endpointId = DB_HOST?.split('.')[0] || '';
 
+// Determine if SSL should be used
+// SSL is required for cloud databases (Neon, AWS RDS, etc.) but not for local databases
+const useSSL = process.env.DB_USE_SSL === 'true' || 
+               (DB_HOST && !DB_HOST.includes('localhost') && !DB_HOST.includes('127.0.0.1'));
+
+// Build dialect options conditionally
+const dialectOptions: any = {};
+
+if (useSSL) {
+    dialectOptions.ssl = {
+        require: true,
+        rejectUnauthorized: false,
+    };
+    // Add endpoint parameter for Neon SNI support
+    // if (endpointId) {
+    //     dialectOptions.options = `endpoint=${endpointId}`;
+    // }
+    logger.info('🔒 SSL enabled for database connection');
+} else {
+    logger.info('🔓 SSL disabled for local database connection');
+}
+
 const sequelize = new Sequelize.Sequelize(DB_NAME!, DB_USERNAME!, DB_PASSWORD, {
     dialect: DB_DIALECT as Sequelize.Dialect,
     host: DB_HOST,
@@ -512,6 +534,19 @@ const ensureUserTableColumns = async () => {
         logger.info('Users table does not exist, will be created by sync');
         return;
     }
+
+    // Add legacy id column if missing (used by some parts of the codebase)
+    await ensureColumnExists('users', 'id', {
+        type: Sequelize.DataTypes.UUID,
+        allowNull: true, // keep nullable for existing rows; model will populate for new ones
+    });
+
+    // Add legacy name column if missing (used for backward‑compatibility)
+    await ensureColumnExists('users', 'name', {
+        type: Sequelize.DataTypes.STRING(255),
+        allowNull: true,
+        defaultValue: '',
+    });
 
     // Add role_id if missing
     await ensureColumnExists('users', 'role_id', {

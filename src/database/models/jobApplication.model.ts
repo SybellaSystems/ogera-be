@@ -5,7 +5,7 @@ import { UserModel } from "./user.model";
 
 export type JobApplicationCreationAttributes = Optional<
   JobApplication,
-  "application_id" | "status" | "reviewed_at" | "reviewed_by" | "created_at" | "updated_at"
+  "application_id" | "status" | "completed_at" | "reviewed_at" | "reviewed_by" | "created_at" | "updated_at"
 >;
 
 export class JobApplicationModel
@@ -19,6 +19,7 @@ export class JobApplicationModel
   public cover_letter?: string;
   public resume_url?: string;
   public applied_at!: Date;
+  public completed_at?: Date;
   public reviewed_at?: Date;
   public reviewed_by?: string;
   public readonly created_at!: Date;
@@ -73,6 +74,10 @@ export default function (sequelize: Sequelize): typeof JobApplicationModel {
         type: DataTypes.DATE,
         defaultValue: Sequelize.literal("NOW()"),
         allowNull: false,
+      },
+      completed_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
       },
       reviewed_at: {
         type: DataTypes.DATE,

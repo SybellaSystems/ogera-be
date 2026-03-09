@@ -202,6 +202,19 @@ export const applyForJobService = async (
         }
     }
 
+    // Write activity log for application (audit)
+    try {
+        await DB.ActivityLogs.create({
+            user_id: student_id || null,
+            action: 'job_application',
+            entity_type: 'JobApplication',
+            entity_id: application.application_id,
+            description: `Student ${student_id} applied to job ${job_id}`,
+        } as any);
+    } catch (e) {
+        // Swallow logging errors
+    }
+
     return normalizeApplicationResumeUrl(result);
 };
 
@@ -264,6 +277,7 @@ export const getJobApplicationsService = async (
 export const getEmployerApplicationsService = async (
     user_id: string,
     userRole: string,
+    status?: string,
 ) => {
     // Check if user has permission
     const user = await DB.Users.findOne({
@@ -296,14 +310,28 @@ export const getEmployerApplicationsService = async (
         );
     }
 
+    const normalizedStatus =
+        status && typeof status === 'string' ? status.trim() : undefined;
+
+    // Validate status filter if provided
+    const statusFilter =
+        normalizedStatus &&
+        ['Pending', 'Accepted', 'Rejected'].includes(normalizedStatus)
+            ? (normalizedStatus as 'Pending' | 'Accepted' | 'Rejected')
+            : undefined;
+
     // If user is employer, get their applications
     if (roleType === 'employer') {
-        const applications = await repo.findAllApplicationsForEmployer(user_id);
+        const applications = await repo.findAllApplicationsForEmployer(
+            user_id,
+            statusFilter,
+        );
         return normalizeApplicationsResumeUrls(applications);
     }
 
     // If user is superadmin, get all applications
     const applications = await DB.JobApplications.findAll({
+        ...(statusFilter ? { where: { status: statusFilter } } : {}),
         include: [
             {
                 model: DB.Jobs,
@@ -364,7 +392,10 @@ export const getEmployerApplicationsService = async (
 };
 
 // Get student's own applications
-export const getStudentApplicationsService = async (student_id: string) => {
+export const getStudentApplicationsService = async (
+    student_id: string,
+    status?: string,
+) => {
     // Check if user is a student
     const student = await DB.Users.findOne({
         where: { user_id: student_id },
@@ -389,7 +420,18 @@ export const getStudentApplicationsService = async (student_id: string) => {
         );
     }
 
-    const applications = await repo.findAllApplicationsByStudent(student_id);
+    const normalizedStatus =
+        status && typeof status === 'string' ? status.trim() : undefined;
+    const statusFilter =
+        normalizedStatus &&
+        ['Pending', 'Accepted', 'Rejected'].includes(normalizedStatus)
+            ? (normalizedStatus as 'Pending' | 'Accepted' | 'Rejected')
+            : undefined;
+
+    const applications = await repo.findAllApplicationsByStudent(
+        student_id,
+        statusFilter,
+    );
     return normalizeApplicationsResumeUrls(applications);
 };
 

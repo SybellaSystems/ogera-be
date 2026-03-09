@@ -119,6 +119,7 @@ export const getEmployerApplications = async (
         const applications = await getEmployerApplicationsService(
             req.user.user_id,
             req.user.role,
+            (req.query.status as string | undefined) || undefined,
         );
         response.response(
             res,
@@ -155,6 +156,7 @@ export const getStudentApplications = async (
         }
         const applications = await getStudentApplicationsService(
             req.user.user_id,
+            (req.query.status as string | undefined) || undefined,
         );
         response.response(
             res,
