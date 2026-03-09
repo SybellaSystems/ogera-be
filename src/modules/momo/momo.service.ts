@@ -1,9 +1,10 @@
 import axios, { AxiosError } from 'axios';
 import { randomUUID } from 'crypto';
-import { MOMO_CONFIG } from '@/config';
+import { MOMO_CONFIG, MOMO_DISBURSEMENT_CONFIG } from '@/config';
 import logger from '@/utils/logger';
 
 const { baseUrl, subscriptionKey, apiUserId, apiKey, targetEnvironment, serviceFeePercent, currency: defaultCurrency } = MOMO_CONFIG;
+const dispConfig = MOMO_DISBURSEMENT_CONFIG;
 
 let cachedAccessToken: string | null = null;
 
@@ -237,6 +238,179 @@ export async function handleCallback(body: unknown): Promise<void> {
  */
 export function parseCallbackPayload(body: unknown): void {
     handleCallback(body).catch((err) => logger.error('MoMo handleCallback error:', err));
+}
+
+// --- Disbursement (pay students from Ogera wallet) ---
+
+let cachedDisbursementToken: string | null = null;
+
+function getDisbursementAuthHeader(): string {
+    const basicAuth = Buffer.from(`${dispConfig.apiUserId}:${dispConfig.apiKey}`).toString('base64');
+    return `Basic ${basicAuth}`;
+}
+
+async function getDisbursementToken(): Promise<string> {
+    if (!dispConfig.subscriptionKey || !dispConfig.apiUserId || !dispConfig.apiKey) {
+        throw new Error('MoMo Disbursement is not configured. Set MOMO_DISBURSEMENT_SUBSCRIPTION_KEY, MOMO_DISBURSEMENT_USER_ID, MOMO_DISBURSEMENT_API_KEY.');
+    }
+    const response = await axios.post(
+        `${dispConfig.baseUrl}/disbursement/token/`,
+        {},
+        {
+            headers: {
+                Authorization: getDisbursementAuthHeader(),
+                'Ocp-Apim-Subscription-Key': dispConfig.subscriptionKey,
+            },
+        }
+    );
+    cachedDisbursementToken = response.data?.access_token ?? null;
+    if (!cachedDisbursementToken) throw new Error('MoMo Disbursement token response missing access_token');
+    return cachedDisbursementToken;
+}
+
+export interface DisbursementTransferPayload {
+    amount: string;
+    currency: string;
+    externalId: string;
+    partyId: string;
+    payerMessage?: string;
+    payeeNote?: string;
+}
+
+/**
+ * Disbursement transfer: send money from Ogera wallet to payee (student) MoMo.
+ */
+export async function disbursementTransfer(payload: DisbursementTransferPayload): Promise<{ referenceId: string }> {
+    const token = await getDisbursementToken();
+    const referenceId = randomUUID();
+    await axios.post(
+        `${dispConfig.baseUrl}/disbursement/v1_0/transfer`,
+        {
+            amount: payload.amount,
+            currency: payload.currency,
+            externalId: payload.externalId,
+            payee: { partyIdType: 'MSISDN', partyId: normalizePartyId(payload.partyId) },
+            payerMessage: payload.payerMessage ?? 'Ogera job payment',
+            payeeNote: payload.payeeNote ?? 'Payment for completed job',
+        },
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'X-Reference-Id': referenceId,
+                'X-Target-Environment': dispConfig.targetEnvironment,
+                'Ocp-Apim-Subscription-Key': dispConfig.subscriptionKey,
+                'Content-Type': 'application/json',
+            },
+        }
+    );
+    return { referenceId };
+}
+
+/**
+ * Get Ogera disbursement account balance (wallet total – money received from employers, available for payouts).
+ */
+export async function getDisbursementAccountBalance(): Promise<{ availableBalance: string; currency: string }> {
+    const token = await getDisbursementToken();
+    const response = await axios.get(
+        `${dispConfig.baseUrl}/disbursement/v1_0/account/balance`,
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'X-Target-Environment': dispConfig.targetEnvironment,
+                'Ocp-Apim-Subscription-Key': dispConfig.subscriptionKey,
+            },
+        }
+    );
+    const data = response.data as { availableBalance?: string; currency?: string };
+    return {
+        availableBalance: data?.availableBalance ?? '0',
+        currency: data?.currency ?? dispConfig.currency,
+    };
+}
+
+/**
+ * Get disbursement transfer status by reference ID.
+ */
+export async function getDisbursementTransferStatus(referenceId: string): Promise<unknown> {
+    const token = await getDisbursementToken();
+    const response = await axios.get(
+        `${dispConfig.baseUrl}/disbursement/v1_0/transfer/${referenceId}`,
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'X-Target-Environment': dispConfig.targetEnvironment,
+                'Ocp-Apim-Subscription-Key': dispConfig.subscriptionKey,
+            },
+        }
+    );
+    return response.data;
+}
+
+/**
+ * Approve work and pay student: employer triggers this when work is done.
+ * Job must be Funded; job must have exactly one Accepted application.
+ * Transfers job.budget to student's MoMo, marks application completed_at and job as Paid.
+ */
+export async function payStudentForJob(jobId: string, userId: string): Promise<{ referenceId: string; amount: number }> {
+    const { DB } = await import('@/database');
+    const job = await DB.Jobs.findOne({
+        where: { job_id: jobId },
+        include: [
+            {
+                model: DB.JobApplications,
+                as: 'jobApplications',
+                where: { status: 'Accepted' },
+                required: true,
+                include: [
+                    { model: DB.Users, as: 'student', attributes: ['user_id', 'full_name', 'mobile_number'] },
+                ],
+            },
+        ],
+    });
+    if (!job) throw new Error('Job not found');
+    const jobAny = job as { employer_id: string; budget: number; funding_status?: string; jobApplications?: Array<{ application_id: string; student?: { mobile_number?: string } }> };
+    if (jobAny.employer_id !== userId) throw new Error('Only the job employer can approve work and pay the student');
+    if (jobAny.funding_status === 'Paid') throw new Error('Student has already been paid for this job');
+    if (jobAny.funding_status !== 'Funded') throw new Error('Job must be funded before paying the student');
+    const applications = jobAny.jobApplications;
+    if (!applications || applications.length === 0) throw new Error('No accepted application found for this job. Accept a student first.');
+    if (applications.length > 1) throw new Error('Multiple accepted applications; only one student can be paid per job.');
+    const student = applications[0].student;
+    const mobile = student?.mobile_number;
+    if (!mobile || !mobile.trim()) throw new Error('Student has no mobile number. Student must add MoMo number in profile to receive payment.');
+    const budget = Number(jobAny.budget) || 0;
+    if (budget <= 0) throw new Error('Job budget must be greater than zero');
+    // Employer paid (budget + 10%) = total in Ogera wallet. Student gets 90% of that; Ogera keeps 10%.
+    const totalInWallet = budget * (1 + serviceFeePercent / 100);
+    const amountToStudent = Math.round(totalInWallet * 0.9);
+    const amountStr = String(amountToStudent);
+    const referenceId = (
+        await disbursementTransfer({
+            amount: amountStr,
+            currency: dispConfig.currency,
+            externalId: jobId,
+            partyId: mobile,
+            payerMessage: `Ogera job payment: ${(job as { job_title?: string }).job_title || jobId}`,
+            payeeNote: 'Payment for completed job',
+        })
+    ).referenceId;
+    const applicationId = applications[0].application_id;
+    await DB.JobApplications.update(
+        { completed_at: new Date() },
+        { where: { application_id: applicationId } }
+    );
+    await DB.Jobs.update(
+        {
+            funding_status: 'Paid',
+            disbursement_reference_id: referenceId,
+            paid_at: new Date(),
+            status: 'Completed',
+            amount_paid_to_student: amountToStudent,
+        },
+        { where: { job_id: jobId } }
+    );
+    logger.info('Job paid via disbursement', { jobId, referenceId, amountToStudent, totalInWallet });
+    return { referenceId, amount: amountToStudent };
 }
 
 /**

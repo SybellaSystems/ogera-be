@@ -7,6 +7,9 @@ import {
     getInvoiceStatus,
     fundJob,
     listJobPayments,
+    getWalletBalance,
+    approveWorkAndPay,
+    getDisbursementStatus,
     callback,
 } from './momo.controller';
 import { authMiddleware } from '@/middlewares/auth.middleware';
@@ -20,8 +23,17 @@ momoRouter.get('/token', getToken);
 // Fund job (employer) - job amount + fee, request to pay to employer's MoMo
 momoRouter.post('/fund-job', authMiddleware, fundJob);
 
-// Admin: employer payments / job funding status
+// Admin: employer payments / job funding status (includes Paid)
 momoRouter.get('/admin/payments', authMiddleware, adminOrSuperadminOnly, listJobPayments);
+
+// Admin: Ogera wallet balance (disbursement account total)
+momoRouter.get('/admin/wallet-balance', authMiddleware, adminOrSuperadminOnly, getWalletBalance);
+
+// Employer: approve work and pay student via disbursement (job must be Funded, one Accepted application)
+momoRouter.post('/approve-work-and-pay', authMiddleware, approveWorkAndPay);
+
+// Disbursement transfer status (auth)
+momoRouter.get('/disbursement-status/:referenceId', authMiddleware, getDisbursementStatus);
 
 // Request to Pay - requires auth
 momoRouter.post('/request-to-pay', authMiddleware, requestToPay);

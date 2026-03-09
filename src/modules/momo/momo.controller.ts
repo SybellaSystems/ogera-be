@@ -188,25 +188,97 @@ export async function listJobPayments(req: Request, res: Response): Promise<void
         const { DB } = await import('@/database');
         const { Op } = await import('sequelize');
         const jobs = await DB.Jobs.findAll({
-            where: { funding_status: { [Op.in]: ['Pending', 'Funded'] } },
+            where: { funding_status: { [Op.in]: ['Pending', 'Funded', 'Paid'] } },
             include: [
                 { model: DB.Users, as: 'employer', attributes: ['user_id', 'full_name', 'email', 'mobile_number'] },
             ],
             order: [['momo_paid_at', 'DESC'], ['updated_at', 'DESC']],
         });
-        const list = (jobs as unknown[]).map((j: Record<string, unknown>) => ({
-            job_id: j.job_id,
-            job_title: j.job_title,
-            budget: j.budget,
-            funding_status: j.funding_status,
-            momo_reference_id: j.momo_reference_id,
-            momo_paid_at: j.momo_paid_at,
-            employer: (j as { employer?: Record<string, unknown> }).employer,
-        }));
+        const feePct = 10;
+        const list = (jobs as unknown[]).map((j: Record<string, unknown>) => {
+            const budget = Number(j.budget) || 0;
+            const stored = j.amount_paid_to_student != null ? Number(j.amount_paid_to_student) : null;
+            const amount_paid_to_student = stored ?? (j.funding_status === 'Paid' ? Math.round(budget * (1 + feePct / 100) * 0.9) : null);
+            return {
+                job_id: j.job_id,
+                job_title: j.job_title,
+                budget: j.budget,
+                funding_status: j.funding_status,
+                momo_reference_id: j.momo_reference_id,
+                momo_paid_at: j.momo_paid_at,
+                disbursement_reference_id: j.disbursement_reference_id,
+                paid_at: j.paid_at,
+                amount_paid_to_student,
+                employer: (j as { employer?: Record<string, unknown> }).employer,
+            };
+        });
         res.json({ success: true, data: list });
     } catch (error) {
         logger.error('MoMo listJobPayments error:', error);
         res.status(500).json({ success: false, message: (error as Error).message });
+    }
+}
+
+/**
+ * Approve work and pay student (employer only). Body: jobId.
+ * Job must be Funded and have one Accepted application. Transfers job.budget to student MoMo and marks job as Paid.
+ */
+export async function approveWorkAndPay(req: Request, res: Response): Promise<void> {
+    try {
+        const userId = req.user?.user_id;
+        if (!userId) {
+            res.status(401).json({ success: false, message: 'Unauthorized' });
+            return;
+        }
+        const { jobId } = req.body;
+        if (!jobId) {
+            res.status(400).json({ success: false, message: 'jobId is required' });
+            return;
+        }
+        const result = await momoService.payStudentForJob(String(jobId), userId);
+        res.json({
+            success: true,
+            message: 'Student paid successfully. Job marked as Paid.',
+            data: result,
+        });
+    } catch (error) {
+        const err = error as Error;
+        const { status, data } = momoService.toMoMoError(error);
+        logger.error('MoMo approveWorkAndPay error:', error);
+        res.status(status).json({ success: false, message: err.message, ...(typeof data === 'object' ? data : { message: data }) });
+    }
+}
+
+/**
+ * Get Ogera wallet balance (disbursement account – admin only). Shown on MoMo Payments page.
+ */
+export async function getWalletBalance(req: Request, res: Response): Promise<void> {
+    try {
+        const result = await momoService.getDisbursementAccountBalance();
+        res.json({ success: true, data: result });
+    } catch (error) {
+        const { status, data } = momoService.toMoMoError(error);
+        logger.error('MoMo getWalletBalance error:', error);
+        res.status(status).json({ success: false, ...(typeof data === 'object' ? data : { message: data }) });
+    }
+}
+
+/**
+ * Get disbursement transfer status (for admin or employer to check payout status).
+ */
+export async function getDisbursementStatus(req: Request, res: Response): Promise<void> {
+    try {
+        const { referenceId } = req.params;
+        if (!referenceId) {
+            res.status(400).json({ success: false, message: 'referenceId is required' });
+            return;
+        }
+        const data = await momoService.getDisbursementTransferStatus(referenceId);
+        res.json({ success: true, data });
+    } catch (error) {
+        const { status, data } = momoService.toMoMoError(error);
+        logger.error('MoMo getDisbursementStatus error:', error);
+        res.status(status).json({ success: false, ...(typeof data === 'object' ? data : { message: data }) });
     }
 }
 

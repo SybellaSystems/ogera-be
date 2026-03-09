@@ -84,6 +84,16 @@ export const MOMO_CONFIG = {
     currency: process.env.MOMO_CURRENCY || 'EUR',
 };
 
+// MTN MoMo Disbursement API (pay students from Ogera wallet)
+export const MOMO_DISBURSEMENT_CONFIG = {
+    baseUrl: process.env.MOMO_BASE_URL || 'https://sandbox.momodeveloper.mtn.com',
+    subscriptionKey: process.env.MOMO_DISBURSEMENT_SUBSCRIPTION_KEY || '',
+    apiUserId: process.env.MOMO_DISBURSEMENT_USER_ID || '',
+    apiKey: process.env.MOMO_DISBURSEMENT_API_KEY || '',
+    targetEnvironment: process.env.MOMO_TARGET_ENV || 'sandbox',
+    currency: process.env.MOMO_CURRENCY || 'EUR',
+};
+
 // SMS Configuration
 export const SMS_CONFIG = {
     provider: (process.env.SMS_PROVIDER || 'console') as 'twilio' | 'console' | 'none',
