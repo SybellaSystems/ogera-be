@@ -85,7 +85,7 @@ export async function submitPaymentOrder(req: Request, res: Response): Promise<v
  */
 export async function getPaymentStatus(req: Request, res: Response): Promise<void> {
     try {
-        const { orderTrackingId } = req.params;
+        const orderTrackingId = typeof req.params.orderTrackingId === 'string' ? req.params.orderTrackingId : req.params.orderTrackingId?.[0];
 
         if (!orderTrackingId) {
             res.status(400).json({

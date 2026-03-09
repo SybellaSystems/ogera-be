@@ -69,9 +69,9 @@ if (useSSL) {
         rejectUnauthorized: false,
     };
     // Add endpoint parameter for Neon SNI support
-    if (endpointId) {
-        dialectOptions.options = `endpoint=${endpointId}`;
-    }
+    // if (endpointId) {
+    //     dialectOptions.options = `endpoint=${endpointId}`;
+    // }
     logger.info('🔒 SSL enabled for database connection');
 } else {
     logger.info('🔓 SSL disabled for local database connection');

@@ -467,6 +467,8 @@ export const updateDisputeService = async (
         }
     }
 
+    const existingDispute = await repo.findDisputeById(dispute_id);
+
     const updates: Partial<Dispute> = {};
     if (data.status) updates.status = data.status;
     if (data.priority) updates.priority = data.priority;
@@ -490,7 +492,7 @@ export const updateDisputeService = async (
     });
 
     // Notify parties if status changed
-    if (data.status && data.status !== dispute.status) {
+    if (data.status && existingDispute && data.status !== existingDispute.status) {
         await notifyDisputeParties(dispute_id, 'updated');
     }
 
@@ -504,9 +506,9 @@ export const resolveDisputeService = async (
     dispute_id: string,
     resolution: 'Refunded' | 'Settled' | 'Dismissed' | 'Escalated',
     resolution_notes: string,
-    refund_amount?: number,
     user_id: string,
     userRole: string,
+    refund_amount?: number,
 ) => {
     const dispute = await repo.findDisputeById(dispute_id);
     if (!dispute) {

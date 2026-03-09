@@ -54,7 +54,7 @@ export const createDispute = async (req: Request, res: Response): Promise<void> 
             res,
             true,
             StatusCodes.CREATED,
-            dispute,
+            dispute ?? {},
             'Dispute created successfully',
         );
     } catch (error: any) {
@@ -114,9 +114,14 @@ export const getAllDisputes = async (req: Request, res: Response): Promise<void>
 // Get dispute by ID
 export const getDisputeById = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const id = typeof req.params.id === 'string' ? req.params.id : req.params.id?.[0];
         const user_id = req.user?.user_id;
         const userRole = req.user?.role?.toLowerCase();
+
+        if (!id) {
+            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'Dispute ID is required');
+            return;
+        }
 
         const result = await getDisputeByIdService(id, user_id, userRole);
 
@@ -140,17 +145,17 @@ export const getDisputeById = async (req: Request, res: Response): Promise<void>
 // Update dispute
 export const updateDispute = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const id = typeof req.params.id === 'string' ? req.params.id : req.params.id?.[0];
         const user_id = req.user?.user_id;
         const userRole = req.user?.role?.toLowerCase();
 
-        const result = await updateDisputeService(id, req.body, user_id!, userRole!);
+        const result = await updateDisputeService(id!, req.body, user_id!, userRole!);
 
         response.response(
             res,
             true,
             StatusCodes.OK,
-            result,
+            result ?? {},
             'Dispute updated successfully',
         );
     } catch (error: any) {
@@ -166,7 +171,7 @@ export const updateDispute = async (req: Request, res: Response): Promise<void> 
 // Resolve dispute
 export const resolveDispute = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const id = typeof req.params.id === 'string' ? req.params.id : req.params.id?.[0];
         const { resolution, resolution_notes, refund_amount } = req.body;
         const user_id = req.user?.user_id;
         const userRole = req.user?.role?.toLowerCase();
@@ -180,21 +185,20 @@ export const resolveDispute = async (req: Request, res: Response): Promise<void>
             );
             return;
         }
-
         const result = await resolveDisputeService(
-            id,
+            id!,
             resolution,
             resolution_notes,
-            refund_amount,
             user_id!,
             userRole!,
+            refund_amount,
         );
 
         response.response(
             res,
             true,
             StatusCodes.OK,
-            result,
+            result ?? {},
             'Dispute resolved successfully',
         );
     } catch (error: any) {
@@ -210,7 +214,7 @@ export const resolveDispute = async (req: Request, res: Response): Promise<void>
 // Add message to dispute
 export const addDisputeMessage = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const id = typeof req.params.id === 'string' ? req.params.id : req.params.id?.[0];
         const { message, is_internal } = req.body;
         const user_id = req.user?.user_id;
         const userRole = req.user?.role?.toLowerCase() as any;
@@ -225,7 +229,7 @@ export const addDisputeMessage = async (req: Request, res: Response): Promise<vo
             return;
         }
 
-        const result = await addDisputeMessageService(id, { message, is_internal }, user_id!, userRole);
+        const result = await addDisputeMessageService(id!, { message, is_internal }, user_id!, userRole);
 
         response.response(
             res,
@@ -247,7 +251,7 @@ export const addDisputeMessage = async (req: Request, res: Response): Promise<vo
 // Upload evidence
 export const uploadEvidence = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const id = typeof req.params.id === 'string' ? req.params.id : req.params.id?.[0];
         const { description } = req.body;
         const user_id = req.user?.user_id;
         const file = req.file;
@@ -262,7 +266,7 @@ export const uploadEvidence = async (req: Request, res: Response): Promise<void>
             return;
         }
 
-        const result = await uploadEvidenceService(id, file, description, user_id!);
+        const result = await uploadEvidenceService(id!, file, description, user_id!);
 
         response.response(
             res,

@@ -326,10 +326,11 @@ const repo = {
             DB.Disputes.count({ where: { status: 'Open' } }),
             DB.Disputes.count({ where: { status: 'Under Review' } }),
             DB.Disputes.count({
-                where: { status: 'Resolved' },
-                // This month
-                created_at: {
-                    [Op.gte]: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+                where: {
+                    status: 'Resolved',
+                    created_at: {
+                        [Op.gte]: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+                    },
                 },
             }),
             DB.Disputes.count({ where: { priority: 'High' } }),
