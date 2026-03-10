@@ -11,6 +11,8 @@ import {
     deleteJobService,
     toggleJobStatusService,
 } from './job.service';
+import { DB } from '@/database';
+import { MOMO_CONFIG } from '@/config';
 
 const response = new ResponseFormat();
 
@@ -159,11 +161,26 @@ export const getJobById = async (
 ) => {
     try {
         const job = await getJobByIdService(req.params.id as string);
+        const jobData = job && typeof job.get === 'function' ? job.get({ plain: true }) : (job as Record<string, unknown>);
+        if (req.user && jobData && jobData.funding_status === 'Paid') {
+            const application = await DB.JobApplications.findOne({
+                where: { job_id: req.params.id, status: 'Accepted' },
+                attributes: ['student_id'],
+            });
+            const app = application as { student_id?: string } | null;
+            if (app && app.student_id === req.user.user_id) {
+                const paid = jobData.amount_paid_to_student;
+                const budget = Number(jobData.budget) || 0;
+                const feePct = MOMO_CONFIG?.serviceFeePercent ?? 10;
+                (jobData as Record<string, unknown>).amount_received_by_you =
+                    paid != null ? Number(paid) : Math.round(budget * (1 + feePct / 100) * 0.9);
+            }
+        }
         response.response(
             res,
             true,
             StatusCodes.OK,
-            job,
+            jobData,
             Messages.Job.GET_JOB_BY_ID,
         );
     } catch (error: any) {

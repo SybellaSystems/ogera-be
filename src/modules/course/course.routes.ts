@@ -41,19 +41,10 @@ import {
 
 const courseRouter = express.Router();
 
-const videoUpload = multer({
+// Generic uploader for course content (PDF / image assets)
+const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 500 * 1024 * 1024 },
-    fileFilter: (_req, file, cb) => {
-        const allowed = [
-            'video/mp4',
-            'video/webm',
-            'video/ogg',
-            'video/quicktime',
-        ];
-        if (allowed.includes(file.mimetype)) cb(null, true);
-        else cb(new Error('Only MP4, WebM, OGG, MOV videos are allowed'));
-    },
+    limits: { fileSize: 20 * 1024 * 1024 }, // 20MB per file
 });
 
 // Generic upload instance for course content (e.g. PDFs, images)
@@ -163,15 +154,6 @@ courseRouter.get(
     PermissionChecker('/courses', 'view'),
     getCourseById,
 );
-
-// Student enrollment flow: enroll → complete → (admin reviews certificate)
-courseRouter.post('/:id/enroll', authMiddleware, enrollCourse);
-
-courseRouter.get('/:id/enrollment', authMiddleware, getEnrollment);
-
-courseRouter.get('/:id/chat', authMiddleware, getCourseChatHistory);
-
-courseRouter.post('/:id/complete', authMiddleware, completeCourse);
 
 // Create course - only CourseAdmin or superAdmin can create courses
 courseRouter.post(

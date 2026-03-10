@@ -1,26 +1,30 @@
-import http from 'http';
 import express from 'express';
-import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import router from '@routes/routes';
 import logger from '@utils/logger';
 import { DB } from '@database/index';
-import { PORT, FRONTEND_URL, SMS_CONFIG } from './config';
+import { PORT, FRONTEND_URL, NODE_ENV, SMS_CONFIG } from './config';
 import { errorHandler } from './utils/error-handler';
 import { swaggerSpec, swaggerUi } from './utils/swagger';
 import { apiLimiter } from './middlewares/rateLimiter.middleware';
 import { helmetMiddleware } from './middlewares/helmet.middleware';
 import { requestLoggerMiddleware } from './middlewares/requestLogger.middleware';
 import { initializeSMSProvider } from './utils/sms';
-import { setupCourseChatSocket } from './socket/courseChat.socket';
+import { initializeSocket } from './utils/socket';
 
 const appServer = express();
-const port = PORT;
+const httpServer = createServer(appServer);
+// const port = PORT;
+const port = process.env.PORT || 5000;
 const corsOrigin = FRONTEND_URL || 'http://localhost:5173';
 
-const corsOptions = {
-    origin: corsOrigin,
+// In development we allow all origins; in production we reflect the configured frontend URL.
+const corsOptions: cors.CorsOptions = {
+    origin:
+        NODE_ENV === 'development'
+            ? true
+            : corsOrigin,
     credentials: true,
 };
 
@@ -28,6 +32,12 @@ const corsOptions = {
 appServer.use(cors(corsOptions));
 
 appServer.options('*', cors(corsOptions));
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+};
+
+appServer.options('*', cors(corsOptions));
+appServer.use(cors(corsOptions));
 
 helmetMiddleware(appServer);
 
@@ -68,15 +78,13 @@ DB.sequelize
     .authenticate()
     .then(() => {
         logger.info('Database connected successfully!');
-        const httpServer = http.createServer(appServer);
-        const io = new SocketIOServer(httpServer, {
-            cors: { origin: corsOrigin, credentials: true },
-            path: '/socket.io',
-        });
-        setupCourseChatSocket(io);
+        
+        // Initialize Socket.IO
+        initializeSocket(httpServer);
+        
         httpServer.listen(port, () => {
-            logger.info(`Server is running on http://localhost:${port}`);
-            logger.info(`Socket.io course chat enabled`);
+            // logger.info(`Server is running on http://localhost:${port}`);
+            logger.info(`Server is running on port ${port}`);
         });
     })
     .catch(error => {

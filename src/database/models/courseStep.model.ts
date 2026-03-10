@@ -1,33 +1,24 @@
 import { Sequelize, DataTypes, Model, Optional } from 'sequelize';
-import { CourseStep, CourseStepType } from '@/interfaces/course.interfaces';
+import { CourseStep } from '@/interfaces/course.interfaces';
 
 export type CourseStepCreationAttributes = Optional<
     CourseStep,
-    'step_id' | 'step_title' | 'created_at' | 'updated_at'
+    | 'step_id'
+    | 'step_title'
+    | 'created_at'
+    | 'updated_at'
 >;
 
-export class CourseStepModel
-    extends Model<CourseStep, CourseStepCreationAttributes>
-    implements CourseStep
-{
+export class CourseStepModel extends Model<CourseStep, CourseStepCreationAttributes> implements CourseStep {
     public step_id!: string;
     public course_id!: string;
-    public step_type!: CourseStepType;
+    public step_type!: "video" | "link" | "pdf" | "image" | "text";
     public step_content!: string;
     public step_title?: string;
     public step_order!: number;
     public readonly created_at!: Date;
     public readonly updated_at!: Date;
 }
-
-const STEP_TYPES: CourseStepType[] = [
-    'video',
-    'link',
-    'pdf',
-    'image',
-    'text',
-    'quiz',
-];
 
 export default function (sequelize: Sequelize): typeof CourseStepModel {
     CourseStepModel.init(
@@ -47,7 +38,7 @@ export default function (sequelize: Sequelize): typeof CourseStepModel {
                 onDelete: 'CASCADE',
             },
             step_type: {
-                type: DataTypes.ENUM(...STEP_TYPES),
+                type: DataTypes.ENUM('video', 'link', 'pdf', 'image', 'text'),
                 allowNull: false,
             },
             step_content: {
@@ -82,3 +73,5 @@ export default function (sequelize: Sequelize): typeof CourseStepModel {
 
     return CourseStepModel;
 }
+
+

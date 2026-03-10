@@ -1,13 +1,11 @@
 import repo from './job.repo';
+import jobCategoryRepo from '../jobCategory/jobCategory.repo';
 import { CustomError } from '@/utils/custom-error';
 import { StatusCodes } from 'http-status-codes';
 import { Messages } from '@/utils/messages';
 import { Job } from '@/interfaces/job.interfaces';
 import { DB } from '@/database';
-import {
-    creditStudentBalance,
-    processCourseFeeDeductions,
-} from '@/modules/wallet/wallet.service';
+import jobCategoryRepo from '../jobCategory/jobCategory.repo';
 
 export const createJobService = async (
     jobData: Partial<Job> & { questions?: any[] },
@@ -176,34 +174,12 @@ export const updateJobService = async (
 
     const { questions, ...jobUpdates } = updates;
 
-    const existingJob = await repo.findJobById(job_id);
-    const wasNotCompleted =
-        existingJob && (existingJob as any).status !== 'Completed';
-    const nowCompleting =
-        jobUpdates.status === 'Completed' && wasNotCompleted;
-
     const updated = await repo.updateJob(job_id, jobUpdates);
     if (!updated) {
         throw new CustomError(
             Messages.Job.JOB_NOT_FOUND,
             StatusCodes.NOT_FOUND,
         );
-    }
-
-    // SRS: When job marked Completed, credit accepted student's balance and deduct course fees
-    if (nowCompleting && updated) {
-        const acceptedApp = await DB.JobApplications.findOne({
-            where: { job_id, status: 'Accepted' },
-        });
-        if (acceptedApp && updated.budget) {
-            const studentId = acceptedApp.student_id;
-            try {
-                await creditStudentBalance(studentId, Number(updated.budget));
-                await processCourseFeeDeductions(studentId);
-            } catch (err: any) {
-                console.error('Wallet credit/deduction failed:', err?.message);
-            }
-        }
     }
 
     // Update questions if provided

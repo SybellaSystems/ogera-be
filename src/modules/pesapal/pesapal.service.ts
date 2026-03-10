@@ -1,3 +1,4 @@
+// @ts-ignore - external SDK without bundled TypeScript types
 import { Pesapal } from 'pesapal-v3';
 import { FRONTEND_URL } from '@/config';
 import { PESAPAL_CONFIG } from '@/config';
