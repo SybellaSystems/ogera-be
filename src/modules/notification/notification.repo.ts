@@ -170,9 +170,6 @@ const repo = {
       { is_read: true },
       {
         where: {
-          user_id,
-          related_id: course_id,
-          title: { [Op.like]: 'Course support:%' },
           is_read: false,
         },
       }

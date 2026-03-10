@@ -20,8 +20,6 @@ import userAccomplishmentModel from './models/userAccomplishment.model';
 import userExtendedProfileModel from './models/userExtendedProfile.model';
 import courseModel from './models/course.model';
 import courseStepModel from './models/courseStep.model';
-import courseEnrollmentModel from './models/courseEnrollment.model';
-import courseChatMessageModel from './models/courseChatMessage.model';
 import courseProgressModel from './models/courseProgress.model';
 import activityLogModel from './models/activityLog.model';
 import disputeModel from './models/dispute.model';
@@ -37,13 +35,12 @@ import {
     DB_PASSWORD,
     DB_PORT,
     DB_USERNAME,
-    DB_SSL,
     NODE_ENV,
 } from '@/config';
 
 // Fix IPv6 timeout issues by forcing IPv4 DNS resolution
 const originalLookup = dns.lookup;
-dns.lookup = function (hostname: any, options: any, callback: any) {
+dns.lookup = function(hostname: any, options: any, callback: any) {
     if (typeof options === 'function') {
         callback = options;
         options = {};
@@ -98,19 +95,7 @@ const sequelize = new Sequelize.Sequelize(DB_NAME!, DB_USERNAME!, DB_PASSWORD, {
               }
             : false,
     benchmark: true,
-    dialectOptions: {
-        // Only use SSL when DB_SSL=true (e.g. Neon). Local PostgreSQL often does not support SSL.
-        ...(DB_SSL && {
-            ssl: {
-                require: true,
-                rejectUnauthorized: false,
-            },
-        }),
-        ...(DB_SSL &&
-            endpointId && {
-                options: `endpoint=${endpointId}`,
-            }),
-    },
+    dialectOptions,
 });
 
 // Test DB connection with improved error handling
@@ -129,9 +114,7 @@ sequelize
             logger.error('Parent error code:', err.parent.code);
         }
         logger.error('Full error:', err);
-        logger.error(
-            'Please check your database configuration and ensure the database server is running',
-        );
+        logger.error('Please check your database configuration and ensure the database server is running');
         // Don't exit process - let the app continue and handle errors gracefully
     });
 
@@ -154,8 +137,6 @@ const UserAccomplishments = userAccomplishmentModel(sequelize);
 const UserExtendedProfiles = userExtendedProfileModel(sequelize);
 const Courses = courseModel(sequelize);
 const CourseSteps = courseStepModel(sequelize);
-const CourseEnrollments = courseEnrollmentModel(sequelize);
-const CourseChatMessages = courseChatMessageModel(sequelize);
 const CourseProgress = courseProgressModel(sequelize);
 const ActivityLogs = activityLogModel(sequelize);
 const Disputes = disputeModel(sequelize);
@@ -467,9 +448,7 @@ const ensureJobCategoriesTableColumns = async () => {
         await queryInterface.describeTable('job_categories');
     } catch (err) {
         // Table doesn't exist, sync will create it
-        logger.info(
-            'Job categories table does not exist, will be created by sync',
-        );
+        logger.info('Job categories table does not exist, will be created by sync');
         return;
     }
 
@@ -478,64 +457,6 @@ const ensureJobCategoriesTableColumns = async () => {
         type: Sequelize.DataTypes.INTEGER,
         allowNull: true,
         defaultValue: 0,
-    });
-};
-
-// Function to ensure courses table has SRS enhancement columns
-const ensureCourseTableColumns = async () => {
-    try {
-        await sequelize.getQueryInterface().describeTable('courses');
-    } catch (err) {
-        logger.info('Courses table does not exist, will be created by sync');
-        return;
-    }
-
-    await ensureColumnExists('courses', 'estimated_hours', {
-        type: Sequelize.DataTypes.INTEGER,
-        allowNull: true,
-    });
-    await ensureColumnExists('courses', 'category', {
-        type: Sequelize.DataTypes.STRING(100),
-        allowNull: true,
-    });
-    await ensureColumnExists('courses', 'is_free', {
-        type: Sequelize.DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: true,
-    });
-    await ensureColumnExists('courses', 'price_amount', {
-        type: Sequelize.DataTypes.DECIMAL(12, 2),
-        allowNull: true,
-    });
-    await ensureColumnExists('courses', 'price_currency', {
-        type: Sequelize.DataTypes.STRING(10),
-        allowNull: true,
-    });
-    await ensureColumnExists('courses', 'discount_trust_score_min', {
-        type: Sequelize.DataTypes.INTEGER,
-        allowNull: true,
-    });
-    await ensureColumnExists('courses', 'discount_percent', {
-        type: Sequelize.DataTypes.INTEGER,
-        allowNull: true,
-    });
-    await ensureColumnExists('courses', 'created_by', {
-        type: Sequelize.DataTypes.UUID,
-        allowNull: true,
-    });
-};
-
-// Course chat: one thread per student (conversation_user_id)
-const ensureCourseChatMessageColumns = async () => {
-    try {
-        await sequelize.getQueryInterface().describeTable('course_chat_messages');
-    } catch (err) {
-        logger.info('course_chat_messages table does not exist, will be created by sync');
-        return;
-    }
-    await ensureColumnExists('course_chat_messages', 'conversation_user_id', {
-        type: Sequelize.DataTypes.UUID,
-        allowNull: true,
     });
 };
 
@@ -678,11 +599,16 @@ const ensureUserTableColumns = async () => {
         allowNull: true,
     });
 
-    // SRS: User balance - loaded from employer payments, used for courses/platform services
-    await ensureColumnExists('users', 'balance', {
-        type: Sequelize.DataTypes.DECIMAL(14, 2),
+    // Add login_2fa_otp if missing
+    await ensureColumnExists('users', 'login_2fa_otp', {
+        type: Sequelize.DataTypes.STRING(10),
         allowNull: true,
-        defaultValue: 0,
+    });
+
+    // Add login_2fa_otp_expiry if missing
+    await ensureColumnExists('users', 'login_2fa_otp_expiry', {
+        type: Sequelize.DataTypes.DATE,
+        allowNull: true,
     });
 
     // Handle role_type column - rename from 'role' if it exists, or add if missing
@@ -797,12 +723,6 @@ const ensureUserTableColumns = async () => {
         logger.info('Ensuring job_categories table columns exist...');
         await ensureJobCategoriesTableColumns();
 
-        logger.info('Ensuring courses table columns exist...');
-        await ensureCourseTableColumns();
-
-        logger.info('Ensuring course_chat_messages table columns exist...');
-        await ensureCourseChatMessageColumns();
-
         // Fix any NULL role_type values BEFORE syncing
         logger.info('Checking for NULL role_type values...');
         const fixSuccess = await fixNullRoleTypeValues();
@@ -886,8 +806,6 @@ const ensureUserTableColumns = async () => {
         // Ensure all columns are correct
         await ensureUserTableColumns();
         await ensureJobCategoriesTableColumns();
-        await ensureCourseTableColumns();
-        await ensureCourseChatMessageColumns();
     } catch (err: any) {
         logger.error(
             '❌ Error during database initialization:',
@@ -897,8 +815,6 @@ const ensureUserTableColumns = async () => {
         try {
             await ensureUserTableColumns();
             await ensureJobCategoriesTableColumns();
-            await ensureCourseTableColumns();
-            await ensureCourseChatMessageColumns();
             await fixNullRoleTypeValues();
         } catch (finalErr) {
             logger.warn('⚠️  Could not complete final column checks');
@@ -925,8 +841,6 @@ export const DB = {
     UserExtendedProfiles,
     Courses,
     CourseSteps,
-    CourseEnrollments,
-    CourseChatMessages,
     CourseProgress,
     ActivityLogs,
     Disputes,

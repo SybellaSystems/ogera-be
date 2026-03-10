@@ -7,7 +7,6 @@ import { JobApplicationModel } from './jobApplication.model';
 export type UserCreationAttributes = Optional<
     User,
     | 'user_id'
-    | 'balance'
     | 'two_fa_enabled'
     | 'two_fa_secret'
     | 'created_at'
@@ -269,8 +268,6 @@ export default function (sequelize: Sequelize): typeof UserModel {
             balance: {
                 type: DataTypes.DECIMAL(14, 2),
                 allowNull: true,
-                defaultValue: 0,
-                comment: 'SRS: From employer payments; used for courses',
             },
 
             created_at: {
