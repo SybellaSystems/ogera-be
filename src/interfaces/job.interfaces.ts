@@ -13,6 +13,12 @@ export interface Job {
   employment_type?: string;
   experience_level?: string;
   status: "Pending" | "Active" | "Inactive" | "Completed";
+  funding_status?: "Unfunded" | "Pending" | "Funded" | "Paid";
+  momo_reference_id?: string | null;
+  momo_paid_at?: Date | null;
+  disbursement_reference_id?: string | null;
+  paid_at?: Date | null;
+  amount_paid_to_student?: number | null;
   created_at: Date;
   updated_at: Date;
 }

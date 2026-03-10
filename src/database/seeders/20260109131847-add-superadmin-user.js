@@ -37,6 +37,7 @@ module.exports = {
 
         // Insert the user
         await queryInterface.bulkInsert('users', [{
+            id: randomUUID(),
             user_id: randomUUID(),
             email: 'superadmin@example.com',
             password_hash: hashedPassword,
