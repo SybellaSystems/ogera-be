@@ -8,16 +8,8 @@ import {
     getCourseByIdService,
     updateCourseService,
     deleteCourseService,
-    enrollCourseService,
-    getMyEnrollmentsService,
-    getEnrollmentService,
-    completeCourseService,
-    getStudentCompletedCoursesService,
-    getEnrollmentsPendingReviewService,
-    updateCertificateStatusService,
-    uploadCourseVideoService,
-    streamCourseVideoService,
-    getCourseChatHistoryService,
+    uploadCourseContentService,
+    downloadCourseContentService,
 } from './course.service';
 
 const response = new ResponseFormat();
@@ -154,15 +146,13 @@ export const deleteCourse = async (
     }
 };
 
-// ---------- Enrollments ----------
-
-export const enrollCourse = async (
-    req: Request,
+export const uploadCourseContent = async (
+    req: any,
     res: Response,
+    next: NextFunction,
 ): Promise<void> => {
     try {
-        const user_id = (req as any).user?.user_id;
-        if (!user_id) {
+        if (!req.user) {
             response.errorResponse(
                 res,
                 StatusCodes.UNAUTHORIZED,
@@ -171,215 +161,29 @@ export const enrollCourse = async (
             );
             return;
         }
-        const { id: course_id } = req.params;
-        const enrollment = await enrollCourseService(
-            user_id,
-            course_id as string,
-        );
-        response.response(
-            res,
-            true,
-            StatusCodes.CREATED,
-            enrollment,
-            'Enrolled successfully',
-        );
-    } catch (error: any) {
-        response.errorResponse(
-            res,
-            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
-            false,
-            error.message,
-        );
-    }
-};
 
-export const getMyEnrollments = async (
-    req: Request,
-    res: Response,
-): Promise<void> => {
-    try {
-        const user_id = (req as any).user?.user_id;
-        if (!user_id) {
-            response.errorResponse(
-                res,
-                StatusCodes.UNAUTHORIZED,
-                false,
-                'User not authenticated',
-            );
-            return;
-        }
-        const enrollments = await getMyEnrollmentsService(user_id);
-        response.response(
-            res,
-            true,
-            StatusCodes.OK,
-            enrollments,
-            'Enrollments fetched',
-        );
-    } catch (error: any) {
-        response.errorResponse(
-            res,
-            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
-            false,
-            error.message,
-        );
-    }
-};
+        const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+        const pdfFile = files?.pdf?.[0];
+        const imageFile = files?.image?.[0];
+        const file = pdfFile || imageFile;
 
-export const getEnrollment = async (
-    req: Request,
-    res: Response,
-): Promise<void> => {
-    try {
-        const user_id = (req as any).user?.user_id;
-        if (!user_id) {
-            response.errorResponse(
-                res,
-                StatusCodes.UNAUTHORIZED,
-                false,
-                'User not authenticated',
-            );
-            return;
-        }
-        const { id: course_id } = req.params;
-        const enrollment = await getEnrollmentService(
-            user_id,
-            course_id as string,
-        );
-        if (!enrollment) {
-            response.errorResponse(
-                res,
-                StatusCodes.NOT_FOUND,
-                false,
-                'Enrollment not found',
-            );
-            return;
-        }
-        response.response(
-            res,
-            true,
-            StatusCodes.OK,
-            enrollment,
-            'Enrollment fetched',
-        );
-    } catch (error: any) {
-        response.errorResponse(
-            res,
-            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
-            false,
-            error.message,
-        );
-    }
-};
-
-export const completeCourse = async (
-    req: Request,
-    res: Response,
-): Promise<void> => {
-    try {
-        const user_id = (req as any).user?.user_id;
-        if (!user_id) {
-            response.errorResponse(
-                res,
-                StatusCodes.UNAUTHORIZED,
-                false,
-                'User not authenticated',
-            );
-            return;
-        }
-        const { id: course_id } = req.params;
-        const enrollment = await completeCourseService(
-            user_id,
-            course_id as string,
-        );
-        response.response(
-            res,
-            true,
-            StatusCodes.OK,
-            enrollment,
-            'Course marked complete; certificate pending review',
-        );
-    } catch (error: any) {
-        response.errorResponse(
-            res,
-            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
-            false,
-            error.message,
-        );
-    }
-};
-
-export const getStudentCompletedCourses = async (
-    req: Request,
-    res: Response,
-): Promise<void> => {
-    try {
-        const { user_id } = req.params;
-        const courses = await getStudentCompletedCoursesService(user_id as string);
-        response.response(
-            res,
-            true,
-            StatusCodes.OK,
-            courses,
-            'Completed courses fetched',
-        );
-    } catch (error: any) {
-        response.errorResponse(
-            res,
-            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
-            false,
-            error.message,
-        );
-    }
-};
-
-export const getEnrollmentsPendingReview = async (
-    req: Request,
-    res: Response,
-): Promise<void> => {
-    try {
-        const enrollments = await getEnrollmentsPendingReviewService();
-        response.response(
-            res,
-            true,
-            StatusCodes.OK,
-            enrollments,
-            'Pending reviews fetched',
-        );
-    } catch (error: any) {
-        response.errorResponse(
-            res,
-            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
-            false,
-            error.message,
-        );
-    }
-};
-
-// ---------- Video upload & stream ----------
-
-export const uploadCourseVideo = async (
-    req: Request,
-    res: Response,
-): Promise<void> => {
-    try {
-        const file = (req as any).file;
         if (!file) {
             response.errorResponse(
                 res,
                 StatusCodes.BAD_REQUEST,
                 false,
-                'No video file provided',
+                'PDF or image file is required',
             );
             return;
         }
-        const result = await uploadCourseVideoService(file);
+
+        const result = await uploadCourseContentService(file);
         response.response(
             res,
             true,
-            StatusCodes.OK,
+            StatusCodes.CREATED,
             result,
-            'Video uploaded successfully',
+            'Course content uploaded successfully',
         );
     } catch (error: any) {
         response.errorResponse(
@@ -391,94 +195,13 @@ export const uploadCourseVideo = async (
     }
 };
 
-export const streamCourseVideo = async (
+export const downloadCourseContent = async (
     req: Request,
     res: Response,
+    next: NextFunction,
 ): Promise<void> => {
     try {
-        const path = req.query.path as string;
-        if (!path) {
-            response.errorResponse(
-                res,
-                StatusCodes.BAD_REQUEST,
-                false,
-                'Path parameter required',
-            );
-            return;
-        }
-        const result = await streamCourseVideoService(path);
-        if (!result) {
-            response.errorResponse(
-                res,
-                StatusCodes.NOT_FOUND,
-                false,
-                'Video not found',
-            );
-            return;
-        }
-        res.setHeader('Content-Type', result.mimeType);
-        res.setHeader(
-            'Content-Disposition',
-            `inline; filename="${result.fileName}"`,
-        );
-        res.setHeader('Accept-Ranges', 'bytes');
-        res.send(result.buffer);
-    } catch (error: any) {
-        response.errorResponse(
-            res,
-            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
-            false,
-            error.message,
-        );
-    }
-};
-
-export const updateCertificateStatus = async (
-    req: Request,
-    res: Response,
-): Promise<void> => {
-    try {
-        const { enrollment_id } = req.params;
-        const { certificate_status, funded } = req.body;
-        if (!['pending_review', 'approved'].includes(certificate_status)) {
-            response.errorResponse(
-                res,
-                StatusCodes.BAD_REQUEST,
-                false,
-                'Invalid certificate_status',
-            );
-            return;
-        }
-        const enrollment = await updateCertificateStatusService(
-            enrollment_id,
-            certificate_status,
-            funded,
-        );
-        response.response(
-            res,
-            true,
-            StatusCodes.OK,
-            enrollment,
-            'Certificate status updated',
-        );
-    } catch (error: any) {
-        response.errorResponse(
-            res,
-            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
-            false,
-            error.message,
-        );
-    }
-};
-
-export const getCourseChatHistory = async (
-    req: Request,
-    res: Response,
-): Promise<void> => {
-    try {
-        const user_id = (req as any).user?.user_id;
-        const role = (req as any).user?.role;
-        if (!user_id) {
+        if (!req.user) {
             response.errorResponse(
                 res,
                 StatusCodes.UNAUTHORIZED,
@@ -487,19 +210,29 @@ export const getCourseChatHistory = async (
             );
             return;
         }
-        const { id: course_id } = req.params;
-        const messages = await getCourseChatHistoryService(
-            course_id as string,
-            user_id,
-            role as string,
-        );
-        response.response(
-            res,
-            true,
-            StatusCodes.OK,
-            messages,
-            'Chat history fetched',
-        );
+
+        const { path: filePath } = req.query;
+
+        if (!filePath || typeof filePath !== 'string') {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'File path is required',
+            );
+            return;
+        }
+
+        const fileData = await downloadCourseContentService(filePath);
+
+        // Set appropriate headers for file viewing/downloading
+        const decodedPath = decodeURIComponent(filePath);
+        const fileName = decodedPath.split('/').pop() || 'course-content.pdf';
+        res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+        res.setHeader('Content-Type', fileData.contentType);
+
+        // Send file
+        res.send(fileData.buffer);
     } catch (error: any) {
         response.errorResponse(
             res,

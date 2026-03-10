@@ -1,90 +1,30 @@
-import * as path from 'path';
 import repo from './course.repo';
 import { CustomError } from '@/utils/custom-error';
 import { StatusCodes } from 'http-status-codes';
 import { Messages } from '@/utils/messages';
 import { Course } from '@/interfaces/course.interfaces';
 import { saveFile, getFileUrl, getLocalFile } from '@/utils/storage.service';
-import { BASE_URL, STORAGE_CONFIG } from '@/config';
-import { DB } from '@/database/index';
-
-/** Parse step_content for uploaded video: { path, storageType } */
-const parseUploadedVideo = (
-    content: string,
-): { path: string; storageType: string } | null => {
-    try {
-        const parsed = JSON.parse(content);
-        if (parsed?.path && (parsed?.storageType === 'local' || parsed?.storageType === 's3')) {
-            return parsed;
-        }
-    } catch {
-        /* not JSON, treat as URL */
-    }
-    return null;
-};
-
-/** Transform video step_content: resolve uploaded videos to playback URL */
-const transformVideoStepContent = async (
-    step: any,
-): Promise<string> => {
-    if (step.step_type !== 'video') return step.step_content;
-    const uploaded = parseUploadedVideo(step.step_content);
-    if (uploaded) {
-        if (uploaded.storageType === 's3') {
-            return await getFileUrl(uploaded.path, uploaded.storageType);
-        }
-        const encoded = encodeURIComponent(uploaded.path);
-        return `${BASE_URL}/api/courses/videos/stream?path=${encoded}`;
-    }
-    return step.step_content; // YouTube or external URL
-};
-
-/** Convert Sequelize model to plain object (avoids circular ref JSON error) */
-const toPlain = (obj: any): any => {
-    if (!obj) return obj;
-    if (typeof obj.get === 'function') return obj.get({ plain: true });
-    return obj;
-};
-
-/** Transform course steps: resolve video URLs for playback */
-const transformCourseSteps = async (course: any): Promise<any> => {
-    const plainCourse = toPlain(course);
-    if (!plainCourse?.steps?.length) return plainCourse;
-    const steps = await Promise.all(
-        plainCourse.steps.map(async (step: any) => ({
-            ...toPlain(step),
-            step_content: await transformVideoStepContent(toPlain(step)),
-        })),
-    );
-    return { ...plainCourse, steps };
-};
+import * as path from 'path';
+import { STORAGE_CONFIG } from '@/config';
 
 export const createCourseService = async (
     courseData: Partial<Course> & { steps?: any[] },
 ) => {
+    // Validate required fields
     if (!courseData.course_name) {
-        throw new CustomError(
-            'Course name is required',
-            StatusCodes.BAD_REQUEST,
-        );
+        throw new CustomError('Course name is required', StatusCodes.BAD_REQUEST);
     }
     if (!courseData.type) {
-        throw new CustomError(
-            'Course type is required',
-            StatusCodes.BAD_REQUEST,
-        );
+        throw new CustomError('Course type is required', StatusCodes.BAD_REQUEST);
     }
     if (!courseData.tag) {
         throw new CustomError('Tag is required', StatusCodes.BAD_REQUEST);
     }
 
     const { steps, ...coursePayloadData } = courseData;
-    const is_free = coursePayloadData.is_free !== false;
+    
     const coursePayload = {
         ...coursePayloadData,
-        is_free,
-        price_amount: is_free ? null : coursePayloadData.price_amount ?? null,
-        price_currency: coursePayloadData.price_currency ?? 'RWF',
     };
 
     const course = await repo.createCourse(coursePayload);
@@ -94,7 +34,7 @@ export const createCourseService = async (
         await repo.createCourseSteps(course.course_id, steps);
     }
 
-    // Return course with steps (transform video URLs)
+    // Return course with steps
     const createdCourse = await repo.findCourseById(course.course_id);
     if (!createdCourse) {
         throw new CustomError(
@@ -103,14 +43,11 @@ export const createCourseService = async (
         );
     }
 
-    return await transformCourseSteps(createdCourse);
+    return createdCourse;
 };
 
 export const getAllCoursesService = async () => {
-    const courses = await repo.findAllCourses();
-    return Promise.all(
-        (courses as any[]).map((c) => transformCourseSteps(c)),
-    );
+    return await repo.findAllCourses();
 };
 
 export const getCourseByIdService = async (course_id: string) => {
@@ -118,7 +55,7 @@ export const getCourseByIdService = async (course_id: string) => {
     if (!course) {
         throw new CustomError('Course not found', StatusCodes.NOT_FOUND);
     }
-    return await transformCourseSteps(course);
+    return course;
 };
 
 export const updateCourseService = async (
@@ -141,14 +78,14 @@ export const updateCourseService = async (
     if (steps !== undefined) {
         // Delete existing steps
         await repo.deleteCourseSteps(course_id);
-
+        
         // Create new steps if provided
         if (Array.isArray(steps) && steps.length > 0) {
             await repo.createCourseSteps(course_id, steps);
         }
     }
 
-    // Return updated course (transform video URLs)
+    // Return updated course
     const updatedCourse = await repo.findCourseById(course_id);
     if (!updatedCourse) {
         throw new CustomError(
@@ -157,7 +94,7 @@ export const updateCourseService = async (
         );
     }
 
-    return await transformCourseSteps(updatedCourse);
+    return updatedCourse;
 };
 
 export const deleteCourseService = async (course_id: string) => {
@@ -170,237 +107,123 @@ export const deleteCourseService = async (course_id: string) => {
     return { message: 'Course deleted successfully' };
 };
 
-// ---------- Enrollments (SRS: enroll → complete → admin review → certificate) ----------
-
-export const enrollCourseService = async (
-    user_id: string,
-    course_id: string,
-) => {
-    const course = await repo.findCourseById(course_id);
-    if (!course) {
-        throw new CustomError('Course not found', StatusCodes.NOT_FOUND);
-    }
-    const existing = await repo.findEnrollment(user_id, course_id);
-    if (existing) {
-        throw new CustomError(
-            'Already enrolled in this course',
-            StatusCodes.BAD_REQUEST,
-        );
-    }
-    const is_free = (course as any).is_free !== false;
-    const priceAmount =
-        (course as any).price_amount != null
-            ? Number((course as any).price_amount)
-            : 0;
-    const amount_due = is_free ? null : priceAmount;
-    const enrollment = await repo.createEnrollment(
-        user_id,
-        course_id,
-        amount_due,
-    );
-    return enrollment;
-};
-
-export const getMyEnrollmentsService = async (user_id: string) => {
-    const enrollments = await repo.findEnrollmentsByUser(user_id);
-    return Promise.all(
-        (enrollments as any[]).map(async (enc) => {
-            if (enc.course?.steps?.length) {
-                enc.course = await transformCourseSteps(enc.course);
-            }
-            return enc;
-        }),
-    );
-};
-
-export const getEnrollmentService = async (
-    user_id: string,
-    course_id: string,
-) => {
-    const enrollment = await repo.findEnrollment(user_id, course_id);
-    if (!enrollment) return null;
-    const enc = enrollment as any;
-    if (enc.course?.steps?.length) {
-        enc.course = await transformCourseSteps(enc.course);
-    }
-    return enrollment;
-};
-
-// ---------- Video upload & stream (courseAdmin/superadmin) ----------
-
-export const uploadCourseVideoService = async (
+export const uploadCourseContentService = async (
     file: Express.Multer.File,
-): Promise<{ path: string; storageType: string }> => {
-    const { path, storageType } = await saveFile(file, 'course-videos');
-    return { path, storageType };
-};
-
-export const streamCourseVideoService = async (
-    filePath: string,
-): Promise<{ buffer: Buffer; fileName: string; mimeType: string } | null> => {
-    let actualPath = decodeURIComponent(filePath);
-    if (
-        !actualPath.includes('course-videos') &&
-        !actualPath.includes(STORAGE_CONFIG.localStoragePath)
-    ) {
-        actualPath = path.join(
-            STORAGE_CONFIG.localStoragePath,
-            'course-videos',
-            path.basename(actualPath),
-        );
-    }
-    const buffer = getLocalFile(actualPath);
-    if (!buffer) return null;
-    const fileName = path.basename(actualPath);
-    const ext = path.extname(fileName).toLowerCase();
-    const mimeMap: Record<string, string> = {
-        '.mp4': 'video/mp4',
-        '.webm': 'video/webm',
-        '.ogg': 'video/ogg',
-        '.mov': 'video/quicktime',
-    };
-    const mimeType = mimeMap[ext] || 'video/mp4';
-    return { buffer, fileName, mimeType };
-};
-
-// ---------- Enrollments ----------
-
-export const completeCourseService = async (
-    user_id: string,
-    course_id: string,
 ) => {
-    const enrollment = await repo.findEnrollment(user_id, course_id);
-    if (!enrollment) {
-        throw new CustomError('Enrollment not found', StatusCodes.NOT_FOUND);
+    if (!file) {
+        throw new CustomError('File is required', StatusCodes.BAD_REQUEST);
     }
-    if ((enrollment as any).completed_at) {
+
+    // Determine folder based on file type
+    const isPDF = file.mimetype === 'application/pdf';
+    const folder = isPDF ? 'course-content/pdfs' : 'course-content/images';
+
+    // Save file to storage (local or S3 based on .env)
+    const { path, storageType } = await saveFile(file, folder);
+
+    // Get file URL
+    let fileUrl: string;
+    if (storageType === 's3') {
+        fileUrl = await getFileUrl(path, storageType);
+    } else {
+        // For local storage, return the file path
+        // The frontend will need to construct the full URL or use a static file server
+        fileUrl = path;
+    }
+
+    return {
+        file_url: fileUrl,
+        path,
+        storageType,
+    };
+};
+
+export const downloadCourseContentService = async (
+    filePath: string,
+): Promise<{ buffer: Buffer; contentType: string }> => {
+    // Decode the file path in case it's URL encoded
+    const decodedPath = decodeURIComponent(filePath);
+
+    // If it's an HTTP/HTTPS URL (S3), we can't serve it directly
+    if (
+        decodedPath.startsWith('http://') ||
+        decodedPath.startsWith('https://')
+    ) {
         throw new CustomError(
-            'Course already completed',
+            'This file is stored in S3. Please use the provided URL to access it.',
             StatusCodes.BAD_REQUEST,
         );
     }
-    const result = await repo.completeEnrollment(user_id, course_id);
-    if (!result) {
-        throw new CustomError(
-            'Failed to complete course',
-            StatusCodes.INTERNAL_SERVER_ERROR,
-        );
-    }
-    const enc = result as any;
-    if (enc.course?.steps?.length) {
-        enc.course = await transformCourseSteps(enc.course);
-    }
-    return result;
-};
 
-/** Completed courses for a student (e.g. for profile). */
-export const getStudentCompletedCoursesService = async (user_id: string) => {
-    const enrollments = await repo.findCompletedEnrollmentsByUser(user_id);
-    return (enrollments as any[]).map((enc) => {
-        const canViewCertificate =
-            enc.certificate_status === 'approved' && enc.funded === true;
-        return {
-            enrollment_id: enc.enrollment_id,
-            course_id: enc.course_id,
-            course_name: enc.course?.course_name,
-            category: enc.course?.category,
-            estimated_hours: enc.course?.estimated_hours,
-            completed_at: enc.completed_at,
-            certificate_status: enc.certificate_status,
-            certificate_visible: canViewCertificate,
-        };
-    });
-};
+    // Get file from local storage
+    // Try multiple path variations
+    const pathVariations = [decodedPath, filePath];
 
-export const getEnrollmentsPendingReviewService = async () => {
-    const enrollments = await repo.findEnrollmentsPendingReview();
-    return Promise.all(
-        (enrollments as any[]).map(async (enc) => {
-            if (enc.course?.steps?.length) {
-                enc.course = await transformCourseSteps(enc.course);
+    // Add variations with storage path prepended if not already there
+    if (STORAGE_CONFIG.localStoragePath) {
+        for (const pathVar of [decodedPath, filePath]) {
+            if (
+                pathVar &&
+                !pathVar.startsWith(STORAGE_CONFIG.localStoragePath)
+            ) {
+                // Check if it's a relative path from storage
+                const relativePath = pathVar.replace(/^\/+/, ''); // Remove leading slashes
+                pathVariations.push(
+                    path.join(STORAGE_CONFIG.localStoragePath, relativePath),
+                );
+                pathVariations.push(
+                    path.join(STORAGE_CONFIG.localStoragePath, pathVar),
+                );
             }
-            return enc;
-        }),
-    );
-};
-
-export const updateCertificateStatusService = async (
-    enrollment_id: string,
-    certificate_status: 'pending_review' | 'approved',
-    funded?: boolean,
-) => {
-    const updated = await repo.updateCertificateStatus(
-        enrollment_id,
-        certificate_status,
-        funded,
-    );
-    if (!updated) {
-        throw new CustomError('Enrollment not found', StatusCodes.NOT_FOUND);
-    }
-    const enc = updated as any;
-    if (enc.course?.steps?.length) {
-        enc.course = await transformCourseSteps(enc.course);
-    }
-    return updated;
-};
-
-/** Course chat history for real-time UI. User must be enrolled or have course view. */
-export const getCourseChatHistoryService = async (
-    course_id: string,
-    user_id: string,
-    user_role: string,
-) => {
-    const course = await DB.Courses.findByPk(course_id);
-    if (!course) {
-        throw new CustomError('Course not found', StatusCodes.NOT_FOUND);
-    }
-    const supportRoles = ['superadmin', 'admin', 'courseadmin', 'employer'];
-    const isSupport = supportRoles.some(
-        (r) => user_role?.toLowerCase() === r.toLowerCase(),
-    );
-    if (!isSupport) {
-        const enrollment = await DB.CourseEnrollments.findOne({
-            where: { course_id, user_id },
-        });
-        if (!enrollment) {
-            throw new CustomError(
-                'Enroll in the course to view chat',
-                StatusCodes.FORBIDDEN,
-            );
         }
     }
-    const where: { course_id: string; conversation_user_id?: string } = {
-        course_id,
+
+    let fileBuffer: Buffer | null = null;
+    let finalPath = '';
+
+    for (const pathVar of pathVariations) {
+        if (!pathVar) continue;
+        fileBuffer = getLocalFile(pathVar);
+        if (fileBuffer) {
+            finalPath = pathVar;
+            break;
+        }
+    }
+
+    if (!fileBuffer) {
+        throw new CustomError(
+            'Course content file not found on server',
+            StatusCodes.NOT_FOUND,
+        );
+    }
+
+    // Determine content type based on file extension
+    const extension = finalPath.split('.').pop()?.toLowerCase() || 'pdf';
+    let contentType = 'application/pdf';
+    switch (extension) {
+        case 'jpg':
+        case 'jpeg':
+            contentType = 'image/jpeg';
+            break;
+        case 'png':
+            contentType = 'image/png';
+            break;
+        case 'gif':
+            contentType = 'image/gif';
+            break;
+        case 'webp':
+            contentType = 'image/webp';
+            break;
+        case 'pdf':
+        default:
+            contentType = 'application/pdf';
+            break;
+    }
+
+    return {
+        buffer: fileBuffer,
+        contentType,
     };
-    if (!isSupport) {
-        where.conversation_user_id = user_id;
-    }
-    const messages = await DB.CourseChatMessages.findAll({
-        where,
-        order: [['created_at', 'ASC']],
-        limit: 500,
-    });
-    const plainMessages = messages.map((m) => m.get({ plain: true }));
-
-    if (!isSupport) {
-        return plainMessages as any;
-    }
-
-    const conversationUserIds = [
-        ...new Set(
-            plainMessages
-                .map((m: any) => m.conversation_user_id)
-                .filter(Boolean),
-        ),
-    ] as string[];
-    const participants =
-        conversationUserIds.length === 0
-            ? []
-            : await DB.Users.findAll({
-                  where: { user_id: conversationUserIds },
-                  attributes: ['user_id', 'full_name'],
-                  raw: true,
-              });
-
-    return { messages: plainMessages, participants };
 };
+
+
