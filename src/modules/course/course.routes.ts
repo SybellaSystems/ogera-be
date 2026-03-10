@@ -16,7 +16,20 @@ import {
     streamCourseVideo,
     getStudentCompletedCourses,
     getCourseChatHistory,
+    uploadCourseContent,
+    downloadCourseContent,
 } from './course.controller';
+import {
+    markStepComplete,
+    markStepIncomplete,
+    getCourseProgress,
+    getCourseCompletion,
+    getAllCoursesProgress,
+    checkCourseStarted,
+    getCourseStudents,
+    getCourseStatistics,
+    getCourseSpecificStatistics,
+} from './courseProgress.controller';
 import {
     authMiddleware,
     authMiddlewareOrQueryToken,
@@ -41,6 +54,11 @@ const videoUpload = multer({
         if (allowed.includes(file.mimetype)) cb(null, true);
         else cb(new Error('Only MP4, WebM, OGG, MOV videos are allowed'));
     },
+});
+
+// Generic upload instance for course content (e.g. PDFs, images)
+const upload = multer({
+    storage: multer.memoryStorage(),
 });
 
 courseRouter.get('/my-enrollments', authMiddleware, getMyEnrollments);

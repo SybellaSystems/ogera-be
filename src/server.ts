@@ -2,8 +2,7 @@ import http from 'http';
 import express from 'express';
 import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
-import cookieParser from "cookie-parser";  
-import { createServer } from 'http';
+import cookieParser from 'cookie-parser';
 import router from '@routes/routes';
 import logger from '@utils/logger';
 import { DB } from '@database/index';
@@ -23,9 +22,12 @@ const corsOrigin = FRONTEND_URL || 'http://localhost:5173';
 const corsOptions = {
     origin: corsOrigin,
     credentials: true,
-}));
+};
 
-appServer.options('*', cors());
+// Enable CORS with the configured options
+appServer.use(cors(corsOptions));
+
+appServer.options('*', cors(corsOptions));
 
 helmetMiddleware(appServer);
 
@@ -35,9 +37,6 @@ initializeSMSProvider(SMS_CONFIG.provider, {
     authToken: SMS_CONFIG.twilio.authToken,
     fromNumber: SMS_CONFIG.twilio.fromNumber,
 });
-
-// Enable CORS
-
 
 // Body parsers (must be before logging middleware to capture request body)
 appServer.use(express.json());

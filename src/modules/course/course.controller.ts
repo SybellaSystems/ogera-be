@@ -509,3 +509,82 @@ export const getCourseChatHistory = async (
         );
     }
 };
+
+// ---------- Course content (PDF/Image) ----------
+
+export const uploadCourseContent = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+): Promise<void> => {
+    try {
+        if (!req.user) {
+            response.errorResponse(
+                res,
+                StatusCodes.UNAUTHORIZED,
+                false,
+                'User not authenticated',
+            );
+            return;
+        }
+
+        const files = (req as any).files;
+        if (!files || (!files.pdf && !files.image)) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'No course content provided',
+            );
+            return;
+        }
+
+        response.response(
+            res,
+            true,
+            StatusCodes.NOT_IMPLEMENTED,
+            {},
+            'Upload course content endpoint not implemented yet',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+export const downloadCourseContent = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+): Promise<void> => {
+    try {
+        if (!req.user) {
+            response.errorResponse(
+                res,
+                StatusCodes.UNAUTHORIZED,
+                false,
+                'User not authenticated',
+            );
+            return;
+        }
+
+        response.response(
+            res,
+            true,
+            StatusCodes.NOT_IMPLEMENTED,
+            {},
+            'Download course content endpoint not implemented yet',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
