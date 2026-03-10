@@ -338,23 +338,6 @@ export const setupAssociations = () => {
         onDelete: 'CASCADE',
     });
 
-    // ====================== COURSE STEP ↔ COURSE PROGRESS ======================
-    // A course step can have many progress records
-    CourseStepModel.hasMany(CourseProgressModel, {
-        foreignKey: 'step_id',
-        as: 'progress',
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE',
-    });
-
-    // A course progress belongs to one course step
-    CourseProgressModel.belongsTo(CourseStepModel, {
-        foreignKey: 'step_id',
-        as: 'step',
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE',
-    });
-
     // ====================== INTERVIEWS ======================
     // A student (User) can have many interviews
     UserModel.hasMany(InterviewModel, {

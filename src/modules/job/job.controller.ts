@@ -161,7 +161,8 @@ export const getJobById = async (
 ) => {
     try {
         const job = await getJobByIdService(req.params.id as string);
-        const jobData = job && typeof job.get === 'function' ? job.get({ plain: true }) : (job as Record<string, unknown>);
+        const rawJob = job && typeof job.get === 'function' ? job.get({ plain: true }) : job;
+        const jobData = rawJob as unknown as Record<string, unknown>;
         if (req.user && jobData && jobData.funding_status === 'Paid') {
             const application = await DB.JobApplications.findOne({
                 where: { job_id: req.params.id, status: 'Accepted' },
