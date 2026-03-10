@@ -7,7 +7,7 @@
         "test": "jest",
         "test:watch": "jest --watch",
         "start": "node dist/server.js",
-        "dev": "nodemon",
+        "dev": "node -r ts-node/register -r tsconfig-paths/register src/server.ts",
         "clean": "node -e \"const fs=require('fs'),p='dist';fs.existsSync(p)&&fs.rmSync(p,{recursive:true});console.log('Dist cleaned.')\"",
         "build": "tsc && tsc-alias && echo 'Build Finished! 👍'",
         "rebuild": "npm run clean && npm run build",

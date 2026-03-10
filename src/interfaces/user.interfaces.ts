@@ -32,6 +32,10 @@ export interface User {
     phone_verification_otp?: string | null;
     phone_verification_otp_expiry?: Date | null;
 
+    // One-time 2FA login codes (separate from reset_otp)
+    login_2fa_otp?: string | null;
+    login_2fa_otp_expiry?: Date | null;
+
     /** SRS: Balance from employer payments; used for courses/platform services. */
     balance?: number | null;
 

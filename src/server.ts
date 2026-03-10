@@ -7,7 +7,7 @@ import { createServer } from 'http';
 import router from '@routes/routes';
 import logger from '@utils/logger';
 import { DB } from '@database/index';
-import { PORT, FRONTEND_URL, SMS_CONFIG } from './config';
+import { PORT, FRONTEND_URL, NODE_ENV, SMS_CONFIG } from './config';
 import { errorHandler } from './utils/error-handler';
 import { swaggerSpec, swaggerUi } from './utils/swagger';
 import { apiLimiter } from './middlewares/rateLimiter.middleware';
@@ -20,12 +20,19 @@ const appServer = express();
 const port = PORT;
 const corsOrigin = FRONTEND_URL || 'http://localhost:5173';
 
-const corsOptions = {
-    origin: corsOrigin,
+// In development we allow all origins; in production we reflect the configured frontend URL.
+const corsOptions: cors.CorsOptions = {
+    origin:
+        NODE_ENV === 'development'
+            ? true
+            : corsOrigin,
     credentials: true,
-}));
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+};
 
-appServer.options('*', cors());
+appServer.options('*', cors(corsOptions));
+appServer.use(cors(corsOptions));
 
 helmetMiddleware(appServer);
 

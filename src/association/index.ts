@@ -16,6 +16,7 @@ import { CourseModel } from '@/database/models/course.model';
 import { CourseStepModel } from '@/database/models/courseStep.model';
 import { CourseEnrollmentModel } from '@/database/models/courseEnrollment.model';
 import { CourseChatMessageModel } from '@/database/models/courseChatMessage.model';
+import { CourseProgressModel } from '@/database/models/courseProgress.model';
 
 export const setupAssociations = () => {
     // ====================== USER ↔ ROLE ======================
@@ -315,6 +316,50 @@ export const setupAssociations = () => {
     CourseEnrollmentModel.belongsTo(CourseModel, {
         foreignKey: 'course_id',
         as: 'course',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // ====================== COURSE PROGRESS ======================
+
+    CourseModel.hasMany(CourseProgressModel, {
+        foreignKey: 'course_id',
+        as: 'progress',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    CourseProgressModel.belongsTo(CourseModel, {
+        foreignKey: 'course_id',
+        as: 'course',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    UserModel.hasMany(CourseProgressModel, {
+        foreignKey: 'user_id',
+        as: 'courseProgress',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    CourseProgressModel.belongsTo(UserModel, {
+        foreignKey: 'user_id',
+        as: 'user',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    CourseStepModel.hasMany(CourseProgressModel, {
+        foreignKey: 'step_id',
+        as: 'progress',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    CourseProgressModel.belongsTo(CourseStepModel, {
+        foreignKey: 'step_id',
+        as: 'step',
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
     });

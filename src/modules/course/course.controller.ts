@@ -55,6 +55,74 @@ export const createCourse = async (
     }
 };
 
+// ---------- Course content (PDF / image) ----------
+
+export const uploadCourseContent = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const files = (req as any).files as
+            | { [fieldname: string]: Express.Multer.File[] }
+            | undefined;
+
+        if (!files || (!files.pdf && !files.image)) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'No course content file provided',
+            );
+            return;
+        }
+
+        const pdf = files.pdf?.[0];
+        const image = files.image?.[0];
+
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            {
+                pdf: pdf
+                    ? {
+                          originalname: pdf.originalname,
+                          mimetype: pdf.mimetype,
+                          size: pdf.size,
+                      }
+                    : null,
+                image: image
+                    ? {
+                          originalname: image.originalname,
+                          mimetype: image.mimetype,
+                          size: image.size,
+                      }
+                    : null,
+            },
+            'Course content received',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+export const downloadCourseContent = async (
+    _req: Request,
+    res: Response,
+): Promise<void> => {
+    response.errorResponse(
+        res,
+        StatusCodes.NOT_IMPLEMENTED,
+        false,
+        'Course content download is not implemented yet',
+    );
+};
+
 export const getAllCourses = async (
     req: Request,
     res: Response,

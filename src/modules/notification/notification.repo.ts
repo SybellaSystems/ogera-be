@@ -139,6 +139,19 @@ const repo = {
     return rows;
   },
 
+  // Mark all notifications as read for all users (superadmin action)
+  markAllAsReadAll: async () => {
+    const [rows] = await DB.Notifications.update(
+      { is_read: true },
+      {
+        where: {
+          is_read: false,
+        },
+      }
+    );
+    return rows;
+  },
+
   /** Course chat: count unread notifications for a course (title "Course support:...", related_id = course_id). */
   countUnreadCourseChat: async (user_id: string, course_id: string) => {
     return await DB.Notifications.count({

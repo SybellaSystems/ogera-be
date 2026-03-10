@@ -70,6 +70,9 @@ export class UserModel
     public phone_verification_otp?: string | null;
     public phone_verification_otp_expiry?: Date | null;
 
+    public login_2fa_otp?: string | null;
+    public login_2fa_otp_expiry?: Date | null;
+
     /** SRS: Balance from employer payments (RWF). Used for course fees/platform services. */
     public balance?: number | null;
 
@@ -249,6 +252,16 @@ export default function (sequelize: Sequelize): typeof UserModel {
             },
 
             phone_verification_otp_expiry: {
+                type: DataTypes.DATE,
+                allowNull: true,
+            },
+
+            login_2fa_otp: {
+                type: DataTypes.STRING(10),
+                allowNull: true,
+            },
+
+            login_2fa_otp_expiry: {
                 type: DataTypes.DATE,
                 allowNull: true,
             },

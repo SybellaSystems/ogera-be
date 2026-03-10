@@ -22,6 +22,12 @@ import courseModel from './models/course.model';
 import courseStepModel from './models/courseStep.model';
 import courseEnrollmentModel from './models/courseEnrollment.model';
 import courseChatMessageModel from './models/courseChatMessage.model';
+import courseProgressModel from './models/courseProgress.model';
+import activityLogModel from './models/activityLog.model';
+import disputeModel from './models/dispute.model';
+import disputeEvidenceModel from './models/disputeEvidence.model';
+import disputeMessageModel from './models/disputeMessage.model';
+import disputeTimelineModel from './models/disputeTimeline.model';
 import { setupAssociations } from '@/association/index';
 
 import {
@@ -85,7 +91,12 @@ const sequelize = new Sequelize.Sequelize(DB_NAME!, DB_USERNAME!, DB_PASSWORD, {
     },
     pool: { min: 0, max: 5 },
     // Disable per-query logging to avoid terminal flood (e.g. from repeated enrollment checks)
-    logging: process.env.LOG_SQL === 'true' ? (query: string, time: number) => logger.info(time + 'ms ' + query) : false,
+    logging:
+        process.env.LOG_SQL === 'true'
+            ? (query: string, time?: number): void => {
+                  logger.info(`${time ?? 0}ms ${query}`);
+              }
+            : false,
     benchmark: true,
     dialectOptions: {
         // Only use SSL when DB_SSL=true (e.g. Neon). Local PostgreSQL often does not support SSL.
@@ -145,6 +156,12 @@ const Courses = courseModel(sequelize);
 const CourseSteps = courseStepModel(sequelize);
 const CourseEnrollments = courseEnrollmentModel(sequelize);
 const CourseChatMessages = courseChatMessageModel(sequelize);
+const CourseProgress = courseProgressModel(sequelize);
+const ActivityLogs = activityLogModel(sequelize);
+const Disputes = disputeModel(sequelize);
+const DisputeEvidence = disputeEvidenceModel(sequelize);
+const DisputeMessages = disputeMessageModel(sequelize);
+const DisputeTimeline = disputeTimelineModel(sequelize);
 
 // Apply Associations
 setupAssociations();
@@ -636,6 +653,18 @@ const ensureUserTableColumns = async () => {
         allowNull: true,
     });
 
+    // Add login_2fa_otp if missing (for one-time 2FA login codes)
+    await ensureColumnExists('users', 'login_2fa_otp', {
+        type: Sequelize.DataTypes.STRING(10),
+        allowNull: true,
+    });
+
+    // Add login_2fa_otp_expiry if missing
+    await ensureColumnExists('users', 'login_2fa_otp_expiry', {
+        type: Sequelize.DataTypes.DATE,
+        allowNull: true,
+    });
+
     // Add two_fa_enabled if missing
     await ensureColumnExists('users', 'two_fa_enabled', {
         type: Sequelize.DataTypes.BOOLEAN,
@@ -898,6 +927,12 @@ export const DB = {
     CourseSteps,
     CourseEnrollments,
     CourseChatMessages,
+    CourseProgress,
+    ActivityLogs,
+    Disputes,
+    DisputeEvidence,
+    DisputeMessages,
+    DisputeTimeline,
     sequelize,
     Sequelize,
 };

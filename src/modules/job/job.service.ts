@@ -1,4 +1,5 @@
 import repo from './job.repo';
+import jobCategoryRepo from '../jobCategory/jobCategory.repo';
 import { CustomError } from '@/utils/custom-error';
 import { StatusCodes } from 'http-status-codes';
 import { Messages } from '@/utils/messages';

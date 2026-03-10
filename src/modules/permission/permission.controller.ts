@@ -4,7 +4,10 @@ import { StatusCodes } from 'http-status-codes';
 
 const permissionService = new PermissionService();
 
-export const createPermission = async (req: Request, res: Response) => {
+export const createPermission = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
         const permission = await permissionService.createPermission(req.body);
         res.status(StatusCodes.CREATED).json({
@@ -19,7 +22,7 @@ export const createPermission = async (req: Request, res: Response) => {
                 const existingPermission = await permissionService.getPermissionByApiName(req.body.api_name);
                 if (existingPermission) {
                     // Return existing permission with a message suggesting to use update
-                    return res.status(StatusCodes.CONFLICT).json({
+                    res.status(StatusCodes.CONFLICT).json({
                         success: false,
                         message: `Permission with API name '${req.body.api_name}' already exists. Please update the existing permission instead.`,
                         data: existingPermission,
