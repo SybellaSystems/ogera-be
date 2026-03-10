@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import * as momoService from './momo.service';
 import logger from '@/utils/logger';
+import { MOMO_CONFIG, MOMO_DISBURSEMENT_CONFIG } from '@/config';
 
 /**
  * Generate MoMo access token (and cache it). Useful for testing or pre-warming.
@@ -250,12 +251,47 @@ export async function approveWorkAndPay(req: Request, res: Response): Promise<vo
 }
 
 /**
- * Get Ogera wallet balance (disbursement account – admin only). Shown on MoMo Payments page.
+ * Get Ogera wallet balance (computed from jobs – admin only).
+ * We calculate: sum(employer payments: budget + fee) - sum(amounts paid to students).
  */
 export async function getWalletBalance(req: Request, res: Response): Promise<void> {
     try {
-        const result = await momoService.getDisbursementAccountBalance();
-        res.json({ success: true, data: result });
+        const { DB } = await import('@/database');
+        const { Op } = await import('sequelize');
+
+        const jobs = await DB.Jobs.findAll({
+            where: { funding_status: { [Op.in]: ['Funded', 'Paid'] } },
+            attributes: ['budget', 'funding_status', 'amount_paid_to_student'],
+        });
+
+        const feePct = MOMO_CONFIG.serviceFeePercent ?? 0;
+        let totalReceived = 0;
+        let totalPaidToStudents = 0;
+
+        for (const j of jobs as Array<{ budget: number; funding_status?: string; amount_paid_to_student?: number | null }>) {
+            const budget = Number(j.budget) || 0;
+            if (!budget) continue;
+            const totalForJob = budget * (1 + feePct / 100);
+            totalReceived += totalForJob;
+
+            if (j.funding_status === 'Paid') {
+                const paid =
+                    j.amount_paid_to_student != null
+                        ? Number(j.amount_paid_to_student)
+                        : Math.round(totalForJob * 0.9);
+                totalPaidToStudents += paid;
+            }
+        }
+
+        const available = Math.max(0, Math.round(totalReceived - totalPaidToStudents));
+
+        res.json({
+            success: true,
+            data: {
+                availableBalance: String(available),
+                currency: MOMO_DISBURSEMENT_CONFIG.currency,
+            },
+        });
     } catch (error) {
         const { status, data } = momoService.toMoMoError(error);
         logger.error('MoMo getWalletBalance error:', error);
