@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import cookieParser from "cookie-parser";  
-import { createServer } from 'http';
+import cookieParser from 'cookie-parser';
 import router from '@routes/routes';
 import logger from '@utils/logger';
 import { DB } from '@database/index';
@@ -27,6 +26,12 @@ const corsOptions: cors.CorsOptions = {
             ? true
             : corsOrigin,
     credentials: true,
+};
+
+// Enable CORS with the configured options
+appServer.use(cors(corsOptions));
+
+appServer.options('*', cors(corsOptions));
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
 };
@@ -42,9 +47,6 @@ initializeSMSProvider(SMS_CONFIG.provider, {
     authToken: SMS_CONFIG.twilio.authToken,
     fromNumber: SMS_CONFIG.twilio.fromNumber,
 });
-
-// Enable CORS
-
 
 // Body parsers (must be before logging middleware to capture request body)
 appServer.use(express.json());

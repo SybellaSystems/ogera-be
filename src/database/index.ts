@@ -88,10 +88,12 @@ const sequelize = new Sequelize.Sequelize(DB_NAME!, DB_USERNAME!, DB_PASSWORD, {
     },
     pool: { min: 0, max: 5 },
     // Disable per-query logging to avoid terminal flood (e.g. from repeated enrollment checks)
+    // Ensure logger callback returns void (Sequelize expects a void-returning function)
     logging:
         process.env.LOG_SQL === 'true'
-            ? (query: string, time?: number): void => {
-                  logger.info(`${time ?? 0}ms ${query}`);
+            ? (query: string, time?: number) => {
+                  const timing = typeof time === 'number' ? `${time}ms ` : '';
+                  logger.info(`${timing}${query}`);
               }
             : false,
     benchmark: true,

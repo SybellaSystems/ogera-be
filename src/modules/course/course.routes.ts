@@ -6,6 +6,16 @@ import {
     getCourseById,
     updateCourse,
     deleteCourse,
+    enrollCourse,
+    getMyEnrollments,
+    getEnrollment,
+    completeCourse,
+    getEnrollmentsPendingReview,
+    updateCertificateStatus,
+    uploadCourseVideo,
+    streamCourseVideo,
+    getStudentCompletedCourses,
+    getCourseChatHistory,
     uploadCourseContent,
     downloadCourseContent,
 } from './course.controller';
@@ -20,7 +30,10 @@ import {
     getCourseStatistics,
     getCourseSpecificStatistics,
 } from './courseProgress.controller';
-import { authMiddleware } from '@/middlewares/auth.middleware';
+import {
+    authMiddleware,
+    authMiddlewareOrQueryToken,
+} from '@/middlewares/auth.middleware';
 import {
     PermissionChecker,
     courseAdminOrSuperadminOnly,
@@ -33,6 +46,47 @@ const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 20 * 1024 * 1024 }, // 20MB per file
 });
+
+// Generic upload instance for course content (e.g. PDFs, images)
+const upload = multer({
+    storage: multer.memoryStorage(),
+});
+
+courseRouter.get('/my-enrollments', authMiddleware, getMyEnrollments);
+
+courseRouter.get(
+    '/student/:user_id/completed',
+    authMiddleware,
+    getStudentCompletedCourses,
+);
+
+courseRouter.post(
+    '/upload-video',
+    authMiddleware,
+    courseAdminOrSuperadminOnly,
+    videoUpload.single('video'),
+    uploadCourseVideo,
+);
+
+courseRouter.get(
+    '/videos/stream',
+    authMiddlewareOrQueryToken,
+    streamCourseVideo,
+);
+
+courseRouter.get(
+    '/enrollments/pending-review',
+    authMiddleware,
+    PermissionChecker('/courses', 'view'),
+    getEnrollmentsPendingReview,
+);
+
+courseRouter.put(
+    '/enrollments/:enrollment_id/certificate',
+    authMiddleware,
+    PermissionChecker('/courses', 'edit'),
+    updateCertificateStatus,
+);
 
 // View courses - requires view permission
 courseRouter.get(

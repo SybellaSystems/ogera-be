@@ -27,8 +27,6 @@ export type UserCreationAttributes = Optional<
     | 'phone_verified'
     | 'phone_verification_otp'
     | 'phone_verification_otp_expiry'
-    | 'login_2fa_otp'
-    | 'login_2fa_otp_expiry'
     | 'role_type'
 >;
 
