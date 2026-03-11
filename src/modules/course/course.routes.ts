@@ -6,16 +6,6 @@ import {
     getCourseById,
     updateCourse,
     deleteCourse,
-    enrollCourse,
-    getMyEnrollments,
-    getEnrollment,
-    completeCourse,
-    getEnrollmentsPendingReview,
-    updateCertificateStatus,
-    uploadCourseVideo,
-    streamCourseVideo,
-    getStudentCompletedCourses,
-    getCourseChatHistory,
     uploadCourseContent,
     downloadCourseContent,
 } from './course.controller';
@@ -30,63 +20,32 @@ import {
     getCourseStatistics,
     getCourseSpecificStatistics,
 } from './courseProgress.controller';
-import {
-    authMiddleware,
-    authMiddlewareOrQueryToken,
-} from '@/middlewares/auth.middleware';
-import {
-    PermissionChecker,
-    courseAdminOrSuperadminOnly,
-} from '@/middlewares/role.middleware';
+import { authMiddleware } from '@/middlewares/auth.middleware';
+import { PermissionChecker, courseAdminOrSuperadminOnly } from '@/middlewares/role.middleware';
 
 const courseRouter = express.Router();
 
-// Generic uploader for course content (PDF / image assets)
+/* -------------------- Multer Config -------------------- */
 const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 20 * 1024 * 1024 }, // 20MB per file
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+    fileFilter: (req, file, cb) => {
+        const allowedMimes = [
+            'application/pdf',
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/gif',
+            'image/webp',
+        ];
+
+        if (allowedMimes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Invalid file type. Only PDF and image files are allowed.'));
+        }
+    },
 });
-
-// Generic upload instance for course content (e.g. PDFs, images)
-const upload = multer({
-    storage: multer.memoryStorage(),
-});
-
-courseRouter.get('/my-enrollments', authMiddleware, getMyEnrollments);
-
-courseRouter.get(
-    '/student/:user_id/completed',
-    authMiddleware,
-    getStudentCompletedCourses,
-);
-
-courseRouter.post(
-    '/upload-video',
-    authMiddleware,
-    courseAdminOrSuperadminOnly,
-    videoUpload.single('video'),
-    uploadCourseVideo,
-);
-
-courseRouter.get(
-    '/videos/stream',
-    authMiddlewareOrQueryToken,
-    streamCourseVideo,
-);
-
-courseRouter.get(
-    '/enrollments/pending-review',
-    authMiddleware,
-    PermissionChecker('/courses', 'view'),
-    getEnrollmentsPendingReview,
-);
-
-courseRouter.put(
-    '/enrollments/:enrollment_id/certificate',
-    authMiddleware,
-    PermissionChecker('/courses', 'edit'),
-    updateCertificateStatus,
-);
 
 // View courses - requires view permission
 courseRouter.get(
@@ -225,3 +184,5 @@ courseRouter.get(
 );
 
 export default courseRouter;
+
+

@@ -1,4 +1,5 @@
 import express from 'express';
+import { createServer } from "http";
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import router from '@routes/routes';
@@ -26,15 +27,11 @@ const corsOptions: cors.CorsOptions = {
             ? true
             : corsOrigin,
     credentials: true,
+     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
 };
 
 // Enable CORS with the configured options
-appServer.use(cors(corsOptions));
-
-appServer.options('*', cors(corsOptions));
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-};
 
 appServer.options('*', cors(corsOptions));
 appServer.use(cors(corsOptions));
