@@ -69,7 +69,7 @@ export async function getStatus(req: Request, res: Response): Promise<void> {
             res.status(400).json({ success: false, message: 'referenceId is required' });
             return;
         }
-        const data = await momoService.getTransactionStatus(referenceId);
+        const data = await momoService.getTransactionStatus(String(referenceId));
         res.json({ success: true, data });
     } catch (error) {
         const { status, data } = momoService.toMoMoError(error);
@@ -129,7 +129,7 @@ export async function getInvoiceStatus(req: Request, res: Response): Promise<voi
             res.status(400).json({ success: false, message: 'referenceId is required' });
             return;
         }
-        const data = await momoService.getInvoiceStatus(referenceId);
+        const data = await momoService.getInvoiceStatus(String(referenceId));
         res.json({ success: true, data });
     } catch (error) {
         const { status, data } = momoService.toMoMoError(error);
@@ -196,7 +196,7 @@ export async function listJobPayments(req: Request, res: Response): Promise<void
             order: [['momo_paid_at', 'DESC'], ['updated_at', 'DESC']],
         });
         const feePct = 10;
-        const list = (jobs as unknown[]).map((j: Record<string, unknown>) => {
+        const list = (jobs as Array<Record<string, any>>).map((j) => {
             const budget = Number(j.budget) || 0;
             const stored = j.amount_paid_to_student != null ? Number(j.amount_paid_to_student) : null;
             const amount_paid_to_student = stored ?? (j.funding_status === 'Paid' ? Math.round(budget * (1 + feePct / 100) * 0.9) : null);
@@ -309,7 +309,7 @@ export async function getDisbursementStatus(req: Request, res: Response): Promis
             res.status(400).json({ success: false, message: 'referenceId is required' });
             return;
         }
-        const data = await momoService.getDisbursementTransferStatus(referenceId);
+        const data = await momoService.getDisbursementTransferStatus(String(referenceId));
         res.json({ success: true, data });
     } catch (error) {
         const { status, data } = momoService.toMoMoError(error);

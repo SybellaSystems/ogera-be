@@ -22,6 +22,7 @@ import courseModel from './models/course.model';
 import courseStepModel from './models/courseStep.model';
 import courseProgressModel from './models/courseProgress.model';
 import activityLogModel from './models/activityLog.model';
+import interviewModel from './models/interview.model';
 import disputeModel from './models/dispute.model';
 import disputeEvidenceModel from './models/disputeEvidence.model';
 import disputeMessageModel from './models/disputeMessage.model';
@@ -141,6 +142,7 @@ const Courses = courseModel(sequelize);
 const CourseSteps = courseStepModel(sequelize);
 const CourseProgress = courseProgressModel(sequelize);
 const ActivityLogs = activityLogModel(sequelize);
+const Interviews = interviewModel(sequelize);
 const Disputes = disputeModel(sequelize);
 const DisputeEvidence = disputeEvidenceModel(sequelize);
 const DisputeMessages = disputeMessageModel(sequelize);
@@ -845,6 +847,7 @@ export const DB = {
     CourseSteps,
     CourseProgress,
     ActivityLogs,
+    Interviews,
     Disputes,
     DisputeEvidence,
     DisputeMessages,
