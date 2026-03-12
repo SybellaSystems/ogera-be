@@ -18,17 +18,33 @@ const appServer = express();
 const httpServer = createServer(appServer);
 // const port = PORT;
 const port = process.env.PORT || 5000;
-const corsOrigin = FRONTEND_URL || 'http://localhost:5173';
+// const corsOrigin = FRONTEND_URL || 'http://localhost:5173';
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://ogera-frontend.vercel.app'
+];
 
 // In development we allow all origins; in production we reflect the configured frontend URL.
+// const corsOptions: cors.CorsOptions = {
+//     origin:
+//         NODE_ENV === 'development'
+//             ? true
+//             : corsOrigin,
+//     credentials: true,
+//      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+//     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+// };
 const corsOptions: cors.CorsOptions = {
-    origin:
-        NODE_ENV === 'development'
-            ? true
-            : corsOrigin,
-    credentials: true,
-     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization']
 };
 
 // Enable CORS with the configured options
