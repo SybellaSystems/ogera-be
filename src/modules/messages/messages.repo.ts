@@ -34,7 +34,41 @@ export const getConversationsRepo = async (
       offset,
     });
 
-    return conversations;
+    const rows = await Promise.all(
+      conversations.rows.map(async (conversation) => {
+        const [lastMessage, unreadCount] = await Promise.all([
+          DB.Messages.findOne({
+            where: { conversation_id: conversation.conversation_id },
+            include: [
+              {
+                model: DB.Users,
+                as: 'sender',
+                attributes: ['user_id', 'full_name', 'profile_image_url'],
+              },
+            ],
+            order: [['created_at', 'DESC']],
+          }),
+          DB.Messages.count({
+            where: {
+              conversation_id: conversation.conversation_id,
+              receiver_id: user_id,
+              read_status: false,
+            },
+          }),
+        ]);
+
+        return {
+          ...conversation.toJSON(),
+          lastMessage: lastMessage?.toJSON?.() || lastMessage || null,
+          unreadCount,
+        };
+      })
+    );
+
+    return {
+      ...conversations,
+      rows,
+    };
   } catch (error: any) {
     throw new CustomError(
       `Failed to fetch conversations: ${error.message}`,
@@ -149,7 +183,11 @@ export const getMessagesRepo = async (
     // First verify conversation exists
     const conversation = await getConversationRepo(conversation_id);
 
-    const messages = await DB.Messages.findAndCountAll({
+    const total = await DB.Messages.count({
+      where: { conversation_id },
+    });
+
+    const rows = await DB.Messages.findAll({
       where: { conversation_id },
       include: [
         {
@@ -158,12 +196,15 @@ export const getMessagesRepo = async (
           attributes: ['user_id', 'full_name', 'profile_image_url'],
         },
       ],
-      order: [['created_at', 'ASC']],
+      order: [['created_at', 'DESC']],
       limit,
       offset,
     });
 
-    return messages;
+    return {
+      count: total,
+      rows: rows.reverse(),
+    };
   } catch (error: any) {
     if (error instanceof CustomError) throw error;
     throw new CustomError(
@@ -279,6 +320,25 @@ export const getUnreadCountRepo = async (
   } catch (error: any) {
     throw new CustomError(
       `Failed to get unread count: ${error.message}`,
+      StatusCodes.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
+// Get total unread message count across all conversations for a user
+export const getTotalUnreadCountRepo = async (user_id: string) => {
+  try {
+    const count = await DB.Messages.count({
+      where: {
+        receiver_id: user_id,
+        read_status: false,
+      },
+    });
+
+    return count;
+  } catch (error: any) {
+    throw new CustomError(
+      `Failed to get total unread count: ${error.message}`,
       StatusCodes.INTERNAL_SERVER_ERROR
     );
   }

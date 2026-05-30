@@ -88,6 +88,14 @@ const repo = {
     });
   },
 
+  updateNotification: async (notification_id: string, data: any) => {
+    await DB.Notifications.update(data, {
+      where: { notification_id },
+    });
+
+    return await DB.Notifications.findByPk(notification_id);
+  },
+
   /**
    * Read all notifications from the database `notifications` table (no user filter).
    * Used for superAdmin to see every notification. Optional: is_read, limit.
@@ -155,7 +163,10 @@ const repo = {
    * Read all notifications for a user from the database `notifications` table.
    * Optional: filter by is_read, limit count. Omit limit to return all rows.
    */
-  findNotificationsByUserId: async (user_id: string, options?: { is_read?: boolean; limit?: number }) => {
+  findNotificationsByUserId: async (
+    user_id: string,
+    options?: { is_read?: boolean; limit?: number; offset?: number }
+  ) => {
     const where: any = { user_id };
     if (options?.is_read !== undefined) {
       where.is_read = options.is_read;
@@ -168,6 +179,10 @@ const repo = {
 
     if (options?.limit && options.limit > 0) {
       queryOptions.limit = options.limit;
+    }
+
+    if (options?.offset && options.offset > 0) {
+      queryOptions.offset = options.offset;
     }
 
     const notifications = await DB.Notifications.findAll(queryOptions);
@@ -185,7 +200,7 @@ const repo = {
 
   markAsRead: async (notification_id: string, user_id: string) => {
     const [rows] = await DB.Notifications.update(
-      { is_read: true },
+      { is_read: true, read_at: new Date() },
       {
         where: {
           notification_id,
@@ -199,7 +214,7 @@ const repo = {
   // Mark all notifications as read for a specific user
   markAllAsRead: async (user_id: string) => {
     const [rows] = await DB.Notifications.update(
-      { is_read: true },
+      { is_read: true, read_at: new Date() },
       {
         where: {
           user_id,
@@ -213,7 +228,7 @@ const repo = {
   // Mark all notifications as read for all users (superadmin action)
   markAllAsReadAll: async () => {
     const [rows] = await DB.Notifications.update(
-      { is_read: true },
+      { is_read: true, read_at: new Date() },
       {
         where: {
           is_read: false,
@@ -256,6 +271,27 @@ const repo = {
       },
     });
     return rows > 0;
+  },
+
+  findRecentMessageEmailNotification: async (
+    user_id: string,
+    conversation_id: string,
+    windowStart: Date
+  ) => {
+    return await DB.Notifications.findOne({
+      where: {
+        user_id,
+        type: 'new_message',
+        related_id: conversation_id,
+        email_sent_at: {
+          [Op.ne]: null,
+        },
+        created_at: {
+          [Op.gte]: windowStart,
+        },
+      },
+      order: [['created_at', 'DESC']],
+    });
   },
 };
 

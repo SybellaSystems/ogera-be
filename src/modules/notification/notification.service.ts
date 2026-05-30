@@ -4,17 +4,41 @@ import { StatusCodes } from 'http-status-codes';
 import { emailService, EmailType } from '@/services/email/email.service';
 import { DB } from '@/database';
 import { Op } from 'sequelize';
-import { AdminBroadcastNotificationTemplate } from '@/templete/emailTemplete';
+import {
+  AdminBroadcastNotificationTemplate,
+  MessageNotificationTemplate,
+} from '@/templete/emailTemplete';
+import { emitToUser, isUserActiveInConversation } from '@/utils/socket';
+
+type NotificationType =
+  | 'job_application'
+  | 'application_status'
+  | 'job_posted'
+  | 'system'
+  | 'new_message';
+
+const emitUnreadNotificationCount = async (user_id: string) => {
+  const count = await repo.countUnreadNotifications(user_id);
+  emitToUser(user_id, 'notifications:unread_count', { count });
+  return count;
+};
 
 // Create a notification
 export const createNotificationService = async (notificationData: {
   user_id: string;
-  type: 'job_application' | 'application_status' | 'job_posted' | 'system';
+  type: NotificationType;
   title: string;
   message: string;
   related_id?: string;
+  action_url?: string;
+  entity_type?: string;
+  entity_id?: string;
+  metadata?: Record<string, any> | null;
 }) => {
-  return await repo.createNotification(notificationData);
+  const notification = await repo.createNotification(notificationData);
+  emitToUser(notification.user_id, 'notification:new', notification);
+  await emitUnreadNotificationCount(notification.user_id);
+  return notification;
 };
 
 export const sendAdminNotificationService = async (params: {
@@ -91,7 +115,13 @@ export const sendAdminNotificationService = async (params: {
   const notificationsToCreate = notificationsPayload.filter(
     (n) => !recentlyNotifiedUserIds.has(String(n.user_id))
   );
-  await repo.createNotificationsBulk(notificationsToCreate);
+  const createdNotifications = await repo.createNotificationsBulk(notificationsToCreate);
+  await Promise.all(
+    createdNotifications.map(async (notification: any) => {
+      emitToUser(notification.user_id, 'notification:new', notification);
+      await emitUnreadNotificationCount(notification.user_id);
+    })
+  );
 
   // Create exactly one sender copy so sender inbox shows a single broadcast item,
   // regardless of how many recipients were targeted.
@@ -114,12 +144,14 @@ export const sendAdminNotificationService = async (params: {
       if (senderAlreadyHasRecentCopy) {
         throw new Error('skip_sender_copy_duplicate');
       }
-      await repo.createNotification({
+      const senderNotification = await repo.createNotification({
         user_id: params.sender_user_id,
         type: 'system',
         title: decoratedTitle,
         message: decoratedMessage,
       });
+      emitToUser(senderNotification.user_id, 'notification:new', senderNotification);
+      await emitUnreadNotificationCount(senderNotification.user_id);
     } catch (e) {
       if ((e as Error)?.message !== 'skip_sender_copy_duplicate') {
         console.error('Failed to create sender notification copy:', e);
@@ -164,7 +196,7 @@ export const sendAdminNotificationService = async (params: {
 // Get all notifications for a user; superAdmin gets all notifications from the table
 export const getNotificationsService = async (
   user_id: string,
-  options?: { is_read?: boolean; limit?: number },
+  options?: { is_read?: boolean; limit?: number; offset?: number },
   role?: string
 ) => {
   const isSuperAdmin = role?.toLowerCase() === 'superadmin';
@@ -189,7 +221,9 @@ export const markNotificationAsReadService = async (
   if (!updated) {
     throw new CustomError('Notification not found or access denied', StatusCodes.NOT_FOUND);
   }
-  return await repo.findNotificationById(notification_id);
+  const notification = await repo.findNotificationById(notification_id);
+  await emitUnreadNotificationCount(user_id);
+  return notification;
 };
 
 // Mark all notifications as read
@@ -198,6 +232,9 @@ export const markAllNotificationsAsReadService = async (user_id: string, role?: 
   const count = isSuperAdmin
     ? await repo.markAllAsReadAll()
     : await repo.markAllAsRead(user_id);
+  if (!isSuperAdmin) {
+    await emitUnreadNotificationCount(user_id);
+  }
   return { count };
 };
 
@@ -210,7 +247,81 @@ export const deleteNotificationService = async (
   if (!deleted) {
     throw new CustomError('Notification not found or access denied', StatusCodes.NOT_FOUND);
   }
+  await emitUnreadNotificationCount(user_id);
   return { success: true };
+};
+
+export const createMessageNotification = async (params: {
+  receiver_id: string;
+  sender_id: string;
+  sender_name: string;
+  receiver_email?: string | null;
+  receiver_name?: string | null;
+  conversation_id: string;
+  job_title?: string | null;
+  preview: string;
+}) => {
+  const notification = await createNotificationService({
+    user_id: params.receiver_id,
+    type: 'new_message',
+    title: `New message from ${params.sender_name}`,
+    message: params.preview,
+    related_id: params.conversation_id,
+    action_url: `/dashboard/messages?conversationId=${params.conversation_id}`,
+    entity_type: 'conversation',
+    entity_id: params.conversation_id,
+    metadata: {
+      conversation_id: params.conversation_id,
+      sender_id: params.sender_id,
+      sender_name: params.sender_name,
+      job_title: params.job_title || null,
+      preview: params.preview,
+    },
+  });
+
+  const receiverIsActiveInConversation = isUserActiveInConversation(
+    params.receiver_id,
+    params.conversation_id
+  );
+
+  if (receiverIsActiveInConversation || !params.receiver_email) {
+    return notification;
+  }
+
+  const recentWindowStart = new Date(Date.now() - 15 * 60 * 1000);
+  const recentEmailNotification = await repo.findRecentMessageEmailNotification(
+    params.receiver_id,
+    params.conversation_id,
+    recentWindowStart
+  );
+
+  if (recentEmailNotification) {
+    return notification;
+  }
+
+  const frontendBase = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const chatUrl = `${frontendBase.replace(/\/$/, '')}/dashboard/messages?conversationId=${params.conversation_id}`;
+  const { html, text } = MessageNotificationTemplate({
+    recipientName: params.receiver_name || 'there',
+    senderName: params.sender_name,
+    preview: params.preview,
+    openChatUrl: chatUrl,
+    jobTitle: params.job_title || undefined,
+  });
+
+  await emailService.sendEmail({
+    to: params.receiver_email,
+    type: EmailType.CUSTOM,
+    subject: `${params.sender_name} sent you a message on Ogera`,
+    html,
+    text,
+  });
+
+  await repo.updateNotification(notification.notification_id, {
+    email_sent_at: new Date(),
+  });
+
+  return notification;
 };
 
 // Helper: Create job application notification for employer

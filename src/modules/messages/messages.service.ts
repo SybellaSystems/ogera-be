@@ -2,6 +2,8 @@ import * as repo from './messages.repo';
 import { CustomError } from '@/utils/custom-error';
 import { StatusCodes } from 'http-status-codes';
 import { DB } from '@/database';
+import { emitToConversation, emitToUser, isUserOnline } from '@/utils/socket';
+import { createMessageNotification } from '@/modules/notification/notification.service';
 
 export const getConversationsService = async (
   user_id: string,
@@ -28,9 +30,6 @@ export const getMessagesService = async (
     );
   }
 
-  // Mark all messages as read for this user
-  await repo.markMessagesAsReadRepo(conversation_id, user_id);
-
   return await repo.getMessagesRepo(conversation_id, limit, offset);
 };
 
@@ -42,15 +41,19 @@ export const sendMessageService = async (
   file_name?: string,
   file_type?: string
 ) => {
+  const normalizedContent = String(content || '')
+    .replace(/\u0000/g, '')
+    .trim();
+
   // Content is required unless a file is provided
-  if ((!content || content.trim().length === 0) && !file_url) {
+  if (!normalizedContent && !file_url) {
     throw new CustomError(
       'Message content or file is required',
       StatusCodes.BAD_REQUEST
     );
   }
 
-  if (content && content.length > 5000) {
+  if (normalizedContent.length > 5000) {
     throw new CustomError(
       'Message content is too long (max 5000 characters)',
       StatusCodes.BAD_REQUEST
@@ -73,15 +76,64 @@ export const sendMessageService = async (
     ? conversation.student_id 
     : conversation.employer_id;
 
-  return await repo.createMessageRepo(
+  const message = await repo.createMessageRepo(
     conversation_id,
     sender_id,
     receiver_id,
-    content,
+    normalizedContent,
     file_url,
     file_name,
     file_type
   );
+
+  if (!message) {
+    throw new CustomError('Failed to create message', StatusCodes.INTERNAL_SERVER_ERROR);
+  }
+
+  const sender = await DB.Users.findByPk(sender_id, {
+    attributes: ['user_id', 'full_name', 'email'],
+  });
+  const receiver = await DB.Users.findByPk(receiver_id, {
+    attributes: ['user_id', 'full_name', 'email'],
+  });
+
+  emitToUser(receiver_id, 'message:new', {
+    conversation_id,
+    message,
+  });
+
+  emitToConversation(conversation_id, 'conversation:updated', {
+    conversation_id,
+    message,
+  });
+
+  if (isUserOnline(receiver_id)) {
+    emitToUser(sender_id, 'message:delivered', {
+      conversation_id,
+      message_id: message.message_id,
+      delivered_at: new Date().toISOString(),
+    });
+  }
+
+  try {
+    await createMessageNotification({
+      receiver_id,
+      sender_id,
+      sender_name: sender?.full_name || 'Someone',
+      receiver_email: receiver?.email || null,
+      receiver_name: receiver?.full_name || null,
+      conversation_id,
+      job_title: conversation.job?.job_title || null,
+      preview:
+        normalizedContent ||
+        (file_name ? `Sent an attachment: ${file_name}` : 'Sent you a new message'),
+    });
+  } catch (notificationError) {
+    // Do not block message delivery if notification/email work fails.
+    console.error('Failed to create message notification:', notificationError);
+  }
+
+  return message;
 };
 
 export const createConversationService = async (
@@ -89,7 +141,7 @@ export const createConversationService = async (
   student_id: string,
   job_id: string,
   requesting_user_id: string,
-  requesting_user_role: string
+  _requesting_user_role: string
 ) => {
   // Verify job exists and belongs to employer
   const job = await DB.Jobs.findByPk(job_id);
@@ -159,6 +211,39 @@ export const getUnreadCountService = async (
   return { unread_count: count };
 };
 
+export const markConversationReadService = async (
+  conversation_id: string,
+  user_id: string
+) => {
+  const conversation = await repo.getConversationRepo(conversation_id);
+
+  if (conversation.employer_id !== user_id && conversation.student_id !== user_id) {
+    throw new CustomError(
+      'Unauthorized to access this conversation',
+      StatusCodes.FORBIDDEN
+    );
+  }
+
+  const result = await repo.markMessagesAsReadRepo(conversation_id, user_id);
+  const otherParticipantId =
+    conversation.employer_id === user_id ? conversation.student_id : conversation.employer_id;
+
+  if (result.updated > 0) {
+    emitToUser(otherParticipantId, 'messages:read', {
+      conversation_id,
+      reader_id: user_id,
+      read_at: new Date().toISOString(),
+    });
+  }
+
+  return result;
+};
+
+export const getUnreadSummaryService = async (user_id: string) => {
+  const unread_count = await repo.getTotalUnreadCountRepo(user_id);
+  return { unread_count };
+};
+
 export const deleteConversationService = async (
   conversation_id: string,
   user_id: string
@@ -172,5 +257,7 @@ export default {
   sendMessageService,
   createConversationService,
   getUnreadCountService,
+  markConversationReadService,
+  getUnreadSummaryService,
   deleteConversationService,
 };

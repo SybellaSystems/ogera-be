@@ -12,11 +12,17 @@ export class NotificationModel
 {
   public notification_id!: string;
   public user_id!: string;
-  public type!: 'job_application' | 'application_status' | 'job_posted' | 'system';
+  public type!: 'job_application' | 'application_status' | 'job_posted' | 'system' | 'new_message';
   public title!: string;
   public message!: string;
   public related_id?: string;
+  public action_url?: string;
+  public entity_type?: string;
+  public entity_id?: string;
+  public metadata?: Record<string, any> | null;
   public is_read!: boolean;
+  public read_at?: Date | null;
+  public email_sent_at?: Date | null;
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
 }
@@ -39,7 +45,7 @@ export default function (sequelize: Sequelize): typeof NotificationModel {
         onDelete: 'CASCADE',
       },
       type: {
-        type: DataTypes.ENUM('job_application', 'application_status', 'job_posted', 'system'),
+        type: DataTypes.ENUM('job_application', 'application_status', 'job_posted', 'system', 'new_message'),
         allowNull: false,
       },
       title: {
@@ -54,10 +60,34 @@ export default function (sequelize: Sequelize): typeof NotificationModel {
         type: DataTypes.UUID,
         allowNull: true,
       },
+      action_url: {
+        type: DataTypes.STRING(500),
+        allowNull: true,
+      },
+      entity_type: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+      },
+      entity_id: {
+        type: DataTypes.UUID,
+        allowNull: true,
+      },
+      metadata: {
+        type: DataTypes.JSONB,
+        allowNull: true,
+      },
       is_read: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
+      },
+      read_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      email_sent_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
       },
       created_at: {
         type: DataTypes.DATE,
@@ -74,6 +104,14 @@ export default function (sequelize: Sequelize): typeof NotificationModel {
       createdAt: 'created_at',
       updatedAt: 'updated_at',
       timestamps: true,
+      indexes: [
+        {
+          fields: ['user_id', 'is_read', 'created_at'],
+        },
+        {
+          fields: ['type', 'related_id', 'created_at'],
+        },
+      ],
     }
   );
 

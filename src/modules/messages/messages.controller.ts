@@ -275,6 +275,87 @@ export const getUnreadCount = async (req: Request, res: Response) => {
 };
 
 /**
+ * GET /api/messages/unread-summary
+ * Get total unread message count across all conversations
+ */
+export const getUnreadSummary = async (req: Request, res: Response) => {
+  try {
+    const user_id = req.user?.user_id;
+
+    if (!user_id) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    const result = await messagesService.getUnreadSummaryService(user_id);
+
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      data: result,
+    });
+  } catch (error: any) {
+    logger.error('Get unread summary error:', error);
+
+    if (error instanceof CustomError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to get unread summary',
+    });
+  }
+};
+
+/**
+ * POST /api/messages/:conversationId/read
+ * Mark messages in a conversation as read for the current user
+ */
+export const markConversationRead = async (req: Request, res: Response) => {
+  try {
+    const conversationId = String(req.params.conversationId);
+    const user_id = req.user?.user_id;
+
+    if (!user_id) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    const result = await messagesService.markConversationReadService(
+      conversationId,
+      user_id
+    );
+
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      data: result,
+      message: 'Conversation marked as read',
+    });
+  } catch (error: any) {
+    logger.error('Mark conversation as read error:', error);
+
+    if (error instanceof CustomError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to mark conversation as read',
+    });
+  }
+};
+
+/**
  * DELETE /api/messages/:conversationId
  * Delete a conversation
  */
@@ -323,5 +404,7 @@ export default {
   sendMessage,
   createConversation,
   getUnreadCount,
+  getUnreadSummary,
+  markConversationRead,
   deleteConversation,
 };

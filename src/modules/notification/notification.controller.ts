@@ -15,7 +15,7 @@ const response = new ResponseFormat();
 /**
  * GET /notifications
  * Fetches all notification data from the database for the authenticated user.
- * Query: ?is_read=true|false (optional), ?limit=number (optional; omit for all).
+ * Query: ?is_read=true|false (optional), ?limit=number (optional), ?offset=number (optional).
  * Response: { success, status, message, data: Notification[] }
  */
 export const getNotifications = async (
@@ -34,8 +34,8 @@ export const getNotifications = async (
       return;
     }
 
-    const { is_read, limit } = req.query;
-    const options: { is_read?: boolean; limit?: number } = {};
+    const { is_read, limit, offset } = req.query;
+    const options: { is_read?: boolean; limit?: number; offset?: number } = {};
     if (is_read !== undefined) {
       options.is_read = is_read === 'true';
     }
@@ -43,6 +43,12 @@ export const getNotifications = async (
       const parsed = parseInt(limit as string, 10);
       if (!isNaN(parsed) && parsed > 0) {
         options.limit = Math.min(parsed, 5000);
+      }
+    }
+    if (offset) {
+      const parsed = parseInt(offset as string, 10);
+      if (!isNaN(parsed) && parsed >= 0) {
+        options.offset = parsed;
       }
     }
 

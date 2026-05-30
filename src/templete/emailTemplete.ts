@@ -1506,3 +1506,103 @@ export const AdminBroadcastNotificationTemplate = (
 
     return { html, text };
 };
+
+export interface MessageNotificationTemplateParams {
+    recipientName: string;
+    senderName: string;
+    preview: string;
+    openChatUrl: string;
+    jobTitle?: string;
+}
+
+const escapeHtml = (raw: string) =>
+    String(raw ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
+export const MessageNotificationTemplate = (
+    params: MessageNotificationTemplateParams,
+): { html: string; text: string } => {
+    const recipientName = escapeHtml(params.recipientName);
+    const senderName = escapeHtml(params.senderName);
+    const preview = escapeHtml(params.preview);
+    const openChatUrl = escapeHtml(params.openChatUrl);
+    const jobTitle = params.jobTitle ? escapeHtml(params.jobTitle) : null;
+
+    const text = [
+        `Hello ${params.recipientName},`,
+        '',
+        `${params.senderName} sent you a new message on Ogera.`,
+        jobTitle ? `Job: ${params.jobTitle}` : null,
+        '',
+        `Preview: ${params.preview}`,
+        '',
+        `Open chat: ${params.openChatUrl}`,
+        '',
+        'Best regards,',
+        'The Ogera Team',
+    ]
+        .filter(Boolean)
+        .join('\n');
+
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>New message on Ogera</title>
+</head>
+<body style="margin:0;padding:0;background:#eef2ff;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="padding:24px 12px;background:#eef2ff;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="620" cellspacing="0" cellpadding="0" border="0" style="max-width:620px;width:100%;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 18px 40px rgba(79,70,229,0.14);">
+          <tr>
+            <td style="padding:28px 32px;background:linear-gradient(135deg,#1d4ed8 0%,#4f46e5 55%,#7c3aed 100%);">
+              <p style="margin:0 0 8px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,0.82);font-weight:700;">Ogera Messages</p>
+              <h1 style="margin:0;font-size:28px;line-height:1.2;color:#ffffff;">You have a new message</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;">
+              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;color:#334155;">Hello ${recipientName},</p>
+              <p style="margin:0 0 18px;font-size:16px;line-height:1.7;color:#334155;">
+                <strong style="color:#0f172a;">${senderName}</strong> sent you a new message on Ogera.
+              </p>
+              ${
+                  jobTitle
+                      ? `<p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#6366f1;"><strong>Conversation:</strong> ${jobTitle}</p>`
+                      : ''
+              }
+              <div style="padding:20px 22px;border-radius:16px;background:#f8fafc;border:1px solid #e2e8f0;">
+                <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#64748b;">Message preview</p>
+                <p style="margin:0;font-size:15px;line-height:1.75;color:#0f172a;">${preview}</p>
+              </div>
+              <div style="padding-top:28px;">
+                <a href="${openChatUrl}" style="display:inline-block;padding:14px 24px;border-radius:999px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;">
+                  Open Chat
+                </a>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:22px 32px;background:#f8fafc;border-top:1px solid #e2e8f0;">
+              <p style="margin:0;font-size:12px;line-height:1.6;color:#64748b;">
+                You received this email because a new message arrived in a conversation you are not currently viewing.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+
+    return { html, text };
+};

@@ -5,6 +5,8 @@ import {
   sendMessage,
   createConversation,
   getUnreadCount,
+  getUnreadSummary,
+  markConversationRead,
   deleteConversation,
 } from './messages.controller';
 import { authMiddleware } from '@/middlewares/auth.middleware';
@@ -24,6 +26,13 @@ messagesRouter.post(
   '/conversations',
   authMiddleware,
   createConversation
+);
+
+// Get total unread message count
+messagesRouter.get(
+  '/unread-summary',
+  authMiddleware,
+  getUnreadSummary
 );
 
 // Get messages for a specific conversation
@@ -46,6 +55,13 @@ messagesRouter.get(
   '/:conversationId/unread-count',
   authMiddleware,
   getUnreadCount
+);
+
+// Mark a conversation as read
+messagesRouter.post(
+  '/:conversationId/read',
+  authMiddleware,
+  markConversationRead
 );
 
 // Delete a conversation

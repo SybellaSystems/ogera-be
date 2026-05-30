@@ -490,6 +490,88 @@ const ensureJobCategoriesTableColumns = async () => {
     });
 };
 
+// Function to ensure required jobs table columns exist
+const ensureJobsTableColumns = async () => {
+    const queryInterface = sequelize.getQueryInterface();
+
+    try {
+        await queryInterface.describeTable('jobs');
+    } catch (err) {
+        logger.info('Jobs table does not exist, will be created by sync');
+        return;
+    }
+
+    await ensureColumnExists('jobs', 'description', {
+        type: Sequelize.DataTypes.TEXT,
+        allowNull: true,
+    });
+    await ensureColumnExists('jobs', 'requirements', {
+        type: Sequelize.DataTypes.TEXT,
+        allowNull: true,
+    });
+    await ensureColumnExists('jobs', 'skills', {
+        type: Sequelize.DataTypes.TEXT,
+        allowNull: true,
+    });
+    await ensureColumnExists('jobs', 'employment_type', {
+        type: Sequelize.DataTypes.STRING(50),
+        allowNull: true,
+    });
+    await ensureColumnExists('jobs', 'experience_level', {
+        type: Sequelize.DataTypes.STRING(50),
+        allowNull: true,
+    });
+    await ensureColumnExists('jobs', 'currency', {
+        type: Sequelize.DataTypes.STRING(10),
+        allowNull: true,
+        defaultValue: 'USD',
+    });
+    await ensureColumnExists('jobs', 'funding_status', {
+        type: Sequelize.DataTypes.STRING(20),
+        allowNull: true,
+        defaultValue: 'Unfunded',
+    });
+    await ensureColumnExists('jobs', 'momo_reference_id', {
+        type: Sequelize.DataTypes.STRING(64),
+        allowNull: true,
+    });
+    await ensureColumnExists('jobs', 'momo_paid_at', {
+        type: Sequelize.DataTypes.DATE,
+        allowNull: true,
+    });
+    await ensureColumnExists('jobs', 'disbursement_reference_id', {
+        type: Sequelize.DataTypes.STRING(64),
+        allowNull: true,
+    });
+    await ensureColumnExists('jobs', 'paid_at', {
+        type: Sequelize.DataTypes.DATE,
+        allowNull: true,
+    });
+    await ensureColumnExists('jobs', 'amount_paid_to_student', {
+        type: Sequelize.DataTypes.DECIMAL(12, 2),
+        allowNull: true,
+    });
+};
+
+// Function to ensure required job_applications columns exist
+const ensureJobApplicationsTableColumns = async () => {
+    const queryInterface = sequelize.getQueryInterface();
+
+    try {
+        await queryInterface.describeTable('job_applications');
+    } catch (err) {
+        logger.info(
+            'Job applications table does not exist, will be created by sync',
+        );
+        return;
+    }
+
+    await ensureColumnExists('job_applications', 'preferred_payout_currency', {
+        type: Sequelize.DataTypes.STRING(10),
+        allowNull: true,
+    });
+};
+
 // Function to ensure all required user table columns exist
 const ensureUserTableColumns = async () => {
     const queryInterface = sequelize.getQueryInterface();
@@ -781,6 +863,13 @@ const ensureUserTableColumns = async () => {
         logger.info('Ensuring job_categories table columns exist...');
         await ensureJobCategoriesTableColumns();
 
+        logger.info('Ensuring jobs table columns exist...');
+        await ensureJobsTableColumns();
+
+        // Ensure job_applications table has FX-related columns added after initial launch
+        logger.info('Ensuring job_applications table columns exist...');
+        await ensureJobApplicationsTableColumns();
+
         // Fix any NULL role_type values BEFORE syncing
         logger.info('Checking for NULL role_type values...');
         const fixSuccess = await fixNullRoleTypeValues();
@@ -864,6 +953,8 @@ const ensureUserTableColumns = async () => {
         // Ensure all columns are correct
         await ensureUserTableColumns();
         await ensureJobCategoriesTableColumns();
+        await ensureJobsTableColumns();
+        await ensureJobApplicationsTableColumns();
     } catch (err: any) {
         logger.error(
             '❌ Error during database initialization:',
@@ -873,6 +964,8 @@ const ensureUserTableColumns = async () => {
         try {
             await ensureUserTableColumns();
             await ensureJobCategoriesTableColumns();
+            await ensureJobsTableColumns();
+            await ensureJobApplicationsTableColumns();
             await fixNullRoleTypeValues();
         } catch (finalErr) {
             logger.warn('⚠️  Could not complete final column checks');
