@@ -29,6 +29,7 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'https://ogera-frontend.vercel.app',
+  'https://ogera-frontend-hguj.vercel.app',
   'https://app.ogera.sybellasystems.co.rw',
   'https://ogera.sybellasystems.co.rw',
   ...(FRONTEND_URL ? [FRONTEND_URL.replace(/\/$/, '')] : []),
