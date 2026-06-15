@@ -18,7 +18,7 @@ export class JobApplicationModel
   public status!: "Pending" | "Accepted" | "Rejected";
   public cover_letter?: string;
   public resume_url?: string;
-  // preferred_payout_currency?: string; // Column does not exist in database
+  preferred_payout_currency?: string;
   public applied_at!: Date;
   public completed_at?: Date;
   public reviewed_at?: Date;
@@ -71,10 +71,10 @@ export default function (sequelize: Sequelize): typeof JobApplicationModel {
         type: DataTypes.STRING(500),
         allowNull: true,
       },
-      // preferred_payout_currency: {
-      //   type: DataTypes.STRING(10),
-      //   allowNull: true,
-      // }, // Column does not exist in database
+      preferred_payout_currency: {
+        type: DataTypes.STRING(10),
+        allowNull: true,
+      },
       applied_at: {
         type: DataTypes.DATE,
         defaultValue: Sequelize.literal("NOW()"),

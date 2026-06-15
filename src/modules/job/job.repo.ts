@@ -33,6 +33,10 @@ const repo = {
         where.category = filters.category;
       }
 
+      if (filters?.currency) {
+        where.currency = filters.currency;
+      }
+
       if (filters?.funded === true) {
         where.funding_status = { [Op.in]: ["Funded", "Paid"] };
       } else if (filters?.funded === false) {
