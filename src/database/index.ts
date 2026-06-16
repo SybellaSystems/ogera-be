@@ -40,6 +40,7 @@ import taskModel from './models/task.model';
 import conversationModel from './models/conversation.model';
 import messageModel from './models/message.model';
 import transactionModel from './models/transaction.model';
+import badgePurchaseModel from './models/badgePurchase.model';
 
 import { setupAssociations } from '@/association/index';
 import {
@@ -173,6 +174,7 @@ const Tasks = taskModel(sequelize);
 const Conversations = conversationModel(sequelize);
 const Messages = messageModel(sequelize);
 const Transactions = transactionModel(sequelize);
+const BadgePurchases = badgePurchaseModel(sequelize);
 
 // Apply Associations
 setupAssociations();
@@ -751,6 +753,29 @@ const ensureUserTableColumns = async () => {
         allowNull: true,
     });
 
+    await ensureColumnExists('users', 'badge', {
+        type: Sequelize.DataTypes.ENUM('FREE', 'PREMIUM', 'PIONEER'),
+        allowNull: false,
+        defaultValue: 'FREE',
+    });
+    await ensureColumnExists('users', 'badge_expiry_date', {
+        type: Sequelize.DataTypes.DATE,
+        allowNull: true,
+    });
+    await ensureColumnExists('users', 'subscription_start_date', {
+        type: Sequelize.DataTypes.DATE,
+        allowNull: true,
+    });
+    await ensureColumnExists('users', 'subscription_end_date', {
+        type: Sequelize.DataTypes.DATE,
+        allowNull: true,
+    });
+    await ensureColumnExists('users', 'pioneer_eligible', {
+        type: Sequelize.DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+    });
+
     // Handle role_type column - rename from 'role' if it exists, or add if missing
     try {
         const tableDescription = await queryInterface.describeTable('users');
@@ -1013,6 +1038,7 @@ export const DB = {
     Conversations,
     Messages,
     Transactions,
+    BadgePurchases,
 
     sequelize,
     Sequelize,

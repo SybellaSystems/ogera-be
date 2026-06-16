@@ -11,6 +11,7 @@ import {
     createJobApplicationNotification,
     createApplicationStatusNotification,
 } from '@/modules/notification/notification.service';
+import { assertCanApplyForJob, getEffectiveBadge } from '@/modules/badge/badge.service';
 import * as path from 'path';
 import * as messagesRepo from '@/modules/messages/messages.repo';
 
@@ -51,6 +52,10 @@ const normalizeApplicationResumeUrl = (application: any): any => {
 
     if (application.resume_url) {
         application.resume_url = normalizeResumeUrl(application.resume_url);
+    }
+
+    if (application.student) {
+        application.student.badge = getEffectiveBadge(application.student);
     }
 
     return application;
@@ -98,6 +103,8 @@ export const applyForJobService = async (
             StatusCodes.FORBIDDEN,
         );
     }
+
+    await assertCanApplyForJob(student);
 
     // ===== Required document validation =====
     // Cover letter: required, minimum 50 characters.

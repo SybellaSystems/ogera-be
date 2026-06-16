@@ -27,6 +27,57 @@ function resolveMoMoDisbursementCurrency(requestedCurrency: string): string {
 
 let cachedAccessToken: string | null = null;
 
+export function isMoMoSandbox(): boolean {
+    return (
+        targetEnvironment === 'sandbox' ||
+        String(baseUrl).includes('sandbox.momodeveloper')
+    );
+}
+
+function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * MoMo sandbox auto-approves Request-to-Pay after a few seconds (same as job funding).
+ * Poll MoMo status, then force-settle if still pending — mirrors employer fund-job behaviour.
+ */
+export function scheduleSandboxAutoSettle(
+    referenceId: string,
+    options: {
+        isSettled: () => Promise<boolean>;
+        forceSettle: () => Promise<boolean>;
+        delayMs?: number;
+    },
+): void {
+    if (!isMoMoSandbox()) return;
+
+    const delayMs = options.delayMs ?? 5000;
+
+    void (async () => {
+        await sleep(delayMs);
+
+        try {
+            if (await options.isSettled()) return;
+
+            try {
+                await getTransactionStatus(referenceId);
+            } catch (err) {
+                logger.warn(`Sandbox MoMo status check failed for ${referenceId}`, err);
+            }
+
+            if (await options.isSettled()) return;
+
+            const settled = await options.forceSettle();
+            if (settled) {
+                logger.info(`Sandbox auto-approved MoMo payment: ${referenceId}`);
+            }
+        } catch (err) {
+            logger.error(`Sandbox auto-settle failed for ${referenceId}`, err);
+        }
+    })();
+}
+
 function getAuthHeader(): string {
     const basicAuth = Buffer.from(`${apiUserId}:${apiKey}`).toString('base64');
     return `Basic ${basicAuth}`;
@@ -202,8 +253,16 @@ export async function getTransactionStatus(referenceId: string): Promise<unknown
     );
     const data = response.data as { status?: string };
     if (data?.status === 'SUCCESSFUL') {
-        await settleJobFunding(referenceId);
-        logger.info('Job marked as Funded from status check:', referenceId);
+        try {
+            const { settleBadgeSubscription } = await import('@/modules/badge/badge.service');
+            const badgeSettled = await settleBadgeSubscription(referenceId);
+            if (!badgeSettled) {
+                await settleJobFunding(referenceId);
+                logger.info('Job marked as Funded from status check:', referenceId);
+            }
+        } catch (err) {
+            logger.error('Failed to settle MoMo payment from status check:', referenceId, err);
+        }
     }
     return response.data;
 }
@@ -322,8 +381,16 @@ export async function handleCallback(body: unknown): Promise<void> {
     if (!referenceId) return;
 
     if (status === 'SUCCESSFUL' || !status) {
-        await settleJobFunding(referenceId);
-        logger.info('Job marked as Funded for reference:', referenceId);
+        try {
+            const { settleBadgeSubscription } = await import('@/modules/badge/badge.service');
+            const badgeSettled = await settleBadgeSubscription(referenceId);
+            if (!badgeSettled) {
+                await settleJobFunding(referenceId);
+                logger.info('Job marked as Funded for reference:', referenceId);
+            }
+        } catch (err) {
+            logger.error('MoMo callback settlement failed:', referenceId, err);
+        }
     }
 }
 

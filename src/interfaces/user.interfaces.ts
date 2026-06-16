@@ -48,6 +48,13 @@ export interface User {
     trust_score?: number | null;
     trust_level?: string | null;
 
+    /** Student membership badge tier */
+    badge?: 'FREE' | 'PREMIUM' | 'PIONEER';
+    badge_expiry_date?: Date | null;
+    subscription_start_date?: Date | null;
+    subscription_end_date?: Date | null;
+    pioneer_eligible?: boolean;
+
     created_at: Date;
     updated_at: Date;
 }

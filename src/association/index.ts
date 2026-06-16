@@ -33,6 +33,7 @@ import { TaskModel } from '@/database/models/task.model';
 import { ConversationModel } from '@/database/models/conversation.model';
 import { MessageModel } from '@/database/models/message.model';
 import { TransactionModel } from '@/database/models/transaction.model';
+import { BadgePurchaseModel } from '@/database/models/badgePurchase.model';
 
 export const setupAssociations = () => {
     // ====================== USER ↔ ROLE ======================
@@ -800,6 +801,23 @@ UserModel.hasMany(MessageModel, {
 MessageModel.belongsTo(UserModel, {
     foreignKey: 'receiver_id',
     as: 'receiver',
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+});
+
+// ====================== USER ↔ BADGE PURCHASES ======================
+UserModel.hasMany(BadgePurchaseModel, {
+    foreignKey: 'user_id',
+    sourceKey: 'user_id',
+    as: 'badgePurchases',
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+});
+
+BadgePurchaseModel.belongsTo(UserModel, {
+    foreignKey: 'user_id',
+    targetKey: 'user_id',
+    as: 'user',
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
 });

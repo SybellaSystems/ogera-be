@@ -24,6 +24,7 @@ import interviewRouter from '@/modules/interview/interview.routes';
 
 import taskRouter from '@/modules/task/task.routes';
 import messagesRouter from '@/modules/messages/messages.routes';
+import badgeRouter from '@/modules/badge/badge.routes';
 
 import express from 'express';
 
@@ -55,6 +56,7 @@ router.use('/contact', contactRouter);
 router.use('/interviews', interviewRouter);
 
 router.use('/messages', messagesRouter);
+router.use('/badge', badgeRouter);
 router.use('/', taskRouter);
 
 

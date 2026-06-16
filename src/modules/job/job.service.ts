@@ -6,6 +6,10 @@ import { Job } from '@/interfaces/job.interfaces';
 import { DB } from '@/database';
 import { MOMO_CONFIG } from '@/config';
 import jobCategoryRepo from '../jobCategory/jobCategory.repo';
+import {
+    getEffectiveBadge,
+    filterJobsForStudentBadge,
+} from '@/modules/badge/badge.service';
 
 export const createJobService = async (
     jobData: Partial<Job> & { questions?: any[] },
@@ -175,11 +179,16 @@ export const getAllJobsService = async (
         // Students should see only admin-approved/published jobs.
         // Funding is NOT required for visibility.
         if (normalizedRole === 'student') {
+            const student = await DB.Users.findOne({
+                where: { user_id: user?.user_id },
+                attributes: ['badge', 'subscription_end_date'],
+            });
+            const badge = getEffectiveBadge(student || { badge: 'FREE' });
             const jobs = await repo.findAllJobs({
                 ...repoFilters,
                 status: 'Active',
             });
-            return jobs;
+            return filterJobsForStudentBadge(jobs, badge);
         }
 
         // Employers should see all their jobs by default.

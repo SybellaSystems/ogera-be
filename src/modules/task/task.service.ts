@@ -7,6 +7,7 @@ import { getTrustScoreService } from "@/modules/trustScore/trustScore.service";
 import { sendTaskAssignedEmail } from "@/services/email/email.service";
 import { FRONTEND_URL } from "@/config";
 import logger from "@/utils/logger";
+import { checkAndAwardPioneerBadge } from "@/modules/badge/badge.service";
 
 const EMPLOYER_ROLE_TYPES = new Set(["employer", "superAdmin"]);
 const EMPLOYER_ROLE_NAMES = new Set(["employer", "superadmin"]);
@@ -424,6 +425,11 @@ export const updateTaskStatusService = async (
   }
 
   const updated = await repo.updateTask(task_id, { status: nextStatus });
+
+  if (nextStatus === "COMPLETED" && task.assigned_student_id) {
+    checkAndAwardPioneerBadge(task.assigned_student_id).catch(() => {});
+  }
+
   return serializeTask(updated);
 };
 
