@@ -10,6 +10,20 @@ const OGERA_WALLET_CURRENCY = (process.env.OGERA_WALLET_CURRENCY || 'USD')
     .trim()
     .toUpperCase();
 const STUDENT_SHARE_PERCENT = Number(process.env.STUDENT_SHARE_PERCENT || '90');
+const MOMO_SUPPORTED_CURRENCIES = new Set(
+    (process.env.MOMO_SUPPORTED_CURRENCIES || defaultCurrency || 'EUR')
+        .split(',')
+        .map((c) => c.trim().toUpperCase())
+        .filter(Boolean),
+);
+
+function resolveMoMoDisbursementCurrency(requestedCurrency: string): string {
+    const normalized = String(requestedCurrency || '').trim().toUpperCase();
+    if (MOMO_SUPPORTED_CURRENCIES.has(normalized)) {
+        return normalized;
+    }
+    return String(dispConfig.currency || defaultCurrency || 'EUR').toUpperCase();
+}
 
 let cachedAccessToken: string | null = null;
 
@@ -480,7 +494,7 @@ export async function payStudentForJob(jobId: string, userId: string): Promise<{
         funding_status?: string;
         jobApplications?: Array<{
             application_id: string;
-            // preferred_payout_currency?: string; // Column does not exist in database
+            preferred_payout_currency?: string;
             student?: { user_id?: string; mobile_number?: string };
         }>;
     };
@@ -495,12 +509,11 @@ export async function payStudentForJob(jobId: string, userId: string): Promise<{
     if (!mobile || !mobile.trim()) throw new Error('Student has no mobile number. Student must add MoMo number in profile to receive payment.');
     const budget = Number(jobAny.budget) || 0;
     if (budget <= 0) throw new Error('Job budget must be greater than zero');
-    const jobCurrency = String(jobAny.currency || 'USD').toUpperCase();
-    // Note: preferred_payout_currency column does not exist in database
-    // const payoutCurrency = String(
-    //     applications[0].preferred_payout_currency || jobCurrency,
-    // ).toUpperCase();
-    const payoutCurrency = String(jobCurrency).toUpperCase();
+    const jobCurrency = String(jobAny.currency || defaultCurrency || 'EUR').toUpperCase();
+    const requestedPayoutCurrency = String(
+        applications[0].preferred_payout_currency || jobCurrency,
+    ).toUpperCase();
+    const payoutCurrency = resolveMoMoDisbursementCurrency(requestedPayoutCurrency);
     const payoutAmountInJobCurrency =
         Math.round((budget * (STUDENT_SHARE_PERCENT / 100)) * 1_000_000) / 1_000_000;
 
@@ -583,6 +596,7 @@ export async function payStudentForJob(jobId: string, userId: string): Promise<{
             stage: 'STUDENT_DISBURSEMENT',
             disbursement_reference_id: referenceId,
             student_share_percent: STUDENT_SHARE_PERCENT,
+            requested_payout_currency: requestedPayoutCurrency,
         },
         description: `Student payout for job ${jobId}: ${OGERA_WALLET_CURRENCY} -> ${payoutCurrency}.`,
     });

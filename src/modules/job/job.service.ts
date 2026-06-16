@@ -4,6 +4,7 @@ import { StatusCodes } from 'http-status-codes';
 import { Messages } from '@/utils/messages';
 import { Job } from '@/interfaces/job.interfaces';
 import { DB } from '@/database';
+import { MOMO_CONFIG } from '@/config';
 import jobCategoryRepo from '../jobCategory/jobCategory.repo';
 
 export const createJobService = async (
@@ -67,10 +68,11 @@ export const createJobService = async (
     if (!jobData.budget) {
         throw new CustomError('Budget is required', StatusCodes.BAD_REQUEST);
     }
-    // Note: currency column does not exist in database, so we don't save it
-    // if (!jobData.currency || !String(jobData.currency).trim()) {
-    //     jobData.currency = 'USD';
-    // }
+    if (!jobData.currency || !String(jobData.currency).trim()) {
+        jobData.currency = MOMO_CONFIG.currency || 'EUR';
+    } else {
+        jobData.currency = String(jobData.currency).trim().toUpperCase();
+    }
     if (!jobData.duration) {
         throw new CustomError('Duration is required', StatusCodes.BAD_REQUEST);
     }
@@ -137,7 +139,7 @@ export const getAllJobsService = async (
         search?: string;
         location?: string;
         category?: string;
-        // currency?: string; // Column does not exist in database
+        currency?: string;
         payment_range?: string;
     },
     user?: { user_id: string; role: string },
@@ -165,8 +167,7 @@ export const getAllJobsService = async (
             search: filters?.search,
             location: filters?.location,
             category: filters?.category,
-            // Skip currency - column does not exist in database
-            // currency: filters?.currency,
+            currency: filters?.currency,
             budget_min,
             budget_max,
         };
@@ -254,8 +255,10 @@ export const updateJobService = async (
         }
     }
 
-    // Remove currency and questions from updates since currency column doesn't exist in DB
     const { questions, ...jobUpdates } = updates;
+    if (jobUpdates.currency) {
+        jobUpdates.currency = String(jobUpdates.currency).trim().toUpperCase();
+    }
 
     const updated = await repo.updateJob(job_id, jobUpdates);
     if (!updated) {

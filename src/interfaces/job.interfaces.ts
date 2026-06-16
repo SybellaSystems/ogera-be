@@ -5,7 +5,7 @@ export interface Job {
   applications: number;
   category: string;
   budget: number;
-  // currency?: string; // Column does not exist in database
+  currency?: string;
   duration: string;
   location: string;
   description?: string;

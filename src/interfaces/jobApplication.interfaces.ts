@@ -5,7 +5,7 @@ export interface JobApplication {
   status: "Pending" | "Accepted" | "Rejected";
   cover_letter?: string;
   resume_url?: string;
-  // preferred_payout_currency?: string; // Column does not exist in database
+  preferred_payout_currency?: string;
   applied_at: Date;
   completed_at?: Date;
   reviewed_at?: Date;

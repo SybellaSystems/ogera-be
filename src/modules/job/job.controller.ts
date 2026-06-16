@@ -67,8 +67,7 @@ export const getAllJobs = async (
                 search: req.query.search as string | undefined,
                 location: req.query.location as string | undefined,
                 category: req.query.category as string | undefined,
-                // Skip currency - column does not exist in database
-                // currency: req.query.currency as string | undefined,
+                currency: req.query.currency as string | undefined,
                 payment_range: req.query.payment_range as string | undefined,
             },
             req.user,
