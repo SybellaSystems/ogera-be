@@ -31,6 +31,7 @@ const allowedOrigins = [
   'https://ogera-frontend.vercel.app',
   'https://ogera-frontend-hguj.vercel.app',
   'https://app.ogera.sybellasystems.co.rw',
+  'https://dev-app.ogera.sybellasystems.co.rw',
   'https://ogera.sybellasystems.co.rw',
   ...(FRONTEND_URL ? [FRONTEND_URL.replace(/\/$/, '')] : []),
 ].filter((origin, index, list) => list.indexOf(origin) === index);
