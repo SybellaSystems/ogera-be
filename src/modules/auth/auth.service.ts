@@ -192,6 +192,7 @@ export const registerUser = async (data: any, frontendOrigin?: string) => {
     const user = await repo.createUser({
         full_name: data.full_name?.trim() || '',
         email: data.email,
+        country_code: data.country_code,
         mobile_number: data.mobile_number,
         national_id_number: data.national_id_number,
         business_registration_id: data.business_registration_id || null,
@@ -211,6 +212,11 @@ export const registerUser = async (data: any, frontendOrigin?: string) => {
         terms_accepted_at: new Date(),
         privacy_accepted_at: new Date(),
     });
+     
+    // CREATE EXTENDED PROFILE RECORD
+    await DB.UserExtendedProfiles.create({
+    user_id: user.user_id,
+});
 
         // Log activity: Admin added user
         try {
@@ -247,17 +253,17 @@ export const registerUser = async (data: any, frontendOrigin?: string) => {
         verificationTokenExpiry,
     );
 
-    try {
-        await sendMail({
-            to: data.email,
-            subject: 'Verify Your Email Address',
-            text,
-            html,
-        });
-    } catch (error) {
-        // Log error but don't fail registration
-        console.error('Failed to send verification email:', error);
-    }
+    // try {
+    //     await sendMail({
+    //         to: data.email,
+    //         subject: 'Verify Your Email Address',
+    //         text,
+    //         html,
+    //     });
+    // } catch (error) {
+    //     // Log error but don't fail registration
+    //     console.error('Failed to send verification email:', error);
+    // }
 
     try {
         await sendWelcomeEmail(
@@ -286,13 +292,13 @@ export const registerUser = async (data: any, frontendOrigin?: string) => {
     // Generate + send phone verification OTP right after signup.
     // This matches the signup flow: SMS OTP goes to the registered mobile number.
     // For development/testing, `sendPhoneVerificationOTPService` returns `otp`.
-    let phoneVerificationOtp: string | undefined;
-    try {
-        const phoneResult = await sendPhoneVerificationOTPService(user.user_id);
-        phoneVerificationOtp = phoneResult?.otp;
-    } catch (error) {
-        console.error('Failed to send phone verification OTP:', error);
-    }
+    // let phoneVerificationOtp: string | undefined;
+    // try {
+    //     const phoneResult = await sendPhoneVerificationOTPService(user.user_id);
+    //     phoneVerificationOtp = phoneResult?.otp;
+    // } catch (error) {
+    //     console.error('Failed to send phone verification OTP:', error);
+    // }
 
     // Issue tokens so the new account can auto-login straight to the dashboard.
     // The dashboard will show a "please verify" banner until email + phone are confirmed.
@@ -302,10 +308,10 @@ export const registerUser = async (data: any, frontendOrigin?: string) => {
 
     return {
         user: sanitizeUser(user),
-        phoneNumber: user.mobile_number,
-        phoneVerificationOtp,
-        accessToken,
-        refreshToken,
+        // phoneNumber: `${user.country_code}${user.mobile_number}`,
+        // phoneVerificationOtp,
+        // accessToken,
+        // refreshToken,
     };
 };
 
@@ -346,6 +352,7 @@ export const addUser = async (data: any) => {
     const user = await repo.createUser({
         full_name: data.full_name?.trim() || '',
         email: data.email,
+        country_code: data.country_code,
         mobile_number: data.mobile_number,
         national_id_number: data.national_id_number,
         business_registration_id: data.business_registration_id || null,
@@ -1177,7 +1184,7 @@ export const verifyEmailService = async (token: string) => {
             email_verification_token_expiry: null,
         });
 
-        return { success: true };
+        return { success: true, email: decoded.email };
     } catch (error: any) {
         if (error instanceof jwt.JsonWebTokenError) {
             throw new CustomError(
@@ -1187,6 +1194,21 @@ export const verifyEmailService = async (token: string) => {
         }
         throw error;
     }
+};
+
+// -------------------- GET VERIFICATION STATUS --------------------
+export const getVerificationStatusService = async (email: string) => {
+    const user = await repo.findUserByEmail(email.trim());
+    if (!user) {
+        throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+    }
+
+    return {
+        email: user.email,
+        mobile_number: user.mobile_number,
+        email_verified: Boolean(user.email_verified),
+        phone_verified: Boolean(user.phone_verified),
+    };
 };
 
 // -------------------- RESEND VERIFICATION EMAIL --------------------
@@ -1645,7 +1667,10 @@ export const sendPhoneVerificationOTPService = async (user_id: string) => {
 
     // Send OTP via SMS
     try {
-        await sendOTPSMS(user.mobile_number, otp);
+        await sendOTPSMS(
+  `${user.country_code}${user.mobile_number}`,
+  otp
+);
     } catch (smsError: any) {
         // Log error but don't fail the request - OTP is still stored
         console.error('Failed to send SMS:', smsError.message);
@@ -1747,5 +1772,12 @@ export const verifyAccountService = async (email: string, otp: string) => {
         phone_verification_otp_expiry: null,
     });
 
-    return { success: true, message: 'Phone number verified successfully' };
+    return {
+        success: true,
+        message: 'Phone number verified successfully',
+        email: user.email,
+        mobile_number: user.mobile_number,
+        email_verified: Boolean(user.email_verified),
+        phone_verified: true,
+    };
 };

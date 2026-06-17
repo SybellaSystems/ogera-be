@@ -128,15 +128,15 @@ export default function (sequelize: Sequelize): typeof UserModel {
                 allowNull: false,
             },
 
-            mobile_number: {
-                type: DataTypes.STRING(15),
-                allowNull: false,
-            },
+           country_code: {
+  type: DataTypes.STRING(10),
+  allowNull: true,
+},
 
-            country_code: {
-                type: DataTypes.STRING(10),
-                allowNull: true,
-            },
+mobile_number: {
+  type: DataTypes.STRING(20),
+  allowNull: true,
+},
 
             password_hash: {
                 type: DataTypes.TEXT,

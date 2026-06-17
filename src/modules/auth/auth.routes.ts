@@ -22,6 +22,7 @@ import {
     getUserProfile,
     updateProfile,
     verifyEmail,
+    getVerificationStatus,
     resendVerificationEmail,
     sendPhoneVerificationOTP,
     verifyPhone,
@@ -141,6 +142,7 @@ authRouter.post('/reset-password', resetPassword);
 
 // Email verification routes
 authRouter.get('/verify-email', verifyEmail);
+authRouter.get('/verification-status', getVerificationStatus);
 authRouter.post('/resend-verification-email', resendVerificationEmail);
 
 // Phone verification routes
