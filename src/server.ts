@@ -15,6 +15,7 @@ import { requestLoggerMiddleware } from './middlewares/requestLogger.middleware'
 import { initializeSMSProvider } from './utils/sms';
 import { initializeSocket } from './utils/socket';
 import { startEmailDigestSchedulers } from './schedulers/emailDigests.scheduler';
+import { startBadgeSubscriptionScheduler } from './schedulers/badgeSubscription.scheduler';
 
 const appServer = express();
 const httpServer = createServer(appServer);
@@ -120,6 +121,7 @@ DB.sequelize
             // logger.info(`Server is running on http://localhost:${port}`);
             logger.info(`Server is running on port ${port}`);
             startEmailDigestSchedulers();
+            startBadgeSubscriptionScheduler();
         });
     })
     .catch(error => {

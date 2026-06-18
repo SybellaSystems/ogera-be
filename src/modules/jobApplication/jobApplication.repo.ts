@@ -37,7 +37,7 @@ const repo = {
         {
           model: DB.Users,
           as: "student",
-          attributes: ["user_id", "full_name", "email", "mobile_number"],
+          attributes: ["user_id", "full_name", "email", "mobile_number", "badge", "subscription_end_date"],
           include: [
             {
               model: DB.Roles,
@@ -81,7 +81,7 @@ const repo = {
         {
           model: DB.Users,
           as: "student",
-          attributes: ["user_id", "full_name", "email", "mobile_number"],
+          attributes: ["user_id", "full_name", "email", "mobile_number", "badge", "subscription_end_date"],
           include: [
             {
               model: DB.Roles,
@@ -195,7 +195,7 @@ const repo = {
         {
           model: DB.Users,
           as: "student",
-          attributes: ["user_id", "full_name", "email", "mobile_number"],
+          attributes: ["user_id", "full_name", "email", "mobile_number", "badge", "subscription_end_date"],
           include: [
             {
               model: DB.Roles,
@@ -255,7 +255,7 @@ const repo = {
         {
           model: DB.Users,
           as: "student",
-          attributes: ["user_id", "full_name", "email", "mobile_number"],
+          attributes: ["user_id", "full_name", "email", "mobile_number", "badge", "subscription_end_date"],
           include: [
             {
               model: DB.Roles,

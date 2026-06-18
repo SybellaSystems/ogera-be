@@ -419,8 +419,11 @@ export async function approveWorkAndPay(req: Request, res: Response): Promise<vo
 export async function getWalletBalance(req: Request, res: Response): Promise<void> {
     try {
         const { DB } = await import('@/database');
+        const { Op } = await import('sequelize');
         const credits = await DB.Transactions.findAll({
-            where: { type: 'JOB_FUNDING_CREDIT' },
+            where: {
+                type: { [Op.in]: ['JOB_FUNDING_CREDIT', 'BADGE_SUBSCRIPTION_CREDIT'] },
+            },
             attributes: ['converted_amount', 'converted_currency'],
         });
         const debits = await DB.Transactions.findAll({
