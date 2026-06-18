@@ -1,6 +1,6 @@
-import badgeConfig from '@/config/badgeConfig.js';
-import { DB } from '@/database';
-import { CustomError } from '@/utils/custom-error';
+import badgeConfig from '../../config/badgeConfig.js';
+import { DB } from '../../database';
+import { CustomError } from '../../utils/custom-error';
 import { StatusCodes } from 'http-status-codes';
 import { Op } from 'sequelize';
 import { convertCurrency } from '@/utils/fx.service';
