@@ -1,4 +1,4 @@
-import badgeConfig from '../../config/badgeConfig.js';
+import badgeConfig from '../../config/badgeConfig';
 import { DB } from '../../database';
 import { CustomError } from '../../utils/custom-error';
 import { StatusCodes } from 'http-status-codes';

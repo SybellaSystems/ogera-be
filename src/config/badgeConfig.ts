@@ -1,5 +1,5 @@
 /** Centralized badge configuration for student membership tiers */
-module.exports = {
+const badgeConfig = {
     FREE: {
         applyLimit: 10,
         canSeeLatestJobs: false,
@@ -16,4 +16,6 @@ module.exports = {
         jobDelayDays: 0,
         priorityAccess: true,
     },
-};
+} as const;
+
+export default badgeConfig;
