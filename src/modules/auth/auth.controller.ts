@@ -26,6 +26,7 @@ import {
     getUserProfileService,
     updateProfileService,
     verifyEmailService,
+    getVerificationStatusService,
     resendVerificationEmailService,
     sendPhoneVerificationOTPService,
     verifyPhoneService,
@@ -80,10 +81,10 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
         // Set the refresh token cookie so the browser can silently refresh —
         // mirrors the login flow, enabling auto-login straight after signup.
-        if (result.refreshToken) {
-            setRefreshTokenCookie(res, result.refreshToken);
-            setIsLoggedInCookie(res);
-        }
+        // if (result.refreshToken) {
+        //     setRefreshTokenCookie(res, result.refreshToken);
+        //     setIsLoggedInCookie(res);
+        // }
 
         response.response(
             res,
@@ -757,13 +758,13 @@ export const verifyEmail = async (
             return;
         }
 
-        await verifyEmailService(token.trim());
+        const result = await verifyEmailService(token.trim());
 
         response.response(
             res,
             true,
             StatusCodes.OK,
-            {},
+            result,
             'Email verified successfully',
         );
     } catch (error: any) {
@@ -1349,6 +1350,44 @@ export const verifyPhone = async (
             StatusCodes.OK,
             result,
             'Phone number verified successfully',
+        );
+    } catch (error: any) {
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
+    }
+};
+
+// -------------------- GET VERIFICATION STATUS --------------------
+export const getVerificationStatus = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const emailParam = req.query.email;
+        const email = Array.isArray(emailParam) ? emailParam[0] : emailParam;
+
+        if (!email || typeof email !== 'string' || !email.trim()) {
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'Email is required',
+            );
+            return;
+        }
+
+        const result = await getVerificationStatusService(email);
+
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            result,
+            'Verification status fetched successfully',
         );
     } catch (error: any) {
         response.errorResponse(
