@@ -18,7 +18,6 @@ export type BadgeType = 'FREE' | 'PREMIUM' | 'PIONEER';
 
 const PREMIUM_PRICE = 1000;
 const PREMIUM_DURATION_DAYS = 30;
-const PIONEER_SLOT_LIMIT = 100;
 const OGERA_WALLET_CURRENCY = (process.env.OGERA_WALLET_CURRENCY || 'USD')
     .trim()
     .toUpperCase();
@@ -71,29 +70,14 @@ export const buildBadgeStatus = (user: any) => {
     };
 };
 
-export const countStudentRegistrations = async (): Promise<number> => {
-    return DB.Users.count({
-        where: { role_type: 'student' },
-    });
-};
-
-export const countPioneerBadges = async (): Promise<number> => {
-    return DB.Users.count({
-        where: { badge: 'PIONEER' },
-    });
-};
-
 export const assignFreeBadgeOnRegistration = async (
     roleType: string,
 ): Promise<{ badge: BadgeType; pioneer_eligible: boolean } | null> => {
     if (roleType !== 'student') return null;
 
-    const existingCount = await countStudentRegistrations();
-    const pioneerEligible = existingCount < PIONEER_SLOT_LIMIT;
-
     return {
         badge: 'FREE',
-        pioneer_eligible: pioneerEligible,
+        pioneer_eligible: true,
     };
 };
 
@@ -138,11 +122,7 @@ export const checkAndAwardPioneerBadge = async (userId: string): Promise<boolean
     const user = await DB.Users.findOne({ where: { user_id: userId } });
     if (!user || user.role_type !== 'student') return false;
     if (user.badge === 'PIONEER') return false;
-    if (!user.pioneer_eligible) return false;
     if (user.badge !== 'FREE') return false;
-
-    const pioneerCount = await countPioneerBadges();
-    if (pioneerCount >= PIONEER_SLOT_LIMIT) return false;
 
     const academicAccepted = await DB.AcademicVerifications.findOne({
         where: { user_id: userId, status: 'accepted' },
