@@ -129,10 +129,10 @@ export const checkAndAwardPioneerBadge = async (userId: string): Promise<boolean
     });
     if (!academicAccepted) return false;
 
-    const completedTask = await DB.Tasks.findOne({
-        where: { assigned_student_id: userId, status: 'COMPLETED' },
-    });
-    if (!completedTask) return false;
+    // const completedTask = await DB.Tasks.findOne({
+    //     where: { assigned_student_id: userId, status: 'COMPLETED' },
+    // });
+    // if (!completedTask) return false;
 
     await user.update({ badge: 'PIONEER' });
 
