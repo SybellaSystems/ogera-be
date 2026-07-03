@@ -33,6 +33,7 @@ import { TaskModel } from '@/database/models/task.model';
 import { ConversationModel } from '@/database/models/conversation.model';
 import { MessageModel } from '@/database/models/message.model';
 import { TransactionModel } from '@/database/models/transaction.model';
+import { JobReactionModel } from "@/database/models/jobReaction.model";
 
 export const setupAssociations = () => {
     // ====================== USER ↔ ROLE ======================
@@ -802,5 +803,38 @@ MessageModel.belongsTo(UserModel, {
     as: 'receiver',
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
+});
+// ====================== JOB REACTIONS ======================
+
+// One Job can have many reactions
+JobModel.hasMany(JobReactionModel, {
+    foreignKey: "job_id",
+    as: "reactions",
+    onUpdate: "CASCADE",
+    onDelete: "CASCADE",
+});
+
+// One reaction belongs to one Job
+JobReactionModel.belongsTo(JobModel, {
+    foreignKey: "job_id",
+    as: "job",
+    onUpdate: "CASCADE",
+    onDelete: "CASCADE",
+});
+
+// One User can react to many jobs
+UserModel.hasMany(JobReactionModel, {
+    foreignKey: "user_id",
+    as: "jobReactions",
+    onUpdate: "CASCADE",
+    onDelete: "CASCADE",
+});
+
+// One reaction belongs to one User
+JobReactionModel.belongsTo(UserModel, {
+    foreignKey: "user_id",
+    as: "user",
+    onUpdate: "CASCADE",
+    onDelete: "CASCADE",
 });
 }

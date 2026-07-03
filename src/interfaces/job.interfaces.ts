@@ -20,6 +20,8 @@ export interface Job {
   disbursement_reference_id?: string | null;
   paid_at?: Date | null;
   amount_paid_to_student?: number | null;
+  likes_count: number;
+  dislikes_count: number;
   created_at: Date;
   updated_at: Date;
 }
