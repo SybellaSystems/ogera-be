@@ -15,6 +15,7 @@ import { requestLoggerMiddleware } from './middlewares/requestLogger.middleware'
 import { initializeSMSProvider } from './utils/sms';
 import { initializeSocket } from './utils/socket';
 import { startEmailDigestSchedulers } from './schedulers/emailDigests.scheduler';
+import { startBadgeSubscriptionScheduler } from './schedulers/badgeSubscription.scheduler';
 
 const appServer = express();
 const httpServer = createServer(appServer);
@@ -29,7 +30,9 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'https://ogera-frontend.vercel.app',
+  'https://ogera-frontend-hguj.vercel.app',
   'https://app.ogera.sybellasystems.co.rw',
+  'https://dev-app.ogera.sybellasystems.co.rw',
   'https://ogera.sybellasystems.co.rw',
   ...(FRONTEND_URL ? [FRONTEND_URL.replace(/\/$/, '')] : []),
 ].filter((origin, index, list) => list.indexOf(origin) === index);
@@ -118,6 +121,7 @@ DB.sequelize
             // logger.info(`Server is running on http://localhost:${port}`);
             logger.info(`Server is running on port ${port}`);
             startEmailDigestSchedulers();
+            startBadgeSubscriptionScheduler();
         });
     })
     .catch(error => {

@@ -11,6 +11,7 @@ import {
     createJobApplicationNotification,
     createApplicationStatusNotification,
 } from '@/modules/notification/notification.service';
+import { assertCanApplyForJob, getEffectiveBadge } from '@/modules/badge/badge.service';
 import * as path from 'path';
 import * as messagesRepo from '@/modules/messages/messages.repo';
 
@@ -53,6 +54,10 @@ const normalizeApplicationResumeUrl = (application: any): any => {
         application.resume_url = normalizeResumeUrl(application.resume_url);
     }
 
+    if (application.student) {
+        application.student.badge = getEffectiveBadge(application.student);
+    }
+
     return application;
 };
 
@@ -71,7 +76,7 @@ export const applyForJobService = async (
     applicationData: {
         cover_letter?: string;
         resume_url?: string;
-        // preferred_payout_currency?: string; // Column does not exist in database
+        preferred_payout_currency?: string;
         answers?: Array<{ question_id: string; answer_text: string }>;
     },
 ) => {
@@ -98,6 +103,8 @@ export const applyForJobService = async (
             StatusCodes.FORBIDDEN,
         );
     }
+
+    await assertCanApplyForJob(student);
 
     // ===== Required document validation =====
     // Cover letter: required, minimum 50 characters.
@@ -126,14 +133,13 @@ export const applyForJobService = async (
     }
     // Make sure the application row carries the resolved resume_url
     applicationData.resume_url = resumeUrl;
-    // Note: preferred_payout_currency column does not exist in database
-    // if (applicationData.preferred_payout_currency) {
-    //     applicationData.preferred_payout_currency = String(
-    //         applicationData.preferred_payout_currency,
-    //     )
-    //         .trim()
-    //         .toUpperCase();
-    // }
+    if (applicationData.preferred_payout_currency) {
+        applicationData.preferred_payout_currency = String(
+            applicationData.preferred_payout_currency,
+        )
+            .trim()
+            .toUpperCase();
+    }
 
     // Check if job exists and get questions
     const job = await DB.Jobs.findOne({
@@ -203,11 +209,10 @@ export const applyForJobService = async (
         student_id,
         cover_letter: applicationData.cover_letter,
         resume_url: applicationData.resume_url,
-        // Note: preferred_payout_currency column does not exist in database
-        // preferred_payout_currency:
-        //     applicationData.preferred_payout_currency ||
-        //     (job as any).currency ||
-        //     'USD',
+        preferred_payout_currency:
+            applicationData.preferred_payout_currency ||
+            (job as any).currency ||
+            'USD',
         status: 'Pending',
     });
 

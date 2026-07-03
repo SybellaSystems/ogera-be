@@ -5,6 +5,7 @@ import { saveFile, deleteFile } from '@/utils/storage.service';
 import { AcademicVerificationStatus, ReviewAcademicVerificationData } from '@/interfaces/academicVerification.interfaces';
 import { PaginationQuery } from '@/interfaces/pagination.interfaces';
 import { DB } from '@/database';
+import { checkAndAwardPioneerBadge } from '@/modules/badge/badge.service';
 
 // -------------------- UPLOAD ACADEMIC DOCUMENT --------------------
 export const uploadAcademicDocService = async (
@@ -235,6 +236,10 @@ export const reviewAcademicDocService = async (
     } as any);
   } catch (e) {
     // ignore logging errors
+  }
+
+  if (status === 'accepted') {
+    checkAndAwardPioneerBadge(updated.user_id).catch(() => {});
   }
 
   return updated;

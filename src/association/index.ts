@@ -34,6 +34,7 @@ import { ConversationModel } from '@/database/models/conversation.model';
 import { MessageModel } from '@/database/models/message.model';
 import { TransactionModel } from '@/database/models/transaction.model';
 import { JobReactionModel } from "@/database/models/jobReaction.model";
+import { BadgePurchaseModel } from '@/database/models/badgePurchase.model';
 
 export const setupAssociations = () => {
     // ====================== USER ↔ ROLE ======================
@@ -836,5 +837,21 @@ JobReactionModel.belongsTo(UserModel, {
     as: "user",
     onUpdate: "CASCADE",
     onDelete: "CASCADE",
+
+// ====================== USER ↔ BADGE PURCHASES ======================
+UserModel.hasMany(BadgePurchaseModel, {
+    foreignKey: 'user_id',
+    sourceKey: 'user_id',
+    as: 'badgePurchases',
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+});
+
+BadgePurchaseModel.belongsTo(UserModel, {
+    foreignKey: 'user_id',
+    targetKey: 'user_id',
+    as: 'user',
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
 });
 }

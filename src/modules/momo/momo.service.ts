@@ -10,8 +10,73 @@ const OGERA_WALLET_CURRENCY = (process.env.OGERA_WALLET_CURRENCY || 'USD')
     .trim()
     .toUpperCase();
 const STUDENT_SHARE_PERCENT = Number(process.env.STUDENT_SHARE_PERCENT || '90');
+const MOMO_SUPPORTED_CURRENCIES = new Set(
+    (process.env.MOMO_SUPPORTED_CURRENCIES || defaultCurrency || 'EUR')
+        .split(',')
+        .map((c) => c.trim().toUpperCase())
+        .filter(Boolean),
+);
+
+function resolveMoMoDisbursementCurrency(requestedCurrency: string): string {
+    const normalized = String(requestedCurrency || '').trim().toUpperCase();
+    if (MOMO_SUPPORTED_CURRENCIES.has(normalized)) {
+        return normalized;
+    }
+    return String(dispConfig.currency || defaultCurrency || 'EUR').toUpperCase();
+}
 
 let cachedAccessToken: string | null = null;
+
+export function isMoMoSandbox(): boolean {
+    return (
+        targetEnvironment === 'sandbox' ||
+        String(baseUrl).includes('sandbox.momodeveloper')
+    );
+}
+
+function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * MoMo sandbox auto-approves Request-to-Pay after a few seconds (same as job funding).
+ * Poll MoMo status, then force-settle if still pending — mirrors employer fund-job behaviour.
+ */
+export function scheduleSandboxAutoSettle(
+    referenceId: string,
+    options: {
+        isSettled: () => Promise<boolean>;
+        forceSettle: () => Promise<boolean>;
+        delayMs?: number;
+    },
+): void {
+    if (!isMoMoSandbox()) return;
+
+    const delayMs = options.delayMs ?? 5000;
+
+    void (async () => {
+        await sleep(delayMs);
+
+        try {
+            if (await options.isSettled()) return;
+
+            try {
+                await getTransactionStatus(referenceId);
+            } catch (err) {
+                logger.warn(`Sandbox MoMo status check failed for ${referenceId}`, err);
+            }
+
+            if (await options.isSettled()) return;
+
+            const settled = await options.forceSettle();
+            if (settled) {
+                logger.info(`Sandbox auto-approved MoMo payment: ${referenceId}`);
+            }
+        } catch (err) {
+            logger.error(`Sandbox auto-settle failed for ${referenceId}`, err);
+        }
+    })();
+}
 
 function getAuthHeader(): string {
     const basicAuth = Buffer.from(`${apiUserId}:${apiKey}`).toString('base64');
@@ -188,8 +253,16 @@ export async function getTransactionStatus(referenceId: string): Promise<unknown
     );
     const data = response.data as { status?: string };
     if (data?.status === 'SUCCESSFUL') {
-        await settleJobFunding(referenceId);
-        logger.info('Job marked as Funded from status check:', referenceId);
+        try {
+            const { settleBadgeSubscription } = await import('@/modules/badge/badge.service');
+            const badgeSettled = await settleBadgeSubscription(referenceId);
+            if (!badgeSettled) {
+                await settleJobFunding(referenceId);
+                logger.info('Job marked as Funded from status check:', referenceId);
+            }
+        } catch (err) {
+            logger.error('Failed to settle MoMo payment from status check:', referenceId, err);
+        }
     }
     return response.data;
 }
@@ -308,8 +381,16 @@ export async function handleCallback(body: unknown): Promise<void> {
     if (!referenceId) return;
 
     if (status === 'SUCCESSFUL' || !status) {
-        await settleJobFunding(referenceId);
-        logger.info('Job marked as Funded for reference:', referenceId);
+        try {
+            const { settleBadgeSubscription } = await import('@/modules/badge/badge.service');
+            const badgeSettled = await settleBadgeSubscription(referenceId);
+            if (!badgeSettled) {
+                await settleJobFunding(referenceId);
+                logger.info('Job marked as Funded for reference:', referenceId);
+            }
+        } catch (err) {
+            logger.error('MoMo callback settlement failed:', referenceId, err);
+        }
     }
 }
 
@@ -480,7 +561,7 @@ export async function payStudentForJob(jobId: string, userId: string): Promise<{
         funding_status?: string;
         jobApplications?: Array<{
             application_id: string;
-            // preferred_payout_currency?: string; // Column does not exist in database
+            preferred_payout_currency?: string;
             student?: { user_id?: string; mobile_number?: string };
         }>;
     };
@@ -495,12 +576,11 @@ export async function payStudentForJob(jobId: string, userId: string): Promise<{
     if (!mobile || !mobile.trim()) throw new Error('Student has no mobile number. Student must add MoMo number in profile to receive payment.');
     const budget = Number(jobAny.budget) || 0;
     if (budget <= 0) throw new Error('Job budget must be greater than zero');
-    const jobCurrency = String(jobAny.currency || 'USD').toUpperCase();
-    // Note: preferred_payout_currency column does not exist in database
-    // const payoutCurrency = String(
-    //     applications[0].preferred_payout_currency || jobCurrency,
-    // ).toUpperCase();
-    const payoutCurrency = String(jobCurrency).toUpperCase();
+    const jobCurrency = String(jobAny.currency || defaultCurrency || 'EUR').toUpperCase();
+    const requestedPayoutCurrency = String(
+        applications[0].preferred_payout_currency || jobCurrency,
+    ).toUpperCase();
+    const payoutCurrency = resolveMoMoDisbursementCurrency(requestedPayoutCurrency);
     const payoutAmountInJobCurrency =
         Math.round((budget * (STUDENT_SHARE_PERCENT / 100)) * 1_000_000) / 1_000_000;
 
@@ -583,6 +663,7 @@ export async function payStudentForJob(jobId: string, userId: string): Promise<{
             stage: 'STUDENT_DISBURSEMENT',
             disbursement_reference_id: referenceId,
             student_share_percent: STUDENT_SHARE_PERCENT,
+            requested_payout_currency: requestedPayoutCurrency,
         },
         description: `Student payout for job ${jobId}: ${OGERA_WALLET_CURRENCY} -> ${payoutCurrency}.`,
     });

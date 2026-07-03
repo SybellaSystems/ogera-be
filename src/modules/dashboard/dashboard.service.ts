@@ -12,6 +12,9 @@ export interface DashboardMetrics {
   activeJobs: number;
   totalEarnings: number;
   weeklyGrowth: Array<{ day: string; students: number; employers: number }>;
+  freeBadgeStudents?: number;
+  premiumStudents?: number;
+  pioneerStudents?: number;
 }
 
 /**
@@ -224,12 +227,13 @@ export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
   try {
     logger.info("[Dashboard] Fetching dashboard metrics...");
     
-    const [totalUsers, totalStudents, activeJobs, totalEarnings, weeklyGrowth] = await Promise.all([
+    const [totalUsers, totalStudents, activeJobs, totalEarnings, weeklyGrowth, badgeStats] = await Promise.all([
       repo.getTotalUsersCount(),
       repo.getTotalStudentsCount(),
       repo.getActiveJobsCount(),
       repo.getTotalEarnings(),
       repo.getAdminWeeklyGrowth(),
+      import('@/modules/badge/badge.service').then((m) => m.getAdminBadgeStats()),
     ]);
 
     const metrics = {
@@ -238,6 +242,9 @@ export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
       activeJobs,
       totalEarnings,
       weeklyGrowth,
+      freeBadgeStudents: badgeStats.freeBadgeStudents,
+      premiumStudents: badgeStats.premiumStudents,
+      pioneerStudents: badgeStats.pioneerStudents,
     };
 
     logger.info("[Dashboard] Metrics fetched successfully:", metrics);

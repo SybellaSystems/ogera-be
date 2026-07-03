@@ -31,7 +31,7 @@ export class JobModel extends Model<Job, JobCreationAttributes> implements Job {
     public applications!: number;
     public category!: string;
     public budget!: number;
-    // currency?: string; // Column does not exist in database
+    currency?: string;
     public duration!: string;
     public location!: string;
     public description?: string;
@@ -90,11 +90,11 @@ export default function (sequelize: Sequelize): typeof JobModel {
                 type: DataTypes.FLOAT,
                 allowNull: false,
             },
-            // currency: {
-            //     type: DataTypes.STRING(10),
-            //     allowNull: false,
-            //     defaultValue: 'USD',
-            // }, // Column does not exist in database
+            currency: {
+                type: DataTypes.STRING(10),
+                allowNull: true,
+                defaultValue: 'USD',
+            },
             duration: {
                 type: DataTypes.STRING(100),
                 allowNull: false,

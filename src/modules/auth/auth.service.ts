@@ -28,6 +28,7 @@ import {
 import { RoleType } from '@/interfaces/role.interfaces';
 import { decryptSecret, encryptSecret } from '@/utils/2fa.encryption';
 import { calculateTrustScoreService } from '@/modules/trustScore/trustScore.service';
+import { assignFreeBadgeOnRegistration } from '@/modules/badge/badge.service';
 import { parseDeviceType } from '@/modules/session/session.service';
 import sessionRepo from '@/modules/session/session.repo';
 import { Request } from 'express';
@@ -189,6 +190,8 @@ export const registerUser = async (data: any, frontendOrigin?: string) => {
     );
     const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
+    const badgeDefaults = await assignFreeBadgeOnRegistration(role.roleType);
+
     const user = await repo.createUser({
         full_name: data.full_name?.trim() || '',
         email: data.email,
@@ -211,6 +214,14 @@ export const registerUser = async (data: any, frontendOrigin?: string) => {
         privacy_accepted: true,
         terms_accepted_at: new Date(),
         privacy_accepted_at: new Date(),
+
+        /* ⭐ STUDENT BADGE */
+        ...(badgeDefaults
+            ? {
+                  badge: badgeDefaults.badge,
+                  pioneer_eligible: badgeDefaults.pioneer_eligible,
+              }
+            : {}),
     });
      
     // CREATE EXTENDED PROFILE RECORD

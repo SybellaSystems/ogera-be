@@ -34,6 +34,11 @@ export type UserCreationAttributes = Optional<
     | 'interaction_score'
     | 'trust_score'
     | 'trust_level'
+    | 'badge'
+    | 'badge_expiry_date'
+    | 'subscription_start_date'
+    | 'subscription_end_date'
+    | 'pioneer_eligible'
 >;
 
 export class UserModel
@@ -86,6 +91,12 @@ export class UserModel
     public interaction_score?: number | null;
     public trust_score?: number | null;
     public trust_level?: string | null;
+
+    public badge!: 'FREE' | 'PREMIUM' | 'PIONEER';
+    public badge_expiry_date?: Date | null;
+    public subscription_start_date?: Date | null;
+    public subscription_end_date?: Date | null;
+    public pioneer_eligible!: boolean;
 
     public readonly created_at!: Date;
     public readonly updated_at!: Date;
@@ -311,6 +322,29 @@ mobile_number: {
             trust_level: {
                 type: DataTypes.STRING(32),
                 allowNull: true,
+            },
+
+            badge: {
+                type: DataTypes.ENUM('FREE', 'PREMIUM', 'PIONEER'),
+                allowNull: false,
+                defaultValue: 'FREE',
+            },
+            badge_expiry_date: {
+                type: DataTypes.DATE,
+                allowNull: true,
+            },
+            subscription_start_date: {
+                type: DataTypes.DATE,
+                allowNull: true,
+            },
+            subscription_end_date: {
+                type: DataTypes.DATE,
+                allowNull: true,
+            },
+            pioneer_eligible: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
             },
 
             created_at: {
