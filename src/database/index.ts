@@ -40,6 +40,7 @@ import taskModel from './models/task.model';
 import conversationModel from './models/conversation.model';
 import messageModel from './models/message.model';
 import transactionModel from './models/transaction.model';
+import jobReactionModel from './models/jobReaction.model';
 import badgePurchaseModel from './models/badgePurchase.model';
 
 import { setupAssociations } from '@/association/index';
@@ -174,6 +175,7 @@ const Tasks = taskModel(sequelize);
 const Conversations = conversationModel(sequelize);
 const Messages = messageModel(sequelize);
 const Transactions = transactionModel(sequelize);
+const JobReactions = jobReactionModel(sequelize);
 const BadgePurchases = badgePurchaseModel(sequelize);
 
 // Apply Associations
@@ -1038,6 +1040,7 @@ export const DB = {
     Conversations,
     Messages,
     Transactions,
+    JobReactions,
     BadgePurchases,
 
     sequelize,

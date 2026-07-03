@@ -14,6 +14,8 @@ export type JobCreationAttributes = Optional<
     | 'paid_at'
     | 'amount_paid_to_student'
     | 'description'
+    | 'likes_count'
+    | 'dislikes_count'
     | 'requirements'
     | 'skills'
     | 'employment_type'
@@ -44,6 +46,10 @@ export class JobModel extends Model<Job, JobCreationAttributes> implements Job {
     public disbursement_reference_id?: string | null;
     public paid_at?: Date | null;
     public amount_paid_to_student?: number | null;
+    // like or dislike
+    public likes_count!: number;
+    public dislikes_count!: number;
+
     public readonly created_at!: Date;
     public readonly updated_at!: Date;
 
@@ -118,7 +124,12 @@ export default function (sequelize: Sequelize): typeof JobModel {
                 allowNull: true,
             },
             status: {
-                type: DataTypes.ENUM('Pending', 'Active', 'Inactive', 'Completed'),
+                type: DataTypes.ENUM(
+                    'Pending',
+                    'Active',
+                    'Inactive',
+                    'Completed',
+                ),
                 allowNull: false,
                 defaultValue: 'Active',
             },
@@ -146,6 +157,15 @@ export default function (sequelize: Sequelize): typeof JobModel {
             amount_paid_to_student: {
                 type: DataTypes.DECIMAL(12, 2),
                 allowNull: true,
+            },
+            likes_count: {
+                type: DataTypes.INTEGER,
+                defaultValue: 0,
+            },
+
+            dislikes_count: {
+                type: DataTypes.INTEGER,
+                defaultValue: 0,
             },
             created_at: {
                 type: DataTypes.DATE,
