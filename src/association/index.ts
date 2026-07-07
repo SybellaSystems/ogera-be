@@ -837,6 +837,7 @@ JobReactionModel.belongsTo(UserModel, {
     as: "user",
     onUpdate: "CASCADE",
     onDelete: "CASCADE",
+    });
 
 // ====================== USER ↔ BADGE PURCHASES ======================
 UserModel.hasMany(BadgePurchaseModel, {
