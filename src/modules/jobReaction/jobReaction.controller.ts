@@ -11,7 +11,7 @@ class JobReactionController {
             });
         }
 
-        const job_id = req.params.jobId;
+        const job_id = req.params.jobId as string;
 
         const user_id = req.user.user_id;
 
@@ -31,7 +31,7 @@ class JobReactionController {
             });
         }
 
-        const job_id = req.params.jobId;
+        const job_id = req.params.jobId as string;
 
         const user_id = req.user.user_id;
 
