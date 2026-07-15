@@ -1,8 +1,8 @@
-import { Request, Response } from "express";
-import { StatusCodes } from "http-status-codes";
-import logger from "@/utils/logger";
-import { CustomError } from "@/utils/custom-error";
-import communityWorkspaceService from "./communityWorkspace.service";
+import { Request, Response } from 'express';
+import { StatusCodes } from 'http-status-codes';
+import logger from '@/utils/logger';
+import { CustomError } from '@/utils/custom-error';
+import communityWorkspaceService from './communityWorkspace.service';
 
 /**
  * POST /api/community-workspace/link
@@ -23,10 +23,10 @@ export const submitStudentLink = async (
             success: true,
             status: StatusCodes.CREATED,
             data: result,
-            message: "Profile link submitted successfully.",
+            message: 'Profile link submitted successfully.',
         });
     } catch (error) {
-        logger.error("[Community Workspace] submitStudentLink:", error);
+        logger.error('[Community Workspace] submitStudentLink:', error);
 
         if (error instanceof CustomError) {
             res.status(error.statusCode).json({
@@ -40,7 +40,7 @@ export const submitStudentLink = async (
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
             success: false,
             status: StatusCodes.INTERNAL_SERVER_ERROR,
-            message: "Failed to submit profile link.",
+            message: 'Failed to submit profile link.',
         });
     }
 };
@@ -55,22 +55,21 @@ export const getMyStudentLink = async (
     try {
         const userId = req.user?.user_id as string;
 
-        const result =
-            await communityWorkspaceService.getMyStudentLink(userId);
+        const result = await communityWorkspaceService.getMyStudentLink(userId);
 
         res.status(StatusCodes.OK).json({
             success: true,
             status: StatusCodes.OK,
             data: result,
-            message: "Student link retrieved successfully.",
+            message: 'Student link retrieved successfully.',
         });
     } catch (error) {
-        logger.error("[Community Workspace] getMyStudentLink:", error);
+        logger.error('[Community Workspace] getMyStudentLink:', error);
 
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
             success: false,
             status: StatusCodes.INTERNAL_SERVER_ERROR,
-            message: "Failed to retrieve student link.",
+            message: 'Failed to retrieve student link.',
         });
     }
 };
@@ -83,25 +82,28 @@ export const updateStudentLink = async (
     res: Response,
 ): Promise<void> => {
     try {
-        const result =
-            await communityWorkspaceService.updateStudentLink(
-                req.params.id,
-                req.body,
-            );
+        const id = Array.isArray(req.params.id)
+            ? req.params.id[0]
+            : req.params.id;
+
+        const result = await communityWorkspaceService.updateStudentLink(
+            id,
+            req.body,
+        );
 
         res.status(StatusCodes.OK).json({
             success: true,
             status: StatusCodes.OK,
             data: result,
-            message: "Profile link updated successfully.",
+            message: 'Profile link updated successfully.',
         });
     } catch (error) {
-        logger.error("[Community Workspace] updateStudentLink:", error);
+        logger.error('[Community Workspace] updateStudentLink:', error);
 
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
             success: false,
             status: StatusCodes.INTERNAL_SERVER_ERROR,
-            message: "Failed to update profile link.",
+            message: 'Failed to update profile link.',
         });
     }
 };
@@ -114,20 +116,24 @@ export const deleteStudentLink = async (
     res: Response,
 ): Promise<void> => {
     try {
-        await communityWorkspaceService.deleteStudentLink(req.params.id);
+        const id = Array.isArray(req.params.id)
+            ? req.params.id[0]
+            : req.params.id;
+
+        await communityWorkspaceService.deleteStudentLink(id);
 
         res.status(StatusCodes.OK).json({
             success: true,
             status: StatusCodes.OK,
-            message: "Profile link deleted successfully.",
+            message: 'Profile link deleted successfully.',
         });
     } catch (error) {
-        logger.error("[Community Workspace] deleteStudentLink:", error);
+        logger.error('[Community Workspace] deleteStudentLink:', error);
 
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
             success: false,
             status: StatusCodes.INTERNAL_SERVER_ERROR,
-            message: "Failed to delete profile link.",
+            message: 'Failed to delete profile link.',
         });
     }
 };
@@ -142,27 +148,26 @@ export const getCommunityFeed = async (
     try {
         const userId = req.user?.user_id as string;
 
-        const result =
-            await communityWorkspaceService.getCommunityFeed(userId);
+        const result = await communityWorkspaceService.getCommunityFeed(userId);
 
         res.status(StatusCodes.OK).json({
             success: true,
             status: StatusCodes.OK,
             data: result,
-            message: "Community feed retrieved successfully.",
+            message: 'Community feed retrieved successfully.',
         });
-    }catch (error: any) {
-    console.error(error);
-    console.error(error.message);
-    console.error(error.stack);
+    } catch (error: any) {
+        console.error(error);
+        console.error(error.message);
+        console.error(error.stack);
 
-    logger.error(error);
+        logger.error(error);
 
-    res.status(500).json({
-        success:false,
-        message:error.message,
-    });
-}
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
 };
 
 /**
@@ -174,27 +179,29 @@ export const submitPeerReview = async (
 ): Promise<void> => {
     try {
         const reviewerId = req.user?.user_id as string;
+        const linkId = Array.isArray(req.params.linkId)
+            ? req.params.linkId[0]
+            : req.params.linkId;
 
-        const result =
-            await communityWorkspaceService.submitPeerReview(
-                reviewerId,
-                req.params.linkId,
-                req.body,
-            );
+        const result = await communityWorkspaceService.submitPeerReview(
+            reviewerId,
+            linkId,
+            req.body,
+        );
 
         res.status(StatusCodes.CREATED).json({
             success: true,
             status: StatusCodes.CREATED,
             data: result,
-            message: "Review submitted successfully.",
+            message: 'Review submitted successfully.',
         });
     } catch (error) {
-        logger.error("[Community Workspace] submitPeerReview:", error);
+        logger.error('[Community Workspace] submitPeerReview:', error);
 
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
             success: false,
             status: StatusCodes.INTERNAL_SERVER_ERROR,
-            message: "You have already reviewed this profile.",
+            message: 'You have already reviewed this profile.',
         });
     }
 };
@@ -207,24 +214,25 @@ export const getReviews = async (
     res: Response,
 ): Promise<void> => {
     try {
-        const result =
-            await communityWorkspaceService.getReviews(
-                req.params.linkId,
-            );
+        const linkId = Array.isArray(req.params.linkId)
+            ? req.params.linkId[0]
+            : req.params.linkId;
+
+        const result = await communityWorkspaceService.getReviews(linkId);
 
         res.status(StatusCodes.OK).json({
             success: true,
             status: StatusCodes.OK,
             data: result,
-            message: "Reviews retrieved successfully.",
+            message: 'Reviews retrieved successfully.',
         });
     } catch (error) {
-        logger.error("[Community Workspace] getReviews:", error);
+        logger.error('[Community Workspace] getReviews:', error);
 
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
             success: false,
             status: StatusCodes.INTERNAL_SERVER_ERROR,
-            message: "Failed to retrieve reviews.",
+            message: 'Failed to retrieve reviews.',
         });
     }
 };
