@@ -254,18 +254,26 @@ const computeExperience = async (user_id: string): Promise<number> => {
  * Interaction: AVG(rating) / 5 (ratings clamped to 0–5).
  */
 const computeInteraction = async (user_id: string): Promise<number> => {
-    const rows = await DB.UserFeedbacks.findAll({
-        where: { user_id },
-        attributes: ['rating'],
+    // Count all published peer reviews received across all submitted links
+    const reviewCount = await DB.PeerReviews.count({
+        include: [
+            {
+                model: DB.StudentLinks,
+                as: 'studentLink', // <-- use your association alias
+                where: { user_id },
+                attributes: [],
+            },
+        ],
+        where: {
+            status: 'published',
+        },
     });
-    if (!rows.length) return 0;
-    let sum = 0;
-    for (const r of rows) {
-        const rating = Math.min(5, Math.max(0, Number(r.get('rating')) || 0));
-        sum += rating;
+
+    if (reviewCount >= 5) {
+        return 1; // 100%
     }
-    const avg = sum / rows.length;
-    return clamp01(avg / 5);
+
+    return reviewCount * 0.2;
 };
 
 const trustScoreFromIEC = (I: number, E: number, C: number): number => {
@@ -315,17 +323,17 @@ const buildSuggestions = (I: number, E: number, C: number): string[] => {
     const out: string[] = [];
     if (E < 0.5) {
         out.push(
-            'Upload your resume and add internship, project, and accomplishment records to raise Experience.',
+            '',
         );
     }
     if (C < 0.5) {
         out.push(
-            'Increase collaboration and employer feedback (ratings) to raise Interaction.',
+            '',
         );
     }
     if (I < 0.5) {
         out.push(
-            'Take skill assessments (user_tests) to demonstrate Intelligence.',
+            '',
         );
     }
     if (!out.length) {
