@@ -35,6 +35,8 @@ import { MessageModel } from '@/database/models/message.model';
 import { TransactionModel } from '@/database/models/transaction.model';
 import { JobReactionModel } from "@/database/models/jobReaction.model";
 import { BadgePurchaseModel } from '@/database/models/badgePurchase.model';
+import { StudentLinkModel } from '@/database/models/studentLink.model';
+import { PeerReviewModel } from '@/database/models/peerReview.model';
 
 export const setupAssociations = () => {
     // ====================== USER ↔ ROLE ======================
@@ -855,4 +857,64 @@ BadgePurchaseModel.belongsTo(UserModel, {
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
 });
+
+// ====================== COMMUNITY WORKSPACE ======================
+
+// -------------------------------------------------
+// USER ↔ STUDENT LINK
+// One student can have one submitted profile link
+// -------------------------------------------------
+
+UserModel.hasOne(StudentLinkModel, {
+    foreignKey: 'user_id',
+    as: 'studentLink',
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+});
+
+StudentLinkModel.belongsTo(UserModel, {
+    foreignKey: 'user_id',
+    as: 'student',
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+});
+
+// -------------------------------------------------
+// STUDENT LINK ↔ PEER REVIEWS
+// One submitted profile can have many peer reviews
+// -------------------------------------------------
+
+StudentLinkModel.hasMany(PeerReviewModel, {
+    foreignKey: 'link_id',
+    as: 'peerReviews',
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+});
+
+PeerReviewModel.belongsTo(StudentLinkModel, {
+    foreignKey: 'link_id',
+    as: 'studentLink',
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+});
+
+// -------------------------------------------------
+// USER ↔ PEER REVIEWS
+// One student can write many reviews
+// -------------------------------------------------
+
+UserModel.hasMany(PeerReviewModel, {
+    foreignKey: 'reviewer_id',
+    as: 'writtenPeerReviews',
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+});
+
+PeerReviewModel.belongsTo(UserModel, {
+    foreignKey: 'reviewer_id',
+    as: 'reviewer',
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+});
+
 }

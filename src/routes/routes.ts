@@ -27,6 +27,7 @@ import messagesRouter from '@/modules/messages/messages.routes';
 import badgeRouter from '@/modules/badge/badge.routes';
 
 import jobReactionRoutes from "@/modules/jobReaction/jobReaction.routes";
+import communityWorkspaceRouter from '@/modules/communityWorkspace/communityWorkspace.routes';
 
 import express from 'express';
 
@@ -62,6 +63,7 @@ router.use('/badge', badgeRouter);
 router.use('/', taskRouter);
 
 router.use("/", jobReactionRoutes);
+router.use('/community-workspace', communityWorkspaceRouter);
 
 
 export default router;
