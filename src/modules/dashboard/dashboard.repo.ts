@@ -196,6 +196,83 @@ const repo = {
     }
   },
 
+  // quick stats for student dashboard
+  getStudentAcceptedCount: async (studentId: string): Promise<number> => {
+  try {
+    const count = await DB.JobApplications.count({
+      where: {
+        student_id: studentId,
+        status: "Accepted",
+      },
+    });
+
+    return Number(count ?? 0);
+  } catch (error) {
+    logger.error("[Dashboard] Error counting accepted applications:", error);
+    return 0;
+  }
+},
+
+getStudentJobsInProgressCount: async (
+  studentId: string,
+): Promise<number> => {
+  try {
+    const { Op } = require("sequelize");
+
+    const count = await DB.JobApplications.count({
+      where: {
+        student_id: studentId,
+        status: "Accepted",
+        completed_at: {
+          [Op.is]: null,
+        },
+      },
+    });
+
+    return Number(count ?? 0);
+  } catch (error) {
+    logger.error("[Dashboard] Error counting jobs in progress:", error);
+    return 0;
+  }
+},
+
+getStudentInterviewScheduledCount: async (
+  studentId: string,
+): Promise<number> => {
+  try {
+    if (!(DB as any).Interviews) return 0;
+
+    const { Op } = require("sequelize");
+
+    const count = await (DB as any).Interviews.count({
+      where: {
+        student_id: studentId,
+        status: {
+          [Op.ne]: "cancelled",
+        },
+      },
+    });
+
+    return Number(count ?? 0);
+  } catch (error) {
+    logger.error("[Dashboard] Error counting interviews:", error);
+    return 0;
+  }
+},
+
+getStudentNewJobMatchesCount: async (): Promise<number> => {
+  try {
+    return await DB.Jobs.count({
+      where: {
+        status: "Active",
+      },
+    });
+  } catch (error) {
+    logger.error("[Dashboard] Error counting active jobs:", error);
+    return 0;
+  }
+},
+
   /**
    * Sum earnings for a student between two dates using MoMo payout amount.
    * Source of truth: jobs.amount_paid_to_student for paid jobs.
