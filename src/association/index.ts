@@ -37,6 +37,7 @@ import { JobReactionModel } from "@/database/models/jobReaction.model";
 import { BadgePurchaseModel } from '@/database/models/badgePurchase.model';
 import { StudentLinkModel } from '@/database/models/studentLink.model';
 import { PeerReviewModel } from '@/database/models/peerReview.model';
+import { PeerReviewReplyModel } from "@/database/models/peerReviewReply.model";
 
 export const setupAssociations = () => {
     // ====================== USER ↔ ROLE ======================
@@ -913,6 +914,44 @@ UserModel.hasMany(PeerReviewModel, {
 PeerReviewModel.belongsTo(UserModel, {
     foreignKey: 'reviewer_id',
     as: 'reviewer',
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+});
+
+// -------------------------------------------------
+// PEER REVIEW ↔ REPLY
+// One review can have one reply from the profile owner
+// -------------------------------------------------
+
+PeerReviewModel.hasOne(PeerReviewReplyModel, {
+    foreignKey: 'review_id',
+    as: 'reply',
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+});
+
+PeerReviewReplyModel.belongsTo(PeerReviewModel, {
+    foreignKey: 'review_id',
+    as: 'review',
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+});
+
+// -------------------------------------------------
+// USER ↔ REVIEW REPLIES
+// One user can write many replies
+// -------------------------------------------------
+
+UserModel.hasMany(PeerReviewReplyModel, {
+    foreignKey: 'user_id',
+    as: 'reviewReplies',
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+});
+
+PeerReviewReplyModel.belongsTo(UserModel, {
+    foreignKey: 'user_id',
+    as: 'author',
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
 });

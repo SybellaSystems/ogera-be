@@ -67,4 +67,31 @@ router.get(
     controller.getReviews,
 );
 
+/**
+ * Submit Reply
+ */
+router.post(
+    "/review/:reviewId/reply",
+    authMiddleware,
+    controller.submitReply,
+);
+
+/**
+ * Update Reply
+ */
+router.put(
+    "/review/:reviewId/reply",
+    authMiddleware,
+    controller.updateReply,
+);
+
+/**
+ * My Review History
+ */
+router.get(
+    "/my-reviews",
+    authMiddleware,
+    controller.getMyReviews,
+);
+
 export default router;

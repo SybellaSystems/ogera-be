@@ -44,6 +44,7 @@ import jobReactionModel from './models/jobReaction.model';
 import badgePurchaseModel from './models/badgePurchase.model';
 import studentLinkModel from './models/studentLink.model';
 import peerReviewModel from './models/peerReview.model';
+import peerReviewReplyModel from "./models/peerReviewReply.model";
 
 import { setupAssociations } from '@/association/index';
 import {
@@ -181,6 +182,7 @@ const JobReactions = jobReactionModel(sequelize);
 const BadgePurchases = badgePurchaseModel(sequelize);
 const StudentLinks = studentLinkModel(sequelize);
 const PeerReviews = peerReviewModel(sequelize);
+const PeerReviewReplies = peerReviewReplyModel(sequelize);
 
 // Apply Associations
 setupAssociations();
@@ -1048,6 +1050,7 @@ export const DB = {
     BadgePurchases,
     StudentLinks,
     PeerReviews,
+    PeerReviewReplies,
 
     sequelize,
     Sequelize,
