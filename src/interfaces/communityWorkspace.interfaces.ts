@@ -81,3 +81,23 @@ export interface UpdatePeerReviewDto {
   review?: string;
   status?: ReviewStatus;
 }
+
+/**
+ * ===========================
+ * Peer Review Reply
+ * ===========================
+ */
+
+export interface PeerReviewReply {
+  id: string;
+
+  review_id: string;
+
+  user_id: string;
+
+  reply: string;
+
+  created_at: Date;
+
+  updated_at: Date;
+}

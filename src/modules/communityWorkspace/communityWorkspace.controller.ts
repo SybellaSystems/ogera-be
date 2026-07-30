@@ -195,13 +195,87 @@ export const submitPeerReview = async (
             data: result,
             message: 'Review submitted successfully.',
         });
-    } catch (error) {
+    } catch (error: any) {
         logger.error('[Community Workspace] submitPeerReview:', error);
 
-        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        res.status(StatusCodes.BAD_REQUEST).json({
             success: false,
-            status: StatusCodes.INTERNAL_SERVER_ERROR,
-            message: 'You have already reviewed this profile.',
+            status: StatusCodes.BAD_REQUEST,
+            message: error.message ?? 'Failed to submit review.',
+        });
+    }
+};
+
+/**
+ * POST /api/community-workspace/review/:reviewId/reply
+ */
+export const submitReply = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const userId = req.user?.user_id as string;
+
+        const reviewId = Array.isArray(req.params.reviewId)
+            ? req.params.reviewId[0]
+            : req.params.reviewId;
+
+        const result = await communityWorkspaceService.submitReply(
+            userId,
+            reviewId,
+            req.body,
+        );
+
+        res.status(StatusCodes.CREATED).json({
+            success: true,
+            status: StatusCodes.CREATED,
+            data: result,
+            message: 'Reply submitted successfully.',
+        });
+    } catch (error: any) {
+        logger.error('[Community Workspace] submitReply:', error);
+
+        res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            status: StatusCodes.BAD_REQUEST,
+            message: error.message ?? 'Failed to submit reply.',
+        });
+    }
+};
+
+/**
+ * PUT /api/community-workspace/review/:reviewId/reply
+ */
+export const updateReply = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const userId = req.user?.user_id as string;
+
+        const reviewId = Array.isArray(req.params.reviewId)
+            ? req.params.reviewId[0]
+            : req.params.reviewId;
+
+        const result = await communityWorkspaceService.updateReply(
+            userId,
+            reviewId,
+            req.body,
+        );
+
+        res.status(StatusCodes.OK).json({
+            success: true,
+            status: StatusCodes.OK,
+            data: result,
+            message: 'Reply updated successfully.',
+        });
+    } catch (error: any) {
+        logger.error('[Community Workspace] updateReply:', error);
+
+        res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            status: StatusCodes.BAD_REQUEST,
+            message: error.message ?? 'Failed to update reply.',
         });
     }
 };
@@ -237,6 +311,35 @@ export const getReviews = async (
     }
 };
 
+/**
+ * GET /api/community-workspace/my-reviews
+ */
+export const getMyReviews = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        const userId = req.user?.user_id as string;
+
+        const result = await communityWorkspaceService.getMyReviews(userId);
+
+        res.status(StatusCodes.OK).json({
+            success: true,
+            status: StatusCodes.OK,
+            data: result,
+            message: 'Review history retrieved successfully.',
+        });
+    } catch (error) {
+        logger.error('[Community Workspace] getMyReviews:', error);
+
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            status: StatusCodes.INTERNAL_SERVER_ERROR,
+            message: 'Failed to retrieve review history.',
+        });
+    }
+};
+
 export default {
     submitStudentLink,
     getMyStudentLink,
@@ -244,5 +347,8 @@ export default {
     deleteStudentLink,
     getCommunityFeed,
     submitPeerReview,
+    submitReply,
+    updateReply,
     getReviews,
+    getMyReviews,
 };
