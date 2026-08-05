@@ -17,6 +17,7 @@ export interface User {
     cover_letter?: string;
     preferred_location?: string;
     profile_image_url?: string;
+    profile_image_public_id?: string;
 
     terms_accepted: boolean;
     privacy_accepted: boolean;

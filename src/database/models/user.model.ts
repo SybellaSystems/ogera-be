@@ -16,6 +16,7 @@ export type UserCreationAttributes = Optional<
     | 'cover_letter'
     | 'preferred_location'
     | 'profile_image_url'
+    | 'profile_image_public_id'
     | 'reset_otp'
     | 'reset_otp_expiry'
     | 'terms_accepted'
@@ -63,6 +64,7 @@ export class UserModel
     public cover_letter?: string;
     public preferred_location?: string;
     public profile_image_url?: string;
+    public profile_image_public_id?: string;
 
     public terms_accepted!: boolean;
     public privacy_accepted!: boolean;
@@ -222,6 +224,11 @@ mobile_number: {
                 allowNull: true,
                 comment: 'URL to user profile image',
             },
+            profile_image_public_id: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    comment: 'Cloudinary public_id of profile image',
+},
 
             /* ⭐ LEGAL FIELDS */
             terms_accepted: {
