@@ -6,6 +6,8 @@ import { calculateTrustScoreService } from '@/modules/trustScore/trustScore.serv
 import repo from './profile.repo';
 import { getFileUrl, saveFile } from '@/utils/storage.service';
 import { DB } from '@/database';
+import cloudinary from "@/config/cloudinary";
+import streamifier from "streamifier";
 import {
     CreateSkillRequest,
     CreateEmploymentRequest,
@@ -334,26 +336,97 @@ export const getFullProfileService = async (user_id: string) => {
     const fullProfile = await repo.getFullProfile(user_id);
     return fullProfile;
 };
-// ====================== PROFILE IMAGE UPLOAD ======================
-export const uploadProfileImageService = async (user_id: string, file: Express.Multer.File) => {
-    const { path: filePath, storageType } = await saveFile(file, 'profile-images');
-    let storedUrl = filePath;
-    let displayUrl = filePath;
-    if (storageType === 'local') {
-        const fileName = path.basename(filePath);
-        const baseUrl = process.env.BASE_URL?.replace('/api', '') || `http://localhost:${process.env.PORT || 5000}`;
-        storedUrl = `${baseUrl}/uploads/profile-images/${fileName}`;
-        displayUrl = storedUrl;
-    } else {
-        displayUrl = await getFileUrl(filePath, storageType);
-    }
-    try {
-        await DB.Users.update({ profile_image_url: storedUrl }, { where: { user_id } });
-    } catch (err: any) {
-        console.warn('⚠️ Could not update profile_image_url column:', err.message);
-    }
-    return { profile_image_url: displayUrl };
+
+const uploadToCloudinary = (
+    file: Express.Multer.File
+): Promise<{
+    secure_url: string;
+    public_id: string;
+}> => {
+    return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+            {
+                folder: "profile-images",
+                resource_type: "image",
+            },
+            (error, result) => {
+                if (error) {
+                    return reject(error);
+                }
+
+                resolve({
+                    secure_url: result!.secure_url,
+                    public_id: result!.public_id,
+                });
+            }
+        );
+
+        streamifier.createReadStream(file.buffer).pipe(uploadStream);
+    });
 };
+
+// ====================== PROFILE IMAGE UPLOAD ======================
+export const uploadProfileImageService = async (
+    user_id: string,
+    file: Express.Multer.File
+) => {
+
+    const user = await DB.Users.findByPk(user_id);
+
+    if (!user) {
+        throw new CustomError("User not found", StatusCodes.NOT_FOUND);
+    }
+
+    // Delete previous image from Cloudinary
+    if ((user as any).profile_image_public_id) {
+        try {
+            await cloudinary.uploader.destroy(
+                (user as any).profile_image_public_id
+            );
+        } catch (err) {
+            console.error("Failed to delete old Cloudinary image:", err);
+        }
+    }
+
+    // Upload new image
+    const upload = await uploadToCloudinary(file);
+
+    // Save new image URL and public_id
+    await DB.Users.update(
+        {
+            profile_image_url: upload.secure_url,
+            profile_image_public_id: upload.public_id,
+        },
+        {
+            where: {
+                user_id,
+            },
+        }
+    );
+
+    return {
+        profile_image_url: upload.secure_url,
+    };
+};
+// export const uploadProfileImageService = async (user_id: string, file: Express.Multer.File) => {
+//     const { path: filePath, storageType } = await saveFile(file, 'profile-images');
+//     let storedUrl = filePath;
+//     let displayUrl = filePath;
+//     if (storageType === 'local') {
+//         const fileName = path.basename(filePath);
+//         const baseUrl = process.env.BASE_URL?.replace('/api', '') || `http://localhost:${process.env.PORT || 5000}`;
+//         storedUrl = `${baseUrl}/uploads/profile-images/${fileName}`;
+//         displayUrl = storedUrl;
+//     } else {
+//         displayUrl = await getFileUrl(filePath, storageType);
+//     }
+//     try {
+//         await DB.Users.update({ profile_image_url: storedUrl }, { where: { user_id } });
+//     } catch (err: any) {
+//         console.warn('⚠️ Could not update profile_image_url column:', err.message);
+//     }
+//     return { profile_image_url: displayUrl };
+// };
 
 // ====================== PROFILE COMPLETION ======================
 export const getProfileCompletionService = async (user_id: string) => {
