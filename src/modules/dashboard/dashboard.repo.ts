@@ -795,6 +795,244 @@ getStudentNewJobMatchesCount: async (): Promise<number> => {
         return 0;
       }
     },
+
+      /**
+   * Count new students registered this week.
+   * Week starts on Monday at 00:00.
+   */
+  getNewStudentsThisWeek: async (): Promise<number> => {
+    try {
+      const { Op } = require("sequelize");
+
+      const now = new Date();
+
+      // Get Monday 00:00 of the current week
+      const startOfWeek = new Date(now);
+      const day = startOfWeek.getDay();
+
+      // Sunday = 0, Monday = 1
+      const diffToMonday = day === 0 ? 6 : day - 1;
+
+      startOfWeek.setDate(startOfWeek.getDate() - diffToMonday);
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      const count = await DB.Users.count({
+        where: {
+          role_type: "student",
+          created_at: {
+            [Op.gte]: startOfWeek,
+            [Op.lt]: now,
+          },
+        },
+      });
+
+      logger.info(
+        `[Dashboard] New students this week: ${count}`,
+      );
+
+      return Number(count ?? 0);
+    } catch (error) {
+      logger.error(
+        "[Dashboard] Error counting new students this week:",
+        error,
+      );
+      return 0;
+    }
+  },
+
+  /**
+   * Count new jobs posted this week.
+   * Week starts on Monday at 00:00.
+   */
+  getNewJobsPostedThisWeek: async (): Promise<number> => {
+    try {
+      const { Op } = require("sequelize");
+
+      const now = new Date();
+
+      // Get Monday 00:00 of the current week
+      const startOfWeek = new Date(now);
+      const day = startOfWeek.getDay();
+
+      const diffToMonday = day === 0 ? 6 : day - 1;
+
+      startOfWeek.setDate(startOfWeek.getDate() - diffToMonday);
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      const count = await DB.Jobs.count({
+        where: {
+          created_at: {
+            [Op.gte]: startOfWeek,
+            [Op.lt]: now,
+          },
+        },
+      });
+
+      logger.info(
+        `[Dashboard] New jobs posted this week: ${count}`,
+      );
+
+      return Number(count ?? 0);
+    } catch (error) {
+      logger.error(
+        "[Dashboard] Error counting new jobs posted this week:",
+        error,
+      );
+      return 0;
+    }
+  },
+
+  /**
+   * Count all academic verifications that are currently pending.
+   */
+  getPendingAcademicVerificationsCount: async (): Promise<number> => {
+    try {
+      const count = await DB.AcademicVerifications.count({
+        where: {
+          status: "pending",
+        },
+      });
+
+      logger.info(
+        `[Dashboard] Pending academic verifications: ${count}`,
+      );
+
+      return Number(count ?? 0);
+    } catch (error) {
+      logger.error(
+        "[Dashboard] Error counting pending academic verifications:",
+        error,
+      );
+      return 0;
+    }
+  },
+
+  /**
+   * Count all disputes that have been resolved.
+   */
+  getResolvedDisputesCount: async (): Promise<number> => {
+    try {
+      const count = await DB.Disputes.count({
+        where: {
+          status: "Resolved",
+        },
+      });
+
+      logger.info(
+        `[Dashboard] Resolved disputes: ${count}`,
+      );
+
+      return Number(count ?? 0);
+    } catch (error) {
+      logger.error(
+        "[Dashboard] Error counting resolved disputes:",
+        error,
+      );
+      return 0;
+    }
+  },
+
+  /**
+ * Count new applicants this week.
+ * Uses job_applications.applied_at.
+ * Week starts on Monday at 00:00.
+ */
+getNewApplicantsThisWeek: async (): Promise<number> => {
+  try {
+    const { Op } = require("sequelize");
+
+    const now = new Date();
+
+    // Get Monday 00:00 of the current week
+    const startOfWeek = new Date(now);
+    const day = startOfWeek.getDay();
+
+    // Sunday = 0, Monday = 1
+    const diffToMonday = day === 0 ? 6 : day - 1;
+
+    startOfWeek.setDate(startOfWeek.getDate() - diffToMonday);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const count = await DB.JobApplications.count({
+      where: {
+        applied_at: {
+          [Op.gte]: startOfWeek,
+          [Op.lt]: now,
+        },
+      },
+      distinct: true,
+      col: "application_id",
+    });
+
+    logger.info(
+      `[Dashboard] New applicants this week: ${count}`,
+    );
+
+    return Number(count ?? 0);
+  } catch (error) {
+    logger.error(
+      "[Dashboard] Error counting new applicants this week:",
+      error,
+    );
+    return 0;
+  }
+},
+
+/**
+ * Count positions filled this month.
+ *
+ * A position is considered filled when an application
+ * has status = "Accepted".
+ *
+ * Uses reviewed_at to determine when the application
+ * was accepted.
+ */
+getPositionsFilledThisMonth: async (): Promise<number> => {
+  try {
+    const { Op } = require("sequelize");
+
+    const now = new Date();
+
+    // First day of current month at 00:00
+    const startOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1,
+    );
+
+    // First day of next month at 00:00
+    const startOfNextMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      1,
+    );
+
+    const count = await DB.JobApplications.count({
+      where: {
+        status: "Accepted",
+        reviewed_at: {
+          [Op.gte]: startOfMonth,
+          [Op.lt]: startOfNextMonth,
+        },
+      },
+      distinct: true,
+      col: "application_id",
+    });
+
+    logger.info(
+      `[Dashboard] Positions filled this month: ${count}`,
+    );
+
+    return Number(count ?? 0);
+  } catch (error) {
+    logger.error(
+      "[Dashboard] Error counting positions filled this month:",
+      error,
+    );
+    return 0;
+  }
+},
+
 };
 
 export default repo;
