@@ -15,6 +15,12 @@ export interface DashboardMetrics {
     freeBadgeStudents?: number;
     premiumStudents?: number;
     pioneerStudents?: number;
+    quickStats: {
+        newStudentsThisWeek: number;
+        newJobsPostedThisWeek: number;
+        pendingAcademicVerifications: number;
+        resolvedDisputes: number;
+    };
 }
 
 /**
@@ -107,6 +113,10 @@ export interface EmployerDashboardResponse {
         status: string;
         applied_at: Date;
     }>;
+     quickStats: {
+        newApplicantsThisWeek: number;
+        positionsFilledThisMonth: number;
+    };
 }
 
 /**
@@ -276,8 +286,8 @@ export const getEmployerDashboard = async (
         try {
             const now = new Date();
             const periodMs = periodDays * 24 * 60 * 60 * 1000;
-            const currentStart = new Date(now.getTime() - periodMs);
             const currentEnd = now;
+            const currentStart = new Date(now.getTime() - periodMs);
             const prevStart = new Date(currentStart.getTime() - periodMs);
             const prevEnd = new Date(currentStart.getTime());
 
@@ -290,6 +300,10 @@ export const getEmployerDashboard = async (
                 previousHires,
                 currentSpent,
                 previousSpent,
+
+                // New employer quick stats
+                newApplicantsThisWeek,
+                positionsFilledThisMonth,
             ] = await Promise.all([
                 repo.getEmployerJobsPostedBetween(
                     employerId,
@@ -327,6 +341,10 @@ export const getEmployerDashboard = async (
                     currentEnd,
                 ),
                 repo.getEmployerSpentBetween(employerId, prevStart, prevEnd),
+                 // New quick stats
+                repo.getNewApplicantsThisWeek(),
+
+                repo.getPositionsFilledThisMonth(),
             ]);
 
             const [weeklyActivity, applicationBreakdown, recentApplicants] =
@@ -357,6 +375,11 @@ export const getEmployerDashboard = async (
                 weeklyActivity,
                 applicationBreakdown,
                 recentApplicants,
+                 // Employer quick stats
+                quickStats: {
+                    newApplicantsThisWeek,
+                    positionsFilledThisMonth,
+                },
             };
         } catch (error) {
             logger.error(
@@ -383,32 +406,64 @@ export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
             totalEarnings,
             weeklyGrowth,
             badgeStats,
+
+            // Super Admin Quick Stats
+            newStudentsThisWeek,
+            newJobsPostedThisWeek,
+            pendingAcademicVerifications,
+            resolvedDisputes,
         ] = await Promise.all([
+            // Existing dashboard metrics
             repo.getTotalUsersCount(),
             repo.getTotalStudentsCount(),
             repo.getActiveJobsCount(),
             repo.getTotalEarnings(),
             repo.getAdminWeeklyGrowth(),
+
             import('@/modules/badge/badge.service').then(m =>
                 m.getAdminBadgeStats(),
             ),
+
+            // New Super Admin Quick Stats
+            repo.getNewStudentsThisWeek(),
+            repo.getNewJobsPostedThisWeek(),
+            repo.getPendingAcademicVerificationsCount(),
+            repo.getResolvedDisputesCount(),
         ]);
 
-        const metrics = {
+        const metrics: DashboardMetrics = {
+            // Existing functionality
             totalUsers,
             totalStudents,
             activeJobs,
             totalEarnings,
             weeklyGrowth,
+
             freeBadgeStudents: badgeStats.freeBadgeStudents,
             premiumStudents: badgeStats.premiumStudents,
             pioneerStudents: badgeStats.pioneerStudents,
+
+            // New Super Admin Quick Stats
+            quickStats: {
+                newStudentsThisWeek,
+                newJobsPostedThisWeek,
+                pendingAcademicVerifications,
+                resolvedDisputes,
+            },
         };
 
-        logger.info('[Dashboard] Metrics fetched successfully:', metrics);
+        logger.info(
+            '[Dashboard] Metrics fetched successfully:',
+            metrics,
+        );
+
         return metrics;
     } catch (error) {
-        logger.error('[Dashboard] Error fetching metrics:', error);
+        logger.error(
+            '[Dashboard] Error fetching metrics:',
+            error,
+        );
+
         throw new CustomError(
             'Failed to fetch dashboard metrics',
             StatusCodes.INTERNAL_SERVER_ERROR,

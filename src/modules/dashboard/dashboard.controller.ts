@@ -16,21 +16,49 @@ export const getMetrics = async (
 ): Promise<void> => {
   try {
     logger.info("[Dashboard Controller] Getting metrics endpoint called");
-    const metrics: DashboardMetrics = await dashboardService.getDashboardMetrics();
+
+    const metrics: DashboardMetrics =
+      await dashboardService.getDashboardMetrics();
 
     // Sanitize and ensure numeric values (including 0) are returned
     const safeMetrics = {
+      // Existing Super Admin metrics
       totalUsers: Number(metrics.totalUsers ?? 0),
       totalStudents: Number(metrics.totalStudents ?? 0),
       activeJobs: Number(metrics.activeJobs ?? 0),
       totalEarnings: Number(metrics.totalEarnings ?? 0),
+
       weeklyGrowth: metrics.weeklyGrowth ?? [],
+
       freeBadgeStudents: Number(metrics.freeBadgeStudents ?? 0),
       premiumStudents: Number(metrics.premiumStudents ?? 0),
       pioneerStudents: Number(metrics.pioneerStudents ?? 0),
+
+      // New Super Admin Quick Stats
+      quickStats: {
+        newStudentsThisWeek: Number(
+          metrics.quickStats?.newStudentsThisWeek ?? 0
+        ),
+
+        newJobsPostedThisWeek: Number(
+          metrics.quickStats?.newJobsPostedThisWeek ?? 0
+        ),
+
+        pendingAcademicVerifications: Number(
+          metrics.quickStats?.pendingAcademicVerifications ?? 0
+        ),
+
+        resolvedDisputes: Number(
+          metrics.quickStats?.resolvedDisputes ?? 0
+        ),
+      },
     };
 
-    logger.info("[Dashboard Controller] Sending metrics response:", safeMetrics);
+    logger.info(
+      "[Dashboard Controller] Sending metrics response:",
+      safeMetrics
+    );
+
     res.status(StatusCodes.OK).json({
       success: true,
       status: StatusCodes.OK,
@@ -39,6 +67,7 @@ export const getMetrics = async (
     });
   } catch (error) {
     logger.error("[Dashboard Controller] Error in getMetrics:", error);
+
     if (error instanceof CustomError) {
       res.status(error.statusCode).json({
         success: false,
