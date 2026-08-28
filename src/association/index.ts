@@ -38,6 +38,7 @@ import { BadgePurchaseModel } from '@/database/models/badgePurchase.model';
 import { StudentLinkModel } from '@/database/models/studentLink.model';
 import { PeerReviewModel } from '@/database/models/peerReview.model';
 import { PeerReviewReplyModel } from "@/database/models/peerReviewReply.model";
+import { JobReferralModel } from '@/database/models/jobReferral.model';
 
 export const setupAssociations = () => {
     // ====================== USER ↔ ROLE ======================
@@ -954,6 +955,23 @@ PeerReviewReplyModel.belongsTo(UserModel, {
     as: 'author',
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
+});
+
+// ====================== USER ↔ JOB REFERRAL ======================
+// One user can create many job referrals
+UserModel.hasMany(JobReferralModel, {
+    foreignKey: 'created_by',
+    as: 'jobReferrals',
+    onUpdate: 'CASCADE',
+    onDelete: 'SET NULL',
+});
+
+// A job referral belongs to the user who created it
+JobReferralModel.belongsTo(UserModel, {
+    foreignKey: 'created_by',
+    as: 'creator',
+    onUpdate: 'CASCADE',
+    onDelete: 'SET NULL',
 });
 
 }
