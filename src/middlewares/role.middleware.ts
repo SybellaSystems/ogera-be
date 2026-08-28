@@ -28,14 +28,47 @@ export const PermissionChecker = (route: string, action: string) => {
             // Students can access jobs/disputes and academic verification views by default.
             if (
                 normalizedRole === 'student' &&
-                ((route === '/jobs' || route === '/disputes') ||
+                (route === '/jobs' ||
+                    route === '/disputes' ||
                     (route === '/academic-verifications' && action === 'view'))
             ) {
                 return next();
             }
 
+           // Students can VIEW job referrals.
+//
+// Students can also increment referral activity counters
+// through the dedicated /:referral_id/counter endpoint.
+//
+// They still CANNOT create, edit, delete, approve, reject,
+// verify, or change the status of a job referral.
+if (
+    normalizedRole === 'student' &&
+    route === '/job-referrals'
+) {
+    // Normal referral viewing
+    if (action === 'view') {
+        return next();
+    }
+
+    // Referral activity tracking only.
+    //
+    // The router uses PermissionChecker('/job-referrals', 'create')
+    // for the counter endpoint, so specifically allow that endpoint
+    // without granting students general "create" permission.
+    if (
+        action === 'create' &&
+        req.path?.endsWith('/counter')
+    ) {
+        return next();
+    }
+}
+
             // Verification admins retain default academic verification access.
-            if (normalizedRole === 'verifydocadmin' && route === '/academic-verifications') {
+            if (
+                normalizedRole === 'verifydocadmin' &&
+                route === '/academic-verifications'
+            ) {
                 return next();
             }
 
@@ -194,9 +227,7 @@ export const studentRoleOnly = async (
             return next(new CustomError('Unauthorized', 401));
         }
         if (req.user.role?.toLowerCase?.() !== 'student') {
-            return next(
-                new CustomError('Forbidden: Students only', 403),
-            );
+            return next(new CustomError('Forbidden: Students only', 403));
         }
         next();
     } catch (error) {
@@ -234,7 +265,10 @@ export const courseAdminOrSuperadminOnly = async (
         }
 
         // Check if user is CourseAdmin (case-insensitive) with admin roleType
-        if (roleName?.toLowerCase() === 'courseadmin' && role.roleType === 'admin') {
+        if (
+            roleName?.toLowerCase() === 'courseadmin' &&
+            role.roleType === 'admin'
+        ) {
             return next();
         }
 
