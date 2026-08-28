@@ -1,6 +1,16 @@
 import { Request, Response } from 'express';
 import jobReferralService from './jobReferral.service';
 
+const getParamString = (
+    value: string | string[] | undefined,
+): string => {
+    if (Array.isArray(value)) {
+        return value[0] ?? '';
+    }
+
+    return value ?? '';
+};
+
 export class JobReferralController {
     /**
      * Create a new job referral
@@ -159,7 +169,7 @@ async getAll(req: Request, res: Response) {
      */
     async getById(req: Request, res: Response) {
         try {
-            const { referral_id } = req.params;
+            const referral_id = getParamString(req.params.referral_id);
 
             const referral = await jobReferralService.getReferralById(
                 referral_id,
@@ -190,7 +200,7 @@ async getAll(req: Request, res: Response) {
      */
     async getAvailableById(req: Request, res: Response) {
         try {
-            const { referral_id } = req.params;
+            const referral_id = getParamString(req.params.referral_id);
 
             const referral = await jobReferralService.getAvailableReferralById(
                 referral_id,
@@ -241,7 +251,7 @@ async getAll(req: Request, res: Response) {
      */
     async update(req: Request, res: Response) {
         try {
-            const { referral_id } = req.params;
+            const referral_id = getParamString(req.params.referral_id);
 
             const referral = await jobReferralService.updateReferral(
                 referral_id,
@@ -271,7 +281,7 @@ async getAll(req: Request, res: Response) {
      */
     async delete(req: Request, res: Response) {
         try {
-            const { referral_id } = req.params;
+            const referral_id = getParamString(req.params.referral_id);
 
             const result = await jobReferralService.deleteReferral(referral_id);
 
@@ -297,7 +307,7 @@ async getAll(req: Request, res: Response) {
      */
     async updateVerification(req: Request, res: Response) {
         try {
-            const { referral_id } = req.params;
+            const referral_id = getParamString(req.params.referral_id);
 
             const referral = await jobReferralService.updateVerification(
                 referral_id,
@@ -328,7 +338,7 @@ async getAll(req: Request, res: Response) {
      */
     async updateStatus(req: Request, res: Response) {
         try {
-            const { referral_id } = req.params;
+            const referral_id = getParamString(req.params.referral_id);
 
             const { status } = req.body;
 
@@ -360,7 +370,7 @@ async getAll(req: Request, res: Response) {
      */
     async approveReferral(req: Request, res: Response) {
         try {
-            const { referral_id } = req.params;
+            const referral_id = getParamString(req.params.referral_id);
 
             const { verification_notes } = req.body;
 
@@ -389,7 +399,7 @@ async getAll(req: Request, res: Response) {
      */
     async rejectReferral(req: Request, res: Response) {
         try {
-            const { referral_id } = req.params;
+            const referral_id = getParamString(req.params.referral_id);
 
             const { verification_notes } = req.body;
 
@@ -417,7 +427,7 @@ async getAll(req: Request, res: Response) {
      */
     async incrementReferralCounter(req: Request, res: Response) {
         try {
-            const { referral_id } = req.params;
+            const referral_id = getParamString(req.params.referral_id);
             const { type } = req.body;
 
             const allowedTypes = [
@@ -505,7 +515,7 @@ async getAll(req: Request, res: Response) {
      */
     async getReferralAnalytics(req: Request, res: Response) {
         try {
-            const { referral_id } = req.params;
+            const referral_id = getParamString(req.params.referral_id);
 
             const analytics = await jobReferralService.getReferralAnalytics(
                 referral_id,
@@ -643,7 +653,7 @@ async getAll(req: Request, res: Response) {
      */
     async getByCreator(req: Request, res: Response) {
         try {
-            const { created_by } = req.params;
+            const created_by = getParamString(req.params.created_by);
 
             const referrals = await jobReferralService.getReferralsByCreator(
                 created_by,
