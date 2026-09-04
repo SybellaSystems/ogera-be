@@ -8,6 +8,7 @@ import {
     TrustScoreHistoryItem,
     LeaderboardStudentRow,
     TrustAdminSummary,
+    AdminDashboardMetrics ,
 } from '@/interfaces/trustScore.interfaces';
 
 const W_I = 0.4;
@@ -497,51 +498,449 @@ export const getStudentLeaderboardService = async (
     }));
 };
 
-export const getAdminTrustSummaryService = async (): Promise<TrustAdminSummary> => {
-    const students = await DB.Users.findAll({
-        where: { role_type: 'student' },
-        attributes: ['user_id', 'full_name', 'email', 'trust_score', 'trust_level'],
-    });
+// export const getAdminTrustSummaryService = async (): Promise<TrustAdminSummary> => {
+//     const students = await DB.Users.findAll({
+//         where: { role_type: 'student' },
+//         attributes: ['user_id', 'full_name', 'email', 'trust_score', 'trust_level'],
+//     });
 
-    const withScore = students.filter(
-        (s) => s.trust_score != null && !Number.isNaN(Number(s.trust_score)),
-    );
-    const scores = withScore.map((s) => Number(s.trust_score));
-    const avg =
-        scores.length > 0
-            ? round2(scores.reduce((a, b) => a + b, 0) / scores.length)
-            : null;
+//     const withScore = students.filter(
+//         (s) => s.trust_score != null && !Number.isNaN(Number(s.trust_score)),
+//     );
+//     const scores = withScore.map((s) => Number(s.trust_score));
+//     const avg =
+//         scores.length > 0
+//             ? round2(scores.reduce((a, b) => a + b, 0) / scores.length)
+//             : null;
 
-    const top_users = [...withScore]
-        .sort((a, b) => Number(b.trust_score) - Number(a.trust_score))
-        .slice(0, 10)
-        .map((u) => ({
-            user_id: u.user_id,
-            full_name: u.full_name,
-            email: u.email,
-            trust_score: u.trust_score ?? null,
-            trust_level: u.trust_level ?? null,
+//     const top_users = [...withScore]
+//         .sort((a, b) => Number(b.trust_score) - Number(a.trust_score))
+//         .slice(0, 5)
+//         .map((u) => ({
+//             user_id: u.user_id,
+//             full_name: u.full_name,
+//             email: u.email,
+//             trust_score: u.trust_score ?? null,
+//             trust_level: u.trust_level ?? null,
+//         }));
+
+//     const buckets = [
+//         { label: 'Limited (<40)', min: 0, max: 39.99 },
+//         { label: 'Emerging (40–54)', min: 40, max: 54.99 },
+//         { label: 'Developing (55–69)', min: 55, max: 69.99 },
+//         { label: 'Competent (70–84)', min: 70, max: 84.99 },
+//         { label: 'Exceptional (85+)', min: 85, max: 100 },
+//     ];
+
+//     const distribution = buckets.map((b) => ({
+//         label: b.label,
+//         min: b.min,
+//         max: b.max,
+//         count: scores.filter((s) => s >= b.min && s <= b.max).length,
+//     }));
+
+//     return {
+//         average_trust_score: avg,
+//         students_with_score: withScore.length,
+//         top_users,
+//         distribution,
+//     };
+// };
+
+// export const getAdminTrustSummaryService =
+//     async (): Promise<TrustAdminSummary> => {
+//         const students = await DB.Users.findAll({
+//             where: {
+//                 role_type: 'student',
+//             },
+//             attributes: [
+//                 'user_id',
+//                 'full_name',
+//                 'email',
+//                 'trust_score',
+//                 'trust_level',
+//             ],
+//         });
+
+//         // ----------------------------------------
+//         // Get students having a valid trust score
+//         // ----------------------------------------
+//         const scoredStudents = students
+//             .filter((student) => {
+//                 if (student.trust_score == null) {
+//                     return false;
+//                 }
+
+//                 const score = Number(student.trust_score);
+
+//                 return !Number.isNaN(score);
+//             })
+//             .map((student) => ({
+//                 user_id: student.user_id,
+//                 full_name: student.full_name,
+//                 email: student.email,
+//                 trust_score: Number(student.trust_score),
+//                 trust_level: student.trust_level ?? null,
+//             }));
+
+//         // ----------------------------------------
+//         // Get TOP 5 students
+//         // ----------------------------------------
+//         const top_users = [...scoredStudents]
+//             .sort(
+//                 (a, b) =>
+//                     b.trust_score - a.trust_score,
+//             )
+//             .slice(0, 5);
+
+//         // ----------------------------------------
+//         // Use ONLY top 5 for calculations
+//         // ----------------------------------------
+//         const topScores = top_users.map(
+//             (student) => student.trust_score,
+//         );
+
+//         // ----------------------------------------
+//         // Average trust score of TOP 5
+//         // ----------------------------------------
+//         const average_trust_score =
+//             topScores.length > 0
+//                 ? round2(
+//                       topScores.reduce(
+//                           (total, score) => total + score,
+//                           0,
+//                       ) / topScores.length,
+//                   )
+//                 : null;
+
+//         // ----------------------------------------
+//         // Distribution based on TOP 5
+//         // ----------------------------------------
+//         const buckets = [
+//             {
+//                 label: 'Limited (<40)',
+//                 min: 0,
+//                 max: 39.99,
+//             },
+//             {
+//                 label: 'Emerging (40–54)',
+//                 min: 40,
+//                 max: 54.99,
+//             },
+//             {
+//                 label: 'Developing (55–69)',
+//                 min: 55,
+//                 max: 69.99,
+//             },
+//             {
+//                 label: 'Competent (70–84)',
+//                 min: 70,
+//                 max: 84.99,
+//             },
+//             {
+//                 label: 'Exceptional (85+)',
+//                 min: 85,
+//                 max: 100,
+//             },
+//         ];
+
+//         const distribution = buckets.map((bucket) => ({
+//             label: bucket.label,
+//             min: bucket.min,
+//             max: bucket.max,
+//             count: topScores.filter(
+//                 (score) =>
+//                     score >= bucket.min &&
+//                     score <= bucket.max,
+//             ).length,
+//         }));
+
+//         // ----------------------------------------
+//         // Return summary
+//         // ----------------------------------------
+//         return {
+//             average_trust_score,
+//             students_with_score: top_users.length,
+//             top_users,
+//             distribution,
+//         };
+//     };
+
+    export const getAdminTrustSummaryService =
+    async (): Promise<TrustAdminSummary> => {
+        // ============================================================
+        // 1. GET STUDENTS FOR TRUST SCORE ANALYTICS
+        // ============================================================
+
+        const students = await DB.Users.findAll({
+            where: {
+                role_type: 'student',
+            },
+            attributes: [
+                'user_id',
+                'full_name',
+                'email',
+                'trust_score',
+                'trust_level',
+            ],
+        });
+
+        // ============================================================
+        // 2. GET STUDENTS HAVING A VALID TRUST SCORE
+        // ============================================================
+
+        const scoredStudents = students
+            .filter((student) => {
+                if (student.trust_score == null) {
+                    return false;
+                }
+
+                const score = Number(student.trust_score);
+
+                return Number.isFinite(score);
+            })
+            .map((student) => ({
+                user_id: student.user_id,
+                full_name: student.full_name,
+                email: student.email,
+                trust_score: Number(student.trust_score),
+                trust_level: student.trust_level ?? null,
+            }));
+
+        // ============================================================
+        // 3. TOP 5 STUDENTS BY TRUST SCORE
+        // ============================================================
+
+        const top_users = [...scoredStudents]
+            .sort(
+                (a, b) =>
+                    b.trust_score - a.trust_score,
+            )
+            .slice(0, 5);
+
+        // ============================================================
+        // 4. TRUST SCORE CALCULATIONS BASED ON TOP 5
+        // ============================================================
+
+        const topScores = top_users.map(
+            (student) => student.trust_score,
+        );
+
+        const average_trust_score =
+            topScores.length > 0
+                ? round2(
+                      topScores.reduce(
+                          (total, score) => total + score,
+                          0,
+                      ) / topScores.length,
+                  )
+                : null;
+
+        // ============================================================
+        // 5. TRUST SCORE DISTRIBUTION
+        // ============================================================
+
+        const buckets = [
+            {
+                label: 'Limited (<40)',
+                min: 0,
+                max: 39.99,
+            },
+            {
+                label: 'Emerging (40–54)',
+                min: 40,
+                max: 54.99,
+            },
+            {
+                label: 'Developing (55–69)',
+                min: 55,
+                max: 69.99,
+            },
+            {
+                label: 'Competent (70–84)',
+                min: 70,
+                max: 84.99,
+            },
+            {
+                label: 'Exceptional (85+)',
+                min: 85,
+                max: 100,
+            },
+        ];
+
+        const distribution = buckets.map((bucket) => ({
+            label: bucket.label,
+            min: bucket.min,
+            max: bucket.max,
+            count: topScores.filter(
+                (score) =>
+                    score >= bucket.min &&
+                    score <= bucket.max,
+            ).length,
         }));
 
-    const buckets = [
-        { label: 'Limited (<40)', min: 0, max: 39.99 },
-        { label: 'Emerging (40–54)', min: 40, max: 54.99 },
-        { label: 'Developing (55–69)', min: 55, max: 69.99 },
-        { label: 'Competent (70–84)', min: 70, max: 84.99 },
-        { label: 'Exceptional (85+)', min: 85, max: 100 },
-    ];
+        // ============================================================
+        // 6. DATE RANGES
+        // ============================================================
 
-    const distribution = buckets.map((b) => ({
-        label: b.label,
-        min: b.min,
-        max: b.max,
-        count: scores.filter((s) => s >= b.min && s <= b.max).length,
-    }));
+        const now = new Date();
 
-    return {
-        average_trust_score: avg,
-        students_with_score: withScore.length,
-        top_users,
-        distribution,
+        // Start of current month
+        const currentMonthStart = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            1,
+        );
+
+        // Start of previous month
+        const previousMonthStart = new Date(
+            now.getFullYear(),
+            now.getMonth() - 1,
+            1,
+        );
+
+        // ============================================================
+        // 7. TOTAL STUDENTS
+        // ============================================================
+
+        const total_students = await DB.Users.count({
+            where: {
+                role_type: 'student',
+            },
+        });
+
+        // ============================================================
+        // 8. TOTAL EMPLOYERS
+        // ============================================================
+
+        const total_employers = await DB.Users.count({
+            where: {
+                role_type: 'employer',
+            },
+        });
+
+        // ============================================================
+        // 9. TOTAL USERS
+        //    Only students + employers
+        //    Admin/superAdmin are NOT included
+        // ============================================================
+
+        const total_users =
+            total_students + total_employers;
+
+        // ============================================================
+        // 10. USERS BEFORE CURRENT MONTH
+        //
+        // This gives us the total user count at the end of
+        // the previous month.
+        // ============================================================
+
+        const studentsBeforeCurrentMonth =
+            await DB.Users.count({
+                where: {
+                    role_type: 'student',
+                    created_at: {
+                        [Op.lt]: currentMonthStart,
+                    },
+                },
+            });
+
+        const employersBeforeCurrentMonth =
+            await DB.Users.count({
+                where: {
+                    role_type: 'employer',
+                    created_at: {
+                        [Op.lt]: currentMonthStart,
+                    },
+                },
+            });
+
+        const previousMonthTotalUsers =
+            studentsBeforeCurrentMonth +
+            employersBeforeCurrentMonth;
+
+        // ============================================================
+        // 11. USER GROWTH %
+        //
+        // Example:
+        // Previous total = 100
+        // Current total  = 120
+        //
+        // Growth = ((120 - 100) / 100) * 100
+        //        = 20%
+        // ============================================================
+
+        const user_growth_percent =
+            previousMonthTotalUsers > 0
+                ? round2(
+                      ((total_users -
+                          previousMonthTotalUsers) /
+                          previousMonthTotalUsers) *
+                          100,
+                  )
+                : total_users > 0
+                  ? 100
+                  : 0;
+
+        // ============================================================
+        // 12. TOTAL JOBS POSTED
+        // ============================================================
+
+        const total_jobs_posted =
+            await DB.Jobs.count();
+
+        // ============================================================
+        // 13. JOBS BEFORE CURRENT MONTH
+        //
+        // This gives the total number of jobs that existed
+        // before the current month.
+        // ============================================================
+
+        const previousMonthTotalJobs =
+            await DB.Jobs.count({
+                where: {
+                    created_at: {
+                        [Op.lt]: currentMonthStart,
+                    },
+                },
+            });
+
+        // ============================================================
+        // 14. JOB GROWTH %
+        // ============================================================
+
+        const job_growth_percent =
+            previousMonthTotalJobs > 0
+                ? round2(
+                      ((total_jobs_posted -
+                          previousMonthTotalJobs) /
+                          previousMonthTotalJobs) *
+                          100,
+                  )
+                : total_jobs_posted > 0
+                  ? 100
+                  : 0;
+
+        // ============================================================
+        // 15. RETURN EVERYTHING
+        // ============================================================
+
+        return {
+            // Existing TrustScore data
+            average_trust_score,
+            students_with_score: top_users.length,
+            top_users,
+            distribution,
+
+            // User analytics
+            total_users,
+            total_students,
+            total_employers,
+            user_growth_percent,
+
+            // Job analytics
+            total_jobs_posted,
+            job_growth_percent,
+        };
     };
-};
+    

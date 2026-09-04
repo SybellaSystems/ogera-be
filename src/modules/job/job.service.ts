@@ -137,76 +137,195 @@ export const createJobService = async (
 };
 
 export const getAllJobsService = async (
-    filters?: {
-        status?: string;
-        funded?: string;
-        search?: string;
-        location?: string;
-        category?: string;
-        currency?: string;
-        payment_range?: string;
-    },
-    user?: { user_id: string; role: string },
+  filters?: {
+    status?: string;
+    funded?: string;
+    search?: string;
+    location?: string;
+    category?: string;
+    currency?: string;
+    payment_range?: string;
+  },
+  user?: {
+    user_id: string;
+    role: string;
+  },
+  pagination?: {
+    page?: number;
+    limit?: number;
+  },
 ) => {
-    try {
-        const normalizedRole = user?.role ? String(user.role).toLowerCase().trim() : '';
-        const fundedFilter =
-            filters?.funded === 'true' ? true : filters?.funded === 'false' ? false : undefined;
-        let budget_min: number | undefined;
-        let budget_max: number | undefined;
-        if (filters?.payment_range === 'under-500') {
-            budget_max = 499.99;
-        } else if (filters?.payment_range === '500-2000') {
-            budget_min = 500;
-            budget_max = 2000;
-        } else if (filters?.payment_range === '2000-5000') {
-            budget_min = 2000.01;
-            budget_max = 5000;
-        } else if (filters?.payment_range === '5000-plus') {
-            budget_min = 5000.01;
-        }
-        const repoFilters = {
-            status: filters?.status,
-            funded: fundedFilter,
-            search: filters?.search,
-            location: filters?.location,
-            category: filters?.category,
-            currency: filters?.currency,
-            budget_min,
-            budget_max,
-        };
+  try {
+    const normalizedRole = user?.role
+      ? String(user.role).toLowerCase().trim()
+      : "";
 
-        // Students should see only admin-approved/published jobs.
-        // Funding is NOT required for visibility.
-        if (normalizedRole === 'student') {
-            const student = await DB.Users.findOne({
-                where: { user_id: user?.user_id },
-                attributes: ['badge', 'subscription_end_date'],
-            });
-            const badge = getEffectiveBadge(student || { badge: 'FREE' });
-            const jobs = await repo.findAllJobs({
-                ...repoFilters,
-                status: 'Active',
-            });
-            return filterJobsForStudentBadge(jobs, badge);
-        }
+    // -----------------------------
+    // Pagination
+    // -----------------------------
 
-        // Employers should see all their jobs by default.
-        // They can still explicitly filter funded/unfunded with funded=true/false.
-        if (normalizedRole === 'employer') {
-            const jobs = await repo.findAllJobs({
-                ...repoFilters,
-                employer_id: user?.user_id,
-            });
-            return jobs;
-        }
+    const page = Math.max(Number(pagination?.page) || 1, 1);
+    const limit = Math.max(Number(pagination?.limit) || 10, 1);
 
-        const jobs = await repo.findAllJobs(repoFilters);
-        return jobs;
-    } catch (error: any) {
-        console.error('Error in getAllJobsService:', error);
-        throw error;
+    // -----------------------------
+    // Funding filter
+    // -----------------------------
+
+    const fundedFilter =
+      filters?.funded === "true"
+        ? true
+        : filters?.funded === "false"
+          ? false
+          : undefined;
+
+    // -----------------------------
+    // Payment range
+    // -----------------------------
+
+    let budget_min: number | undefined;
+    let budget_max: number | undefined;
+
+    if (filters?.payment_range === "under-500") {
+      budget_max = 499.99;
+    } else if (filters?.payment_range === "500-2000") {
+      budget_min = 500;
+      budget_max = 2000;
+    } else if (filters?.payment_range === "2000-5000") {
+      budget_min = 2000.01;
+      budget_max = 5000;
+    } else if (filters?.payment_range === "5000-plus") {
+      budget_min = 5000.01;
     }
+
+    // -----------------------------
+    // Repository filters
+    // -----------------------------
+
+    const repoFilters = {
+      status: filters?.status,
+      funded: fundedFilter,
+      search: filters?.search,
+      location: filters?.location,
+      category: filters?.category,
+      currency: filters?.currency,
+      budget_min,
+      budget_max,
+    };
+
+    // =========================================================
+// STUDENT
+// =========================================================
+
+if (normalizedRole === "student") {
+  const student = await DB.Users.findOne({
+    where: {
+      user_id: user?.user_id,
+    },
+    attributes: ["badge", "subscription_end_date"],
+  });
+
+  const badge = getEffectiveBadge(
+    student || {
+      badge: "FREE",
+    },
+  );
+
+  /*
+   * Preserve existing behavior:
+   * - If the student does not select a status,
+   *   show Active jobs by default.
+   *
+   * - If the student explicitly selects a status,
+   *   respect that status.
+   */
+  const studentStatus = filters?.status || "Active";
+
+  const jobsResult = await repo.findAllJobs(
+    {
+      ...repoFilters,
+      status: studentStatus,
+    },
+    {
+      page,
+      limit,
+    },
+  );
+
+  /*
+   * Keep existing badge filtering.
+   */
+  const filteredJobs = filterJobsForStudentBadge(
+    jobsResult.rows,
+    badge,
+  );
+
+  return {
+    data: filteredJobs,
+    pagination: {
+      total: jobsResult.count,
+      page: jobsResult.page,
+      limit: jobsResult.limit,
+      totalPages: jobsResult.totalPages,
+    },
+  };
+}
+
+    // =========================================================
+    // EMPLOYER
+    // =========================================================
+
+    if (normalizedRole === "employer") {
+      /*
+       * Keep existing behavior:
+       * Employer only sees their own jobs.
+       */
+      const jobsResult = await repo.findAllJobs(
+        {
+          ...repoFilters,
+          employer_id: user?.user_id,
+        },
+        {
+          page,
+          limit,
+        },
+      );
+
+      return {
+        data: jobsResult.rows,
+        pagination: {
+          total: jobsResult.count,
+          page: jobsResult.page,
+          limit: jobsResult.limit,
+          totalPages: jobsResult.totalPages,
+        },
+      };
+    }
+
+    // =========================================================
+    // ADMIN / OTHER ROLES
+    // =========================================================
+
+    const jobsResult = await repo.findAllJobs(
+      repoFilters,
+      {
+        page,
+        limit,
+      },
+    );
+
+    return {
+      data: jobsResult.rows,
+      pagination: {
+        total: jobsResult.count,
+        page: jobsResult.page,
+        limit: jobsResult.limit,
+        totalPages: jobsResult.totalPages,
+      },
+    };
+  } catch (error: any) {
+    console.error("Error in getAllJobsService:", error);
+    throw error;
+  }
 };
 
 export const getJobsByStatusService = async (

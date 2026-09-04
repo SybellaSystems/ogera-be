@@ -55,39 +55,57 @@ export const createJob = async (
 };
 
 export const getAllJobs = async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
+  req: Request,
+  res: Response,
+  next: NextFunction,
 ) => {
-    try {
-        const jobs = await getAllJobsService(
-            {
-                status: req.query.status as string | undefined,
-                funded: req.query.funded as string | undefined,
-                search: req.query.search as string | undefined,
-                location: req.query.location as string | undefined,
-                category: req.query.category as string | undefined,
-                currency: req.query.currency as string | undefined,
-                payment_range: req.query.payment_range as string | undefined,
-            },
-            req.user,
-        );
-        response.response(
-            res,
-            true,
-            StatusCodes.OK,
-            jobs,
-            Messages.Job.GET_ALL_JOBS,
-        );
-    } catch (error: any) {
-        console.error('Error in getAllJobs:', error);
-        response.errorResponse(
-            res,
-            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
-            false,
-            error.message || 'Failed to fetch jobs',
-        );
-    }
+  try {
+    const page = Math.max(
+      Number(req.query.page) || 1,
+      1,
+    );
+
+    const limit = Math.max(
+      Number(req.query.limit) || 10,
+      1,
+    );
+
+    const jobs = await getAllJobsService(
+      {
+        status: req.query.status as string | undefined,
+        funded: req.query.funded as string | undefined,
+        search: req.query.search as string | undefined,
+        location: req.query.location as string | undefined,
+        category: req.query.category as string | undefined,
+        currency: req.query.currency as string | undefined,
+        payment_range: req.query.payment_range as
+          | string
+          | undefined,
+      },
+      req.user,
+      {
+        page,
+        limit,
+      },
+    );
+
+    return res.status(StatusCodes.OK).json({
+    status: StatusCodes.OK,
+    message: Messages.Job.GET_ALL_JOBS,
+    success: true,
+    pagination: jobs.pagination,
+    data: jobs.data,
+});
+  } catch (error: any) {
+    console.error("Error in getAllJobs:", error);
+
+    response.errorResponse(
+      res,
+      error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+      false,
+      error.message || "Failed to fetch jobs",
+    );
+  }
 };
 
 // Public jobs list for landing page (no auth required)

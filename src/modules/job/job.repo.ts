@@ -5,8 +5,9 @@ const repo = {
   createJob: async (jobData: any) => {
     return await DB.Jobs.create(jobData);
   },
-
-  findAllJobs: async (filters?: {
+  
+  findAllJobs: async (
+  filters?: {
     status?: string;
     funded?: boolean;
     employer_id?: string;
@@ -16,90 +17,164 @@ const repo = {
     currency?: string;
     budget_min?: number;
     budget_max?: number;
-  }) => {
-    try {
-      const where: any = {};
-
-      // Build simple where conditions - avoid Sequelize.col() issues
-      if (filters?.status) {
-        where.status = filters.status;
-      }
-
-      if (filters?.employer_id) {
-        where.employer_id = filters.employer_id;
-      }
-
-      if (filters?.category) {
-        where.category = filters.category;
-      }
-
-      if (filters?.currency) {
-        where.currency = filters.currency;
-      }
-
-      if (filters?.funded === true) {
-        where.funding_status = { [Op.in]: ["Funded", "Paid"] };
-      } else if (filters?.funded === false) {
-        where.funding_status = "Unfunded";
-      }
-
-      // Handle budget filtering
-      if (typeof filters?.budget_min === "number" || typeof filters?.budget_max === "number") {
-        const budgetConditions: any = {};
-        if (typeof filters?.budget_min === "number" && typeof filters?.budget_max === "number") {
-          budgetConditions[Op.between] = [filters.budget_min, filters.budget_max];
-        } else if (typeof filters?.budget_min === "number") {
-          budgetConditions[Op.gte] = filters.budget_min;
-        } else if (typeof filters?.budget_max === "number") {
-          budgetConditions[Op.lte] = filters.budget_max;
-        }
-        where.budget = budgetConditions;
-      }
-
-      // Handle search and location
-      if (filters?.search) {
-        where[Op.or] = [
-          { job_title: { [Op.iLike]: `%${filters.search}%` } },
-          { location: { [Op.iLike]: `%${filters.search}%` } },
-          { category: { [Op.iLike]: `%${filters.search}%` } },
-          { description: { [Op.iLike]: `%${filters.search}%` } },
-        ];
-      } else if (filters?.location) {
-        where.location = { [Op.iLike]: `%${filters.location}%` };
-      }
-
-      const jobs = await DB.Jobs.findAll({
-        where,
-        include: [
-          {
-            model: DB.Users,
-            as: "employer",
-            attributes: ["user_id", "full_name", "role_id"],
-            required: false,
-            include: [
-              {
-                model: DB.Roles,
-                as: "role",
-                attributes: ["roleName"],
-                required: false,
-              },
-            ],
-          },
-          {
-            model: DB.JobQuestions,
-            as: "questions",
-            required: false,
-          },
-        ],
-        order: [["created_at", "DESC"]],
-      });
-
-      return jobs;
-    } catch (error: any) {
-      console.error("Error in findAllJobs:", error);
-      throw error;
-    }
   },
+  pagination?: {
+    page?: number;
+    limit?: number;
+  },
+) => {
+  try {
+    const where: any = {};
+
+    // -----------------------------
+    // Existing filters
+    // -----------------------------
+
+    if (filters?.status) {
+      where.status = filters.status;
+    }
+
+    if (filters?.employer_id) {
+      where.employer_id = filters.employer_id;
+    }
+
+    if (filters?.category) {
+      where.category = filters.category;
+    }
+
+    if (filters?.currency) {
+      where.currency = filters.currency;
+    }
+
+    if (filters?.funded === true) {
+      where.funding_status = {
+        [Op.in]: ["Funded", "Paid"],
+      };
+    } else if (filters?.funded === false) {
+      where.funding_status = "Unfunded";
+    }
+
+    // -----------------------------
+    // Budget filtering
+    // -----------------------------
+
+    if (
+      typeof filters?.budget_min === "number" ||
+      typeof filters?.budget_max === "number"
+    ) {
+      const budgetConditions: any = {};
+
+      if (
+        typeof filters?.budget_min === "number" &&
+        typeof filters?.budget_max === "number"
+      ) {
+        budgetConditions[Op.between] = [
+          filters.budget_min,
+          filters.budget_max,
+        ];
+      } else if (typeof filters?.budget_min === "number") {
+        budgetConditions[Op.gte] = filters.budget_min;
+      } else if (typeof filters?.budget_max === "number") {
+        budgetConditions[Op.lte] = filters.budget_max;
+      }
+
+      where.budget = budgetConditions;
+    }
+
+    // -----------------------------
+    // Search and location
+    // -----------------------------
+
+    if (filters?.search) {
+      where[Op.or] = [
+        {
+          job_title: {
+            [Op.iLike]: `%${filters.search}%`,
+          },
+        },
+        {
+          location: {
+            [Op.iLike]: `%${filters.search}%`,
+          },
+        },
+        {
+          category: {
+            [Op.iLike]: `%${filters.search}%`,
+          },
+        },
+        {
+          description: {
+            [Op.iLike]: `%${filters.search}%`,
+          },
+        },
+      ];
+    } else if (filters?.location) {
+      where.location = {
+        [Op.iLike]: `%${filters.location}%`,
+      };
+    }
+
+    // -----------------------------
+    // Pagination
+    // -----------------------------
+
+    const page = Math.max(Number(pagination?.page) || 1, 1);
+    const limit = Math.max(Number(pagination?.limit) || 10, 1);
+
+    const offset = (page - 1) * limit;
+
+    // -----------------------------
+    // Find jobs + total count
+    // -----------------------------
+
+    const result = await DB.Jobs.findAndCountAll({
+      where,
+
+      include: [
+        {
+          model: DB.Users,
+          as: "employer",
+          attributes: ["user_id", "full_name", "role_id"],
+          required: false,
+
+          include: [
+            {
+              model: DB.Roles,
+              as: "role",
+              attributes: ["roleName"],
+              required: false,
+            },
+          ],
+        },
+
+        {
+          model: DB.JobQuestions,
+          as: "questions",
+          required: false,
+        },
+      ],
+
+      order: [["created_at", "DESC"]],
+
+      limit,
+      offset,
+
+      // Prevent duplicate rows caused by hasMany associations
+      distinct: true,
+    });
+
+    return {
+      rows: result.rows,
+      count: result.count,
+      page,
+      limit,
+      totalPages: Math.ceil(result.count / limit),
+    };
+  } catch (error: any) {
+    console.error("Error in findAllJobs:", error);
+    throw error;
+  }
+},
 
   findJobById: async (job_id: string) => {
     return await DB.Jobs.findOne({
