@@ -75,4 +75,6 @@ trustScoreRouter.get(
 
 trustScoreRouter.get('/:user_id', authMiddleware, getUserTrustScore);
 
+
+
 export default trustScoreRouter;

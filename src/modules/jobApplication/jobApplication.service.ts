@@ -320,122 +320,227 @@ export const getJobApplicationsService = async (
     return normalizeApplicationsResumeUrls(applications);
 };
 
+
 // Get all applications for an employer (employer/superadmin only)
 export const getEmployerApplicationsService = async (
-    user_id: string,
-    userRole: string,
-    status?: string,
+  user_id: string,
+ // userRole: string,
+  status?: string,
+  page = 1,
+  limit = 10,
 ) => {
-    // Check if user has permission
-    const user = await DB.Users.findOne({
-        where: { user_id },
-        include: [
+  // -----------------------------------------
+  // Validate pagination
+  // -----------------------------------------
+  const currentPage =
+    Number.isInteger(page) && page > 0 ? page : 1;
+
+  const pageLimit =
+    Number.isInteger(limit) && limit > 0 && limit <= 100
+      ? limit
+      : 10;
+
+  // -----------------------------------------
+  // Check if user has permission
+  // -----------------------------------------
+  const user = await DB.Users.findOne({
+    where: { user_id },
+    include: [
+      {
+        model: DB.Roles,
+        as: "role",
+        attributes: ["roleType", "roleName"],
+      },
+    ],
+  });
+
+  if (!user || !user.role) {
+    throw new CustomError(
+      "User not found",
+      StatusCodes.NOT_FOUND,
+    );
+  }
+
+  const roleType = user.role.roleType;
+  const roleName = user.role.roleName.toLowerCase();
+
+  // -----------------------------------------
+  // Only employer and superadmin
+  // -----------------------------------------
+  if (
+    roleType !== "employer" &&
+    roleType !== "superAdmin" &&
+    roleName !== "superadmin"
+  ) {
+    throw new CustomError(
+      "Only employer and superadmin users can view job applications",
+      StatusCodes.FORBIDDEN,
+    );
+  }
+
+  // -----------------------------------------
+  // Normalize status
+  // -----------------------------------------
+  const normalizedStatus =
+    status && typeof status === "string"
+      ? status.trim()
+      : undefined;
+
+  // -----------------------------------------
+  // Validate status
+  // -----------------------------------------
+  const statusFilter =
+    normalizedStatus &&
+    ["Pending", "Accepted", "Rejected"].includes(
+      normalizedStatus,
+    )
+      ? (normalizedStatus as
+          | "Pending"
+          | "Accepted"
+          | "Rejected")
+      : undefined;
+
+  // -----------------------------------------
+  // EMPLOYER
+  // -----------------------------------------
+  if (roleType === "employer") {
+    const result =
+      await repo.findAllApplicationsForEmployer(
+        user_id,
+        statusFilter,
+        currentPage,
+        pageLimit,
+      );
+
+    const applications = await normalizeApplicationsResumeUrls(
+      result.rows,
+    );
+
+    return {
+      pagination: {
+        total: result.count,
+        page: currentPage,
+        limit: pageLimit,
+        totalPages: Math.ceil(
+          result.count / pageLimit,
+        ),
+      },
+      data: applications,
+    };
+  }
+
+  // -----------------------------------------
+  // SUPERADMIN
+  // -----------------------------------------
+  const offset = (currentPage - 1) * pageLimit;
+
+  const result =
+    await DB.JobApplications.findAndCountAll({
+      ...(statusFilter
+        ? { where: { status: statusFilter } }
+        : {}),
+
+      include: [
+        {
+          model: DB.Jobs,
+          as: "job",
+          include: [
             {
-                model: DB.Roles,
-                as: 'role',
-                attributes: ['roleType', 'roleName'],
+              model: DB.Users,
+              as: "employer",
+              attributes: [
+                "user_id",
+                "full_name",
+                "email",
+              ],
             },
-        ],
+            {
+              model: DB.JobQuestions,
+              as: "questions",
+              order: [["display_order", "ASC"]],
+              required: false,
+            },
+          ],
+        },
+
+        {
+          model: DB.Users,
+          as: "student",
+          attributes: [
+            "user_id",
+            "full_name",
+            "email",
+            "mobile_number",
+            "badge",
+            "subscription_end_date",
+          ],
+          include: [
+            {
+              model: DB.Roles,
+              as: "role",
+              attributes: [
+                "roleName",
+                "roleType",
+              ],
+            },
+          ],
+        },
+
+        {
+          model: DB.Users,
+          as: "reviewer",
+          attributes: [
+            "user_id",
+            "full_name",
+            "email",
+          ],
+          required: false,
+        },
+
+        {
+          model: DB.JobApplicationAnswers,
+          as: "answers",
+          include: [
+            {
+              model: DB.JobQuestions,
+              as: "question",
+              attributes: [
+                "question_id",
+                "question_text",
+                "question_type",
+                "is_required",
+              ],
+            },
+          ],
+          required: false,
+        },
+      ],
+
+      order: [["applied_at", "DESC"]],
+
+      limit: pageLimit,
+      offset,
+
+      distinct: true,
+      col: "application_id",
     });
 
-    if (!user || !user.role) {
-        throw new CustomError('User not found', StatusCodes.NOT_FOUND);
-    }
+  const applications =
+    await normalizeApplicationsResumeUrls(
+      result.rows,
+    );
 
-    const roleType = user.role.roleType;
-    const roleName = user.role.roleName.toLowerCase();
-
-    // Only employer and superadmin can view applications
-    if (
-        roleType !== 'employer' &&
-        roleType !== 'superAdmin' &&
-        roleName !== 'superadmin'
-    ) {
-        throw new CustomError(
-            'Only employer and superadmin users can view job applications',
-            StatusCodes.FORBIDDEN,
-        );
-    }
-
-    const normalizedStatus =
-        status && typeof status === 'string' ? status.trim() : undefined;
-
-    // Validate status filter if provided
-    const statusFilter =
-        normalizedStatus &&
-        ['Pending', 'Accepted', 'Rejected'].includes(normalizedStatus)
-            ? (normalizedStatus as 'Pending' | 'Accepted' | 'Rejected')
-            : undefined;
-
-    // If user is employer, get their applications
-    if (roleType === 'employer') {
-        const applications = await repo.findAllApplicationsForEmployer(
-            user_id,
-            statusFilter,
-        );
-        return normalizeApplicationsResumeUrls(applications);
-    }
-
-    // If user is superadmin, get all applications
-    const applications = await DB.JobApplications.findAll({
-        ...(statusFilter ? { where: { status: statusFilter } } : {}),
-        include: [
-            {
-                model: DB.Jobs,
-                as: 'job',
-                include: [
-                    {
-                        model: DB.Users,
-                        as: 'employer',
-                        attributes: ['user_id', 'full_name', 'email'],
-                    },
-                    {
-                        model: DB.JobQuestions,
-                        as: 'questions',
-                        order: [['display_order', 'ASC']],
-                        required: false,
-                    },
-                ],
-            },
-            {
-                model: DB.Users,
-                as: 'student',
-                attributes: ['user_id', 'full_name', 'email', 'mobile_number'],
-                include: [
-                    {
-                        model: DB.Roles,
-                        as: 'role',
-                        attributes: ['roleName', 'roleType'],
-                    },
-                ],
-            },
-            {
-                model: DB.Users,
-                as: 'reviewer',
-                attributes: ['user_id', 'full_name', 'email'],
-                required: false,
-            },
-            {
-                model: DB.JobApplicationAnswers,
-                as: 'answers',
-                include: [
-                    {
-                        model: DB.JobQuestions,
-                        as: 'question',
-                        attributes: [
-                            'question_id',
-                            'question_text',
-                            'question_type',
-                            'is_required',
-                        ],
-                    },
-                ],
-                required: false,
-            },
-        ],
-        order: [['applied_at', 'DESC']],
-    });
-    return normalizeApplicationsResumeUrls(applications);
+  return {
+    pagination: {
+      total: result.count,
+      page: currentPage,
+      limit: pageLimit,
+      totalPages: Math.ceil(
+        result.count / pageLimit,
+      ),
+    },
+    data: applications,
+  };
 };
 
 // Get student's own applications

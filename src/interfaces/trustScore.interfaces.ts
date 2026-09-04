@@ -51,4 +51,25 @@ export interface TrustAdminSummary {
         max: number;
         count: number;
     }[];
+
+    // User analytics
+    total_users: number;
+    total_students: number;
+    total_employers: number;
+    user_growth_percent: number;
+
+    // Job analytics
+    total_jobs_posted: number;
+    job_growth_percent: number;
+}
+
+export interface AdminDashboardMetrics {
+    total_users: number;
+    user_growth_percent: number;
+
+    total_students: number;
+    total_employers: number;
+
+    total_jobs_posted: number;
+    job_growth_percent: number;
 }

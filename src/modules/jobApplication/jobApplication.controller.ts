@@ -101,41 +101,62 @@ export const getJobApplications = async (
 };
 
 // Get all applications for an employer (employer/superadmin only)
-export const getEmployerApplications = async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
+ export const getEmployerApplications = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
 ): Promise<void> => {
-    try {
-        if (!req.user) {
-            response.errorResponse(
-                res,
-                StatusCodes.UNAUTHORIZED,
-                false,
-                'User not authenticated',
-            );
-            return;
-        }
-        const applications = await getEmployerApplicationsService(
-            req.user.user_id,
-            req.user.role,
-            (req.query.status as string | undefined) || undefined,
-        );
-        response.response(
-            res,
-            true,
-            StatusCodes.OK,
-            applications,
-            'Applications retrieved successfully',
-        );
-    } catch (error: any) {
-        response.errorResponse(
-            res,
-            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
-            false,
-            error.message,
-        );
+  try {
+    if (!req.user) {
+      response.errorResponse(
+        res,
+        StatusCodes.UNAUTHORIZED,
+        false,
+        "User not authenticated",
+      );
+      return;
     }
+
+    const status =
+      typeof req.query.status === "string"
+        ? req.query.status
+        : undefined;
+
+    const page =
+      typeof req.query.page === "string"
+        ? Number(req.query.page)
+        : 1;
+
+    const limit =
+      typeof req.query.limit === "string"
+        ? Number(req.query.limit)
+        : 10;
+
+    const applications = await getEmployerApplicationsService(
+      req.user.user_id,
+      req.user.role,
+      status,
+      page,
+      limit,
+    );
+
+    res.status(StatusCodes.OK).json({
+      status: StatusCodes.OK,
+      message: "Applications retrieved successfully",
+      success: true,
+      pagination: applications.pagination,
+      data: applications.data,
+    });
+
+    return;
+  } catch (error: any) {
+    response.errorResponse(
+      res,
+      error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+      false,
+      error.message,
+    );
+  }
 };
 
 // Get student's own applications

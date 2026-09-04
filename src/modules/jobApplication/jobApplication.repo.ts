@@ -168,64 +168,98 @@ const repo = {
   },
 
   findAllApplicationsForEmployer: async (
-    employer_id: string,
-    status?: "Pending" | "Accepted" | "Rejected"
-  ) => {
-    return await DB.JobApplications.findAll({
-      ...(status ? { where: { status } } : {}),
-      include: [
-        {
-          model: DB.Jobs,
-          as: "job",
-          where: { employer_id },
-          include: [
-            {
-              model: DB.Users,
-              as: "employer",
-              attributes: ["user_id", "full_name", "email"],
-            },
-            {
-              model: DB.JobQuestions,
-              as: "questions",
-              order: [['display_order', 'ASC']],
-              required: false,
-            },
-          ],
-        },
-        {
-          model: DB.Users,
-          as: "student",
-          attributes: ["user_id", "full_name", "email", "mobile_number", "badge", "subscription_end_date"],
-          include: [
-            {
-              model: DB.Roles,
-              as: "role",
-              attributes: ["roleName", "roleType"],
-            },
-          ],
-        },
-        {
-          model: DB.Users,
-          as: "reviewer",
-          attributes: ["user_id", "full_name", "email"],
-          required: false,
-        },
-        {
-          model: DB.JobApplicationAnswers,
-          as: "answers",
-          include: [
-            {
-              model: DB.JobQuestions,
-              as: "question",
-              attributes: ["question_id", "question_text", "question_type", "is_required"],
-            },
-          ],
-          required: false,
-        },
-      ],
-      order: [["applied_at", "DESC"]],
-    });
-  },
+  employer_id: string,
+  status?: "Pending" | "Accepted" | "Rejected",
+  page = 1,
+  limit = 10,
+) => {
+  const offset = (page - 1) * limit;
+
+  const result = await DB.JobApplications.findAndCountAll({
+    ...(status ? { where: { status } } : {}),
+
+    include: [
+      {
+        model: DB.Jobs,
+        as: "job",
+        where: { employer_id },
+        include: [
+          {
+            model: DB.Users,
+            as: "employer",
+            attributes: ["user_id", "full_name", "email"],
+          },
+          {
+            model: DB.JobQuestions,
+            as: "questions",
+            order: [["display_order", "ASC"]],
+            required: false,
+          },
+        ],
+      },
+
+      {
+        model: DB.Users,
+        as: "student",
+        attributes: [
+          "user_id",
+          "full_name",
+          "email",
+          "mobile_number",
+          "badge",
+          "subscription_end_date",
+        ],
+        include: [
+          {
+            model: DB.Roles,
+            as: "role",
+            attributes: ["roleName", "roleType"],
+          },
+        ],
+      },
+
+      {
+        model: DB.Users,
+        as: "reviewer",
+        attributes: ["user_id", "full_name", "email"],
+        required: false,
+      },
+
+      {
+        model: DB.JobApplicationAnswers,
+        as: "answers",
+        include: [
+          {
+            model: DB.JobQuestions,
+            as: "question",
+            attributes: [
+              "question_id",
+              "question_text",
+              "question_type",
+              "is_required",
+            ],
+          },
+        ],
+        required: false,
+      },
+    ],
+
+    order: [["applied_at", "DESC"]],
+
+    // Pagination
+    limit,
+    offset,
+
+    // Important because answers/questions are hasMany relations
+    distinct: true,
+    col: "application_id",
+  });
+
+  return {
+    rows: result.rows,
+    count: result.count,
+  };
+},
 
   updateApplication: async (application_id: string, updates: any) => {
     const [rows] = await DB.JobApplications.update(updates, {
