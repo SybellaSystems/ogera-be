@@ -324,7 +324,7 @@ export const getJobApplicationsService = async (
 // Get all applications for an employer (employer/superadmin only)
 export const getEmployerApplicationsService = async (
   user_id: string,
- // userRole: string,
+  userRole: string,
   status?: string,
   page = 1,
   limit = 10,
