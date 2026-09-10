@@ -49,6 +49,11 @@ const repo = {
       include: [
         {
           model: DB.Users,
+          as: 'user',
+          attributes: ['user_id', 'full_name', 'email', 'mobile_number'],
+        },
+        {
+          model: DB.Users,
           as: 'reviewer',
           attributes: ['user_id', 'full_name', 'email'],
           required: false,
@@ -68,6 +73,11 @@ const repo = {
       where: { user_id },
       order: [['created_at', 'DESC']],
       include: [
+        {
+          model: DB.Users,
+          as: 'user',
+          attributes: ['user_id', 'full_name', 'email', 'mobile_number'],
+        },
         {
           model: DB.Users,
           as: 'reviewer',
