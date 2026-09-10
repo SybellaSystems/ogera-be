@@ -115,9 +115,11 @@ const repo = {
 
   findAllApplicationsByStudent: async (
     student_id: string,
-    status?: "Pending" | "Accepted" | "Rejected"
+    status?: "Pending" | "Accepted" | "Rejected",
+    page = 1,
+    limit = 10,
   ) => {
-    return await DB.JobApplications.findAll({
+    const result = await DB.JobApplications.findAndCountAll({
       where: { student_id, ...(status ? { status } : {}) },
       include: [
         {
@@ -164,7 +166,16 @@ const repo = {
         },
       ],
       order: [["applied_at", "DESC"]],
+      limit,
+      offset: (page - 1) * limit,
+      distinct: true,
+      col: "application_id",
     });
+
+    return {
+      rows: result.rows,
+      count: result.count,
+    };
   },
 
   findAllApplicationsForEmployer: async (

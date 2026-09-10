@@ -547,7 +547,13 @@ export const getEmployerApplicationsService = async (
 export const getStudentApplicationsService = async (
     student_id: string,
     status?: string,
+    page = 1,
+    limit = 10,
 ) => {
+    const currentPage = Number.isInteger(page) && page > 0 ? page : 1;
+    const pageLimit =
+        Number.isInteger(limit) && limit > 0 && limit <= 100 ? limit : 10;
+
     // Check if user is a student
     const student = await DB.Users.findOne({
         where: { user_id: student_id },
@@ -580,11 +586,23 @@ export const getStudentApplicationsService = async (
             ? (normalizedStatus as 'Pending' | 'Accepted' | 'Rejected')
             : undefined;
 
-    const applications = await repo.findAllApplicationsByStudent(
+    const result = await repo.findAllApplicationsByStudent(
         student_id,
         statusFilter,
+        currentPage,
+        pageLimit,
     );
-    return normalizeApplicationsResumeUrls(applications);
+    const applications = await normalizeApplicationsResumeUrls(result.rows);
+
+    return {
+        pagination: {
+            total: result.count,
+            page: currentPage,
+            limit: pageLimit,
+            totalPages: Math.ceil(result.count / pageLimit),
+        },
+        data: applications,
+    };
 };
 
 // Accept or reject application (employer/superadmin only)

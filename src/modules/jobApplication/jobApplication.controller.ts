@@ -175,17 +175,32 @@ export const getStudentApplications = async (
             );
             return;
         }
+        const status =
+            typeof req.query.status === 'string'
+                ? req.query.status
+                : undefined;
+        const page =
+            typeof req.query.page === 'string'
+                ? Number(req.query.page)
+                : 1;
+        const limit =
+            typeof req.query.limit === 'string'
+                ? Number(req.query.limit)
+                : 10;
+
         const applications = await getStudentApplicationsService(
             req.user.user_id,
-            (req.query.status as string | undefined) || undefined,
+            status,
+            page,
+            limit,
         );
-        response.response(
-            res,
-            true,
-            StatusCodes.OK,
-            applications,
-            'Applications retrieved successfully',
-        );
+        res.status(StatusCodes.OK).json({
+            status: StatusCodes.OK,
+            message: 'Applications retrieved successfully',
+            success: true,
+            pagination: applications.pagination,
+            data: applications.data,
+        });
     } catch (error: any) {
         response.errorResponse(
             res,
