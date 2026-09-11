@@ -41,13 +41,27 @@ export const createCognitiveTest = async (
 };
 
 export const listCognitiveTestsAdmin = async (
-    _req: Request,
+    req: Request,
     res: Response,
     next: NextFunction,
 ): Promise<void> => {
     try {
-        const data = await listCognitiveTestsAdminService();
-        response.response(res, true, StatusCodes.OK, data as any, 'OK');
+        const page = Math.max(Number(req.query.page) || 1, 1);
+        const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 100);
+        const result = await listCognitiveTestsAdminService({
+            category: req.query.category as string | undefined,
+            search: req.query.search as string | undefined,
+            page,
+            limit,
+        });
+
+        res.status(StatusCodes.OK).send({
+            status: StatusCodes.OK,
+            message: 'OK',
+            success: true,
+            pagination: result.pagination,
+            data: result.data,
+        });
     } catch (error: any) {
         response.errorResponse(
             res,

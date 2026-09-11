@@ -1,6 +1,7 @@
 import { CustomError } from '@/utils/custom-error';
 import { StatusCodes } from 'http-status-codes';
 import { DB } from '@/database';
+import { Op, Sequelize } from 'sequelize';
 import { calculateTrustScoreService } from '@/modules/trustScore/trustScore.service';
 import type { CognitiveTestCategory } from '@/database/models/cognitiveTest.model';
 import type { QuestionDifficulty } from '@/database/models/cognitiveQuestion.model';
@@ -104,9 +105,40 @@ export const createCognitiveTestService = async (
     return getCognitiveTestAdminService(row.cognitive_test_id);
 };
 
-export const listCognitiveTestsAdminService = async () => {
-    const rows = await DB.CognitiveTests.findAll({
+export const listCognitiveTestsAdminService = async ({
+    category,
+    search,
+    page,
+    limit,
+}: {
+    category?: string;
+    search?: string;
+    page: number;
+    limit: number;
+}) => {
+    if (category && !validCategory(category)) {
+        throw new CustomError('Invalid category', StatusCodes.BAD_REQUEST);
+    }
+
+    const where: Record<string | symbol, unknown> = {};
+    if (category) where.category = category;
+    if (search?.trim()) {
+        where[Op.or] = [
+            { title: { [Op.iLike]: `%${search.trim()}%` } },
+            Sequelize.where(
+                Sequelize.cast(Sequelize.col('category'), 'text'),
+                { [Op.iLike]: `%${search.trim()}%` },
+            ),
+            { description: { [Op.iLike]: `%${search.trim()}%` } },
+        ];
+    }
+
+    const { rows, count } = await DB.CognitiveTests.findAndCountAll({
+        where,
         order: [['updated_at', 'DESC']],
+        limit,
+        offset: (page - 1) * limit,
+        distinct: true,
         include: [
             {
                 model: DB.CognitiveQuestions,
@@ -115,7 +147,7 @@ export const listCognitiveTestsAdminService = async () => {
             },
         ],
     });
-    return rows.map((r) => {
+    const data = rows.map((r) => {
         const plain = r.get({ plain: true }) as any;
         return {
             cognitive_test_id: plain.cognitive_test_id,
@@ -129,6 +161,16 @@ export const listCognitiveTestsAdminService = async () => {
             created_at: plain.created_at,
         };
     });
+
+    return {
+        data,
+        pagination: {
+            total: count,
+            page,
+            limit,
+            totalPages: Math.ceil(count / limit),
+        },
+    };
 };
 
 export const updateCognitiveTestService = async (
