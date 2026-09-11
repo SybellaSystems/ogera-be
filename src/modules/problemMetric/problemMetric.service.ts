@@ -1,6 +1,7 @@
 import { CustomError } from '@/utils/custom-error';
 import { StatusCodes } from 'http-status-codes';
 import { DB } from '@/database';
+import { Op, Sequelize } from 'sequelize';
 import { calculateTrustScoreService } from '@/modules/trustScore/trustScore.service';
 import type { ProblemMetricCategory } from '@/database/models/problemMetric.model';
 import type { ProblemPuzzleDifficulty } from '@/database/models/problemPuzzleQuestion.model';
@@ -104,9 +105,41 @@ export const createProblemMetricService = async (
     return getProblemMetricAdminService(row.problem_metric_id);
 };
 
-export const listProblemMetricsAdminService = async () => {
-    const rows = await DB.ProblemMetrics.findAll({
+export const listProblemMetricsAdminService = async ({
+    category,
+    search,
+    page,
+    limit,
+}: {
+    category?: string;
+    search?: string;
+    page: number;
+    limit: number;
+}) => {
+    if (category && !validCategory(category)) {
+        throw new CustomError('Invalid category', StatusCodes.BAD_REQUEST);
+    }
+
+    const where: Record<string | symbol, unknown> = {};
+    if (category) where.category = category;
+    if (search?.trim()) {
+        const searchTerm = `%${search.trim()}%`;
+        where[Op.or] = [
+            { title: { [Op.iLike]: searchTerm } },
+            Sequelize.where(
+                Sequelize.cast(Sequelize.col('category'), 'text'),
+                { [Op.iLike]: searchTerm },
+            ),
+            { description: { [Op.iLike]: searchTerm } },
+        ];
+    }
+
+    const { rows, count } = await DB.ProblemMetrics.findAndCountAll({
+        where,
         order: [['updated_at', 'DESC']],
+        limit,
+        offset: (page - 1) * limit,
+        distinct: true,
         include: [
             {
                 model: DB.ProblemMetricQuestions,
@@ -115,7 +148,7 @@ export const listProblemMetricsAdminService = async () => {
             },
         ],
     });
-    return rows.map((r) => {
+    const data = rows.map((r) => {
         const plain = r.get({ plain: true }) as any;
         return {
             problem_metric_id: plain.problem_metric_id,
@@ -129,6 +162,16 @@ export const listProblemMetricsAdminService = async () => {
             created_at: plain.created_at,
         };
     });
+
+    return {
+        data,
+        pagination: {
+            total: count,
+            page,
+            limit,
+            totalPages: Math.ceil(count / limit),
+        },
+    };
 };
 
 export const updateProblemMetricService = async (
