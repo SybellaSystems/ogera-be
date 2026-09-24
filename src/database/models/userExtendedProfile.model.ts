@@ -31,7 +31,10 @@ export interface ExtendedProfileWithTimestamps extends ExtendedUserProfile {
 }
 
 export class UserExtendedProfileModel
-    extends Model<ExtendedProfileWithTimestamps, UserExtendedProfileCreationAttributes>
+    extends Model<
+        ExtendedProfileWithTimestamps,
+        UserExtendedProfileCreationAttributes
+    >
     implements ExtendedProfileWithTimestamps
 {
     public user_id!: string;
@@ -49,7 +52,12 @@ export class UserExtendedProfileModel
     public notice_period?: string;
     public date_of_birth?: Date;
     public gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say';
-    public marital_status?: 'single' | 'married' | 'divorced' | 'widowed' | 'prefer_not_to_say';
+    public marital_status?:
+        | 'single'
+        | 'married'
+        | 'divorced'
+        | 'widowed'
+        | 'prefer_not_to_say';
     public languages?: string[];
     public social_profiles?: {
         linkedin?: string;
@@ -67,7 +75,9 @@ export class UserExtendedProfileModel
     public user?: UserModel;
 }
 
-export default function (sequelize: Sequelize): typeof UserExtendedProfileModel {
+export default function (
+    sequelize: Sequelize,
+): typeof UserExtendedProfileModel {
     UserExtendedProfileModel.init(
         {
             user_id: {
@@ -136,11 +146,22 @@ export default function (sequelize: Sequelize): typeof UserExtendedProfileModel 
                 allowNull: true,
             },
             gender: {
-                type: DataTypes.ENUM('male', 'female', 'other', 'prefer_not_to_say'),
+                type: DataTypes.ENUM(
+                    'male',
+                    'female',
+                    'other',
+                    'prefer_not_to_say',
+                ),
                 allowNull: true,
             },
             marital_status: {
-                type: DataTypes.ENUM('single', 'married', 'divorced', 'widowed', 'prefer_not_to_say'),
+                type: DataTypes.ENUM(
+                    'single',
+                    'married',
+                    'divorced',
+                    'widowed',
+                    'prefer_not_to_say',
+                ),
                 allowNull: true,
             },
             languages: {
@@ -181,4 +202,3 @@ export default function (sequelize: Sequelize): typeof UserExtendedProfileModel 
 
     return UserExtendedProfileModel;
 }
-

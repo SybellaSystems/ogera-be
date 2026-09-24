@@ -1,9 +1,9 @@
-import { Sequelize, DataTypes, Model, Optional } from "sequelize";
-import { JobReaction } from "@/interfaces/jobReaction.interfaces";
+import { Sequelize, DataTypes, Model, Optional } from 'sequelize';
+import { JobReaction } from '@/interfaces/jobReaction.interfaces';
 
 export type JobReactionCreationAttributes = Optional<
     JobReaction,
-    "reaction_id" | "created_at" | "updated_at"
+    'reaction_id' | 'created_at' | 'updated_at'
 >;
 
 export class JobReactionModel
@@ -16,7 +16,7 @@ export class JobReactionModel
 
     public user_id!: string;
 
-    public reaction_type!: "like" | "dislike";
+    public reaction_type!: 'like' | 'dislike';
 
     public readonly created_at!: Date;
 
@@ -43,27 +43,27 @@ export default function (sequelize: Sequelize): typeof JobReactionModel {
             },
 
             reaction_type: {
-                type: DataTypes.ENUM("like", "dislike"),
+                type: DataTypes.ENUM('like', 'dislike'),
                 allowNull: false,
             },
 
             created_at: {
                 type: DataTypes.DATE,
-                defaultValue: Sequelize.literal("NOW()"),
+                defaultValue: Sequelize.literal('NOW()'),
             },
 
             updated_at: {
                 type: DataTypes.DATE,
-                defaultValue: Sequelize.literal("NOW()"),
+                defaultValue: Sequelize.literal('NOW()'),
             },
         },
         {
-            tableName: "job_reactions",
+            tableName: 'job_reactions',
             sequelize,
             timestamps: true,
-            createdAt: "created_at",
-            updatedAt: "updated_at",
-        }
+            createdAt: 'created_at',
+            updatedAt: 'updated_at',
+        },
     );
 
     return JobReactionModel;

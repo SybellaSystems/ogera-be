@@ -1,4 +1,3 @@
-// @ts-ignore - external SDK without bundled TypeScript types
 import { Pesapal } from 'pesapal-v3';
 import { FRONTEND_URL } from '@/config';
 import { PESAPAL_CONFIG } from '@/config';
@@ -57,7 +56,7 @@ class PesapalService {
             throw new Error(
                 (response as { error?: unknown }).error
                     ? JSON.stringify((response as { error?: unknown }).error)
-                    : 'Failed to register IPN URL'
+                    : 'Failed to register IPN URL',
             );
         }
 
@@ -70,10 +69,14 @@ class PesapalService {
         description: string,
         merchantReference: string,
         billingAddress: PesapalBillingAddress,
-        notificationId: string
+        notificationId: string,
     ): Promise<PesapalSubmitOrderResponse> {
-        const callbackUrl = `${FRONTEND_URL || 'http://localhost:5173'}/payment/callback`;
-        const cancellationUrl = `${FRONTEND_URL || 'http://localhost:5173'}/payment/cancelled`;
+        const callbackUrl = `${
+            FRONTEND_URL || 'http://localhost:5173'
+        }/payment/callback`;
+        const cancellationUrl = `${
+            FRONTEND_URL || 'http://localhost:5173'
+        }/payment/cancelled`;
 
         const payload = {
             id: merchantReference,
@@ -113,7 +116,7 @@ class PesapalService {
     }
 
     async getTransactionStatus(
-        orderTrackingId: string
+        orderTrackingId: string,
     ): Promise<PesapalTransactionStatusResponse> {
         const data = await pesapalClient.getTransactionStatus(orderTrackingId);
 
@@ -121,7 +124,7 @@ class PesapalService {
             throw new Error(
                 (data as { error?: unknown }).error
                     ? JSON.stringify((data as { error?: unknown }).error)
-                    : 'Failed to get transaction status'
+                    : 'Failed to get transaction status',
             );
         }
 

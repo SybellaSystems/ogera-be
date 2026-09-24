@@ -186,7 +186,13 @@ export const setup2FA = async (req: Request, res: Response): Promise<void> => {
         }
 
         const data = await setup2FAService(userId);
-        response.response(res, true, StatusCodes.OK, data, '2FA setup successful');
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            data,
+            '2FA setup successful',
+        );
     } catch (error: any) {
         response.errorResponse(
             res,
@@ -213,12 +219,23 @@ export const verify2FA = async (req: Request, res: Response): Promise<void> => {
 
         const { token } = req.body;
         if (!token) {
-            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'Token is required');
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'Token is required',
+            );
             return;
         }
 
         await verify2FAService(userId, token);
-        response.response(res, true, StatusCodes.OK, {}, '2FA enabled successfully');
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            {},
+            '2FA enabled successfully',
+        );
     } catch (error: any) {
         response.errorResponse(
             res,
@@ -230,7 +247,10 @@ export const verify2FA = async (req: Request, res: Response): Promise<void> => {
 };
 
 // -------------------- 2FA DISABLE --------------------
-export const disable2FA = async (req: Request, res: Response): Promise<void> => {
+export const disable2FA = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
         const userId = req.user?.user_id;
         if (!userId) {
@@ -245,12 +265,23 @@ export const disable2FA = async (req: Request, res: Response): Promise<void> => 
 
         const { password, token } = req.body;
         if (!password) {
-            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'Password is required');
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'Password is required',
+            );
             return;
         }
 
         await disable2FAService(userId, password, token);
-        response.response(res, true, StatusCodes.OK, {}, '2FA disabled successfully');
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            {},
+            '2FA disabled successfully',
+        );
     } catch (error: any) {
         response.errorResponse(
             res,
@@ -423,15 +454,28 @@ export const verify2FAWithToken = async (
 };
 
 // -------------------- 2FA VERIFY LOGIN (STEP 2) --------------------
-export const verifyLogin2FA = async (req: Request, res: Response): Promise<void> => {
+export const verifyLogin2FA = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
         const { twoFactorToken, token } = req.body;
         if (!twoFactorToken) {
-            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'twoFactorToken is required');
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'twoFactorToken is required',
+            );
             return;
         }
         if (!token) {
-            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'Token is required');
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'Token is required',
+            );
             return;
         }
 
@@ -470,7 +514,12 @@ export const refreshAccessToken = async (
         const refreshToken = req.cookies.refreshToken;
         if (!refreshToken) {
             // response.errorResponse(res, 401, false, 'Refresh token missing');
-            response.errorResponse(res, StatusCodes.UNAUTHORIZED, false, 'No session found');
+            response.errorResponse(
+                res,
+                StatusCodes.UNAUTHORIZED,
+                false,
+                'No session found',
+            );
             return;
         }
 
@@ -654,7 +703,7 @@ export const getAllusers = async (req: Request, res: Response) => {
 //             success: true,
 //             pagination,
 //             data,
-//         }); 
+//         });
 //         console.log('data', data);
 //         console.log("hello this is console log");
 //     } catch (error: any) {
@@ -744,9 +793,7 @@ export const verifyEmail = async (
     try {
         // Express can provide query params as string|string[]
         const tokenParam = req.query.token;
-        const token = Array.isArray(tokenParam)
-            ? tokenParam[0]
-            : tokenParam;
+        const token = Array.isArray(tokenParam) ? tokenParam[0] : tokenParam;
 
         if (!token || typeof token !== 'string' || !token.trim()) {
             response.errorResponse(
@@ -809,7 +856,10 @@ export const resendVerificationEmail = async (
             }
         }
 
-        const result = await resendVerificationEmailService(email, frontendOrigin);
+        const result = await resendVerificationEmailService(
+            email,
+            frontendOrigin,
+        );
 
         response.response(
             res,
@@ -1400,17 +1450,30 @@ export const getVerificationStatus = async (
 };
 
 // -------------------- VERIFY ACCOUNT (SMS OTP + email verification) --------------------
-export const verifyAccount = async (req: Request, res: Response): Promise<void> => {
+export const verifyAccount = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
         const { email, otp } = req.body;
 
         if (!email || typeof email !== 'string') {
-            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'Email is required');
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'Email is required',
+            );
             return;
         }
 
         if (!otp || typeof otp !== 'string') {
-            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'OTP is required');
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'OTP is required',
+            );
             return;
         }
 
@@ -1421,7 +1484,7 @@ export const verifyAccount = async (req: Request, res: Response): Promise<void> 
             true,
             StatusCodes.OK,
             result,
-            'Phone number verified successfully'
+            'Phone number verified successfully',
         );
     } catch (error: any) {
         response.errorResponse(
@@ -1432,4 +1495,3 @@ export const verifyAccount = async (req: Request, res: Response): Promise<void> 
         );
     }
 };
-

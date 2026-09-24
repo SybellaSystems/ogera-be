@@ -10,37 +10,37 @@ export type ReviewStatus = 'published' | 'hidden';
  * ===========================
  */
 export interface StudentLink {
-  id: string;
-  user_id: string;
+    id: string;
+    user_id: string;
 
-  link_type: LinkType;
-  url: string;
+    link_type: LinkType;
+    url: string;
 
-  visibility: boolean;
+    visibility: boolean;
 
-  status: LinkStatus;
+    status: LinkStatus;
 
-  created_at?: Date;
-  updated_at?: Date;
+    created_at?: Date;
+    updated_at?: Date;
 }
 
 /**
  * Used when creating a new student link.
  */
 export interface CreateStudentLinkDto {
-  link_type: LinkType;
-  url: string;
-  visibility?: boolean;
+    link_type: LinkType;
+    url: string;
+    visibility?: boolean;
 }
 
 /**
  * Used when updating an existing link.
  */
 export interface UpdateStudentLinkDto {
-  link_type?: LinkType;
-  url?: string;
-  visibility?: boolean;
-  status?: LinkStatus;
+    link_type?: LinkType;
+    url?: string;
+    visibility?: boolean;
+    status?: LinkStatus;
 }
 
 /**
@@ -49,37 +49,37 @@ export interface UpdateStudentLinkDto {
  * ===========================
  */
 export interface PeerReview {
-  id: string;
+    id: string;
 
-  link_id: string;
+    link_id: string;
 
-  reviewer_id: string;
+    reviewer_id: string;
 
-  rating: number;
+    rating: number;
 
-  review: string;
+    review: string;
 
-  status: ReviewStatus;
+    status: ReviewStatus;
 
-  created_at?: Date;
-  updated_at?: Date;
+    created_at?: Date;
+    updated_at?: Date;
 }
 
 /**
  * Used when creating a review.
  */
 export interface CreatePeerReviewDto {
-  rating: number;
-  review: string;
+    rating: number;
+    review: string;
 }
 
 /**
  * Used when updating a review.
  */
 export interface UpdatePeerReviewDto {
-  rating?: number;
-  review?: string;
-  status?: ReviewStatus;
+    rating?: number;
+    review?: string;
+    status?: ReviewStatus;
 }
 
 /**
@@ -89,15 +89,15 @@ export interface UpdatePeerReviewDto {
  */
 
 export interface PeerReviewReply {
-  id: string;
+    id: string;
 
-  review_id: string;
+    review_id: string;
 
-  user_id: string;
+    user_id: string;
 
-  reply: string;
+    reply: string;
 
-  created_at: Date;
+    created_at: Date;
 
-  updated_at: Date;
+    updated_at: Date;
 }

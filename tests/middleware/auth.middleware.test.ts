@@ -1,79 +1,78 @@
-import { authMiddleware } from '../../src/middlewares/auth.middleware';
-import { verifyJWT } from '../../src/middlewares/jwt.service';
-import { CustomError } from '../../src/utils/custom-error';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Request, Response, NextFunction } from 'express';
+import { authMiddleware } from '../../src/middlewares/auth.middleware';
+import { verifyAccessToken } from '../../src/middlewares/jwt.service';
+import { CustomError } from '../../src/utils/custom-error';
 
 jest.mock('../../src/middlewares/jwt.service', () => ({
-    verifyJWT: jest.fn(),
+    verifyAccessToken: jest.fn(),
 }));
 
-interface CustomRequest extends Request {
-    context?: any;
-}
-
 describe('authMiddleware', () => {
-    let req: Partial<CustomRequest>;
+    let req: Partial<Request>;
     let res: Partial<Response>;
     let next: NextFunction;
 
     beforeEach(() => {
         req = {
             method: 'GET',
-            url: '',
-            header: jest.fn(),
-            context: {},
+            url: '/api/protected-route',
+            headers: {},
         };
         res = {};
         next = jest.fn();
     });
 
-    test('Should bypass middleware if the request method is OPTIONS', async () => {
-        req.method = 'OPTIONS';
-
-        await authMiddleware(req as Request, res as Response, next);
-        expect(next).toHaveBeenCalled();
-    });
-
-    test('Should bypass middleware for /api/auth/signin route', async () => {
-        req.method = 'POST';
-        req.url = '/api/auth/signin';
-
-        await authMiddleware(req as Request, res as Response, next);
-        expect(next).toHaveBeenCalled();
-    });
-
-    test('Should throw an error if Authorization header is missing', async () => {
-        req.url = '/api/protected-route';
-        (req.header as jest.Mock).mockReturnValue(undefined);
-
-        await authMiddleware(req as Request, res as Response, next);
-
-        expect(next).toHaveBeenCalledWith(
-            new CustomError('Authorization header missing', 401),
+    it('should throw if Authorization header is missing', () => {
+        expect(() => authMiddleware(req as Request, res as Response, next)).toThrow(
+            new CustomError('Access denied. No token provided', 401),
         );
     });
 
-    test('Should proceed if the token is valid', async () => {
-        req.url = '/api/protected-route';
-        const mockPayload = { userId: '123' };
+    it('should set req.user and call next when token is valid', () => {
+        req.headers = {
+            authorization: 'Bearer validToken',
+        };
 
-        (req.header as jest.Mock).mockReturnValue('Bearer validToken');
-        (verifyJWT as jest.Mock).mockResolvedValue(mockPayload);
+        (verifyAccessToken as jest.Mock).mockReturnValue({
+            user_id: '123',
+            role: 'student',
+        });
 
-        await authMiddleware(req as Request, res as Response, next);
+        authMiddleware(req as Request, res as Response, next);
 
-        expect(req.context).toEqual(mockPayload);
-        expect(next).toHaveBeenCalled();
+        expect(req.user).toEqual({
+            user_id: '123',
+            role: 'student',
+        });
+        expect(next).toHaveBeenCalledTimes(1);
     });
 
-    test('Should throw an error if the token is invalid', async () => {
-        req.url = '/api/protected-route';
+    it('should throw a generic auth error if the token payload is invalid', () => {
+        req.headers = {
+            authorization: 'Bearer validToken',
+        };
 
-        (req.header as jest.Mock).mockReturnValue('Bearer invalidToken');
-        (verifyJWT as jest.Mock).mockRejectedValue(new Error('Invalid token'));
+        (verifyAccessToken as jest.Mock).mockReturnValue({
+            user_id: '123',
+        });
 
-        await authMiddleware(req as Request, res as Response, next);
+        expect(() => authMiddleware(req as Request, res as Response, next)).toThrow(
+            'Invalid or expired access token',
+        );
+    });
 
-        expect(next).toHaveBeenCalledWith(new Error('Invalid token'));
+    it('should throw if the token is invalid or expired', () => {
+        req.headers = {
+            authorization: 'Bearer invalidToken',
+        };
+
+        (verifyAccessToken as jest.Mock).mockImplementation(() => {
+            throw new Error('Invalid token');
+        });
+
+        expect(() => authMiddleware(req as Request, res as Response, next)).toThrow(
+            new CustomError('Invalid or expired access token', 401),
+        );
     });
 });

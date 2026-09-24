@@ -1,52 +1,76 @@
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import jwt from 'jsonwebtoken';
-import { generateJWT, verifyJWT } from '../../src/middlewares/jwt.service';
+import {
+    generateAccessToken,
+    generateRefreshToken,
+    verifyAccessToken,
+    verifyRefreshToken,
+} from '../../src/middlewares/jwt.service';
 
 jest.mock('jsonwebtoken', () => ({
-    sign: jest.fn(),
-    verify: jest.fn(),
+    __esModule: true,
+    default: {
+        sign: jest.fn(),
+        verify: jest.fn(),
+    },
 }));
 
 describe('JWT Service', () => {
-    const secretKey = 'test_secret';
-    const payload = { userId: '123' };
+    const payload = { user_id: '123', role: 'student' };
 
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
-    test('generateJWT should return a valid token', async () => {
-        (jwt.sign as jest.Mock).mockReturnValue('mockedToken');
+    it('generateAccessToken should sign a token with the access secret', () => {
+        (jwt.sign as jest.Mock).mockReturnValue('mockedAccessToken');
 
-        const token = await generateJWT(payload, secretKey);
+        const token = generateAccessToken(payload);
 
-        expect(jwt.sign).toHaveBeenCalledWith(payload, secretKey);
-        expect(token).toBe('Bearer mockedToken');
+        expect(jwt.sign).toHaveBeenCalledWith(
+            payload,
+            expect.any(String),
+            { expiresIn: '15m' },
+        );
+        expect(token).toBe('mockedAccessToken');
     });
 
-    test('verifyJWT should return the correct payload when token is valid', async () => {
+    it('generateRefreshToken should sign a token with the refresh secret', () => {
+        (jwt.sign as jest.Mock).mockReturnValue('mockedRefreshToken');
+
+        const token = generateRefreshToken(payload);
+
+        expect(jwt.sign).toHaveBeenCalledWith(
+            payload,
+            expect.any(String),
+            { expiresIn: '7d' },
+        );
+        expect(token).toBe('mockedRefreshToken');
+    });
+
+    it('verifyAccessToken should return the decoded payload for a valid token', () => {
         (jwt.verify as jest.Mock).mockReturnValue(payload);
 
-        const result = await verifyJWT('Bearer validToken', secretKey);
+        const result = verifyAccessToken('validToken');
 
-        expect(jwt.verify).toHaveBeenCalledWith('validToken', secretKey);
+        expect(jwt.verify).toHaveBeenCalledWith('validToken', expect.any(String));
         expect(result).toEqual(payload);
     });
 
-    test('verifyJWT should throw an error if token is invalid', async () => {
+    it('verifyRefreshToken should return the decoded payload for a valid token', () => {
+        (jwt.verify as jest.Mock).mockReturnValue(payload);
+
+        const result = verifyRefreshToken('validRefreshToken');
+
+        expect(jwt.verify).toHaveBeenCalledWith('validRefreshToken', expect.any(String));
+        expect(result).toEqual(payload);
+    });
+
+    it('verifyAccessToken should throw if the token is invalid', () => {
         (jwt.verify as jest.Mock).mockImplementation(() => {
             throw new Error('Invalid token');
         });
 
-        await expect(verifyJWT('Bearer invalidToken', secretKey)).rejects.toThrow(
-            'Invalid token'
-        );
-    });
-
-    test('verifyJWT should throw an error if payload is a string', async () => {
-        (jwt.verify as jest.Mock).mockReturnValue('InvalidPayload');
-
-        await expect(verifyJWT('Bearer validToken', secretKey)).rejects.toThrow(
-            'Invalid token payload'
-        );
+        expect(() => verifyAccessToken('invalidToken')).toThrow('Invalid token');
     });
 });

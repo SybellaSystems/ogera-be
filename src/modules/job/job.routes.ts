@@ -26,16 +26,10 @@ jobRouter.get(
 );
 
 // Get active jobs - public endpoint for landing page
-jobRouter.get(
-    '/public',
-    getPublicJobs,
-);
+jobRouter.get('/public', getPublicJobs);
 
 // Get active jobs - public endpoint for landing page
-jobRouter.get(
-    '/active',
-    getActiveJobs,
-);
+jobRouter.get('/active', getActiveJobs);
 
 // Get pending jobs
 jobRouter.get(
@@ -54,10 +48,7 @@ jobRouter.get(
 );
 
 // Get single job by ID - public endpoint for landing page
-jobRouter.get(
-    '/:id',
-    getJobById,
-);
+jobRouter.get('/:id', getJobById);
 
 // Create job - requires create permission
 jobRouter.post(
@@ -77,20 +68,12 @@ jobRouter.put(
 
 // Review job (Approve/Disapprove) — only admin/superadmin enforced in service.
 // No permission_json gate here to avoid blocking built-in admins.
-jobRouter.patch(
-    '/:id/review',
-    authMiddleware,
-    reviewJob,
-);
+jobRouter.patch('/:id/review', authMiddleware, reviewJob);
 
 // Delete job — service enforces: admin/superadmin can delete any job,
 // employers can delete their own. No permission_json gate because admins
 // without "/jobs delete" in their JSON permissions were being blocked.
-jobRouter.delete(
-    '/:id',
-    authMiddleware,
-    deleteJob,
-);
+jobRouter.delete('/:id', authMiddleware, deleteJob);
 
 // Toggle job status (Active/Inactive) - requires edit permission
 jobRouter.patch(

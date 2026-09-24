@@ -4,13 +4,13 @@ import { CourseStepModel } from './courseStep.model';
 
 export type CourseCreationAttributes = Optional<
     Course,
-    | 'course_id'
-    | 'description'
-    | 'created_at'
-    | 'updated_at'
+    'course_id' | 'description' | 'created_at' | 'updated_at'
 >;
 
-export class CourseModel extends Model<Course, CourseCreationAttributes> implements Course {
+export class CourseModel
+    extends Model<Course, CourseCreationAttributes>
+    implements Course
+{
     public course_id!: string;
     public course_name!: string;
     public type!: string;
@@ -67,5 +67,3 @@ export default function (sequelize: Sequelize): typeof CourseModel {
 
     return CourseModel;
 }
-
-

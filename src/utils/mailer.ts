@@ -127,18 +127,14 @@ const sendViaBrevoApi = async (options: EmailOptions): Promise<any> => {
 
     let data: any;
     try {
-        const response = await axios.post(
-            brevo.apiUrl,
-            payload,
-            {
-                headers: {
-                    'api-key': apiKey,
-                    'content-type': 'application/json',
-                    accept: 'application/json',
-                },
-                timeout: 15000,
+        const response = await axios.post(brevo.apiUrl, payload, {
+            headers: {
+                'api-key': apiKey,
+                'content-type': 'application/json',
+                accept: 'application/json',
             },
-        );
+            timeout: 15000,
+        });
         data = response.data;
     } catch (error: any) {
         if (axios.isAxiosError(error)) {
@@ -183,9 +179,7 @@ export interface EmailOptions {
 /**
  * Send email using SMTP
  */
-export const sendMail = async (
-    options: EmailOptions,
-): Promise<any> => {
+export const sendMail = async (options: EmailOptions): Promise<any> => {
     const { from, provider } = EMAIL_CONFIG;
 
     try {
@@ -196,17 +190,13 @@ export const sendMail = async (
         const mailOptions = {
             from: `"${from.name}" <${from.email}>`,
 
-            to: Array.isArray(options.to)
-                ? options.to.join(', ')
-                : options.to,
+            to: Array.isArray(options.to) ? options.to.join(', ') : options.to,
 
             subject: options.subject,
 
             html: options.html,
 
-            text:
-                options.text ??
-                options.html.replace(/<[^>]+>/g, ''),
+            text: options.text ?? options.html.replace(/<[^>]+>/g, ''),
 
             cc: options.cc
                 ? Array.isArray(options.cc)
@@ -225,9 +215,7 @@ export const sendMail = async (
             attachments: options.attachments,
         };
 
-        const info = await getTransporter().sendMail(
-            mailOptions,
-        );
+        const info = await getTransporter().sendMail(mailOptions);
 
         logger.info('Email sent successfully', {
             to: options.to,
@@ -241,7 +229,9 @@ export const sendMail = async (
             error?.code === 'ETIMEDOUT' ||
             error?.code === 'ECONNECTION' ||
             error?.code === 'ECONNREFUSED' ||
-            /Connection timeout|connect|greeting timeout/i.test(error?.message || '');
+            /Connection timeout|connect|greeting timeout/i.test(
+                error?.message || '',
+            );
 
         if (isSmtpConnectivityError && EMAIL_CONFIG.brevo.apiKey) {
             logger.warn('SMTP failed, retrying via Brevo API fallback', {

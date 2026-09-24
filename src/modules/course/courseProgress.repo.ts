@@ -69,7 +69,12 @@ export default {
                 {
                     model: DB.CourseSteps,
                     as: 'step',
-                    attributes: ['step_id', 'step_order', 'step_title', 'step_type'],
+                    attributes: [
+                        'step_id',
+                        'step_order',
+                        'step_title',
+                        'step_type',
+                    ],
                 },
             ],
             order: [['created_at', 'ASC']],
@@ -84,7 +89,13 @@ export default {
         });
 
         if (totalSteps === 0) {
-            return { completed: 0, total: 0, percentage: 0, started: false, started_at: null };
+            return {
+                completed: 0,
+                total: 0,
+                percentage: 0,
+                started: false,
+                started_at: null,
+            };
         }
 
         // Get number of completed steps
@@ -189,7 +200,7 @@ export default {
     // Get all students enrolled in a course with their progress
     async getCourseStudents(course_id: string) {
         console.log('[getCourseStudents] Starting with course_id:', course_id);
-        
+
         // First, verify the course exists
         const course = await DB.Courses.findByPk(course_id);
         if (!course) {
@@ -207,29 +218,42 @@ export default {
             raw: true, // Get plain objects
         });
 
-        console.log('[getCourseStudents] All progress records:', allProgress.length);
-        console.log('[getCourseStudents] Sample progress record:', allProgress[0]);
+        console.log(
+            '[getCourseStudents] All progress records:',
+            allProgress.length,
+        );
+        console.log(
+            '[getCourseStudents] Sample progress record:',
+            allProgress[0],
+        );
 
         // Extract unique user_ids using Set
         // Handle different possible formats from raw query
         const userIdSet = new Set<string>();
         for (const record of allProgress) {
             // Try different possible property names (case-insensitive, different formats)
-            const rec = record as { user_id?: string; userId?: string; USER_ID?: string };
-            const userId = rec.user_id ||
-                          rec.userId ||
-                          rec.USER_ID ||
-                          null;
+            const rec = record as {
+                user_id?: string;
+                userId?: string;
+                USER_ID?: string;
+            };
+            const userId = rec.user_id || rec.userId || rec.USER_ID || null;
             if (userId) {
                 userIdSet.add(String(userId));
             }
         }
 
         const userIds = Array.from(userIdSet);
-        console.log('[getCourseStudents] Unique user_ids:', userIds.length, userIds);
+        console.log(
+            '[getCourseStudents] Unique user_ids:',
+            userIds.length,
+            userIds,
+        );
 
         if (userIds.length === 0) {
-            console.log('[getCourseStudents] No user_ids found, returning empty');
+            console.log(
+                '[getCourseStudents] No user_ids found, returning empty',
+            );
             return [];
         }
 
@@ -271,11 +295,11 @@ export default {
                     console.warn('No user_id found for student:', student);
                     return null;
                 }
-                
+
                 if (!userId) {
                     return null;
                 }
-                
+
                 const userProgress = await DB.CourseProgress.findAll({
                     where: {
                         user_id: userId,
@@ -285,10 +309,15 @@ export default {
                     raw: true, // Get plain objects for easier access
                 });
 
-                console.log(`[getCourseStudents] User ${userId} progress records:`, userProgress.length);
+                console.log(
+                    `[getCourseStudents] User ${userId} progress records:`,
+                    userProgress.length,
+                );
 
                 if (!userProgress || userProgress.length === 0) {
-                    console.log(`[getCourseStudents] User ${userId} has no progress, skipping`);
+                    console.log(
+                        `[getCourseStudents] User ${userId} has no progress, skipping`,
+                    );
                     return null;
                 }
 
@@ -298,28 +327,46 @@ export default {
                 const completedSteps = userProgress.filter((p: any) => {
                     return p.completed === true;
                 }).length;
-                
-                const percentage = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
-                const isCompleted = totalSteps > 0 && completedSteps === totalSteps;
+
+                const percentage =
+                    totalSteps > 0
+                        ? Math.round((completedSteps / totalSteps) * 100)
+                        : 0;
+                const isCompleted =
+                    totalSteps > 0 && completedSteps === totalSteps;
 
                 // Get user details - handle Sequelize instance
                 let fullName: string;
                 let email: string;
                 let mobileNumber: string | null;
                 let roleName: string;
-                
+
                 if (student.get) {
                     fullName = student.get('full_name') || 'Unknown';
                     email = student.get('email') || 'No email';
                     mobileNumber = student.get('mobile_number') || null;
                     const role = student.get('role');
-                    roleName = role?.get ? role.get('roleName') : (role?.roleName || 'student');
+                    roleName = role?.get
+                        ? role.get('roleName')
+                        : role?.roleName || 'student';
                 } else {
-                    fullName = student.full_name || student.dataValues?.full_name || 'Unknown';
-                    email = student.email || student.dataValues?.email || 'No email';
-                    mobileNumber = student.mobile_number || student.dataValues?.mobile_number || null;
+                    fullName =
+                        student.full_name ||
+                        student.dataValues?.full_name ||
+                        'Unknown';
+                    email =
+                        student.email ||
+                        student.dataValues?.email ||
+                        'No email';
+                    mobileNumber =
+                        student.mobile_number ||
+                        student.dataValues?.mobile_number ||
+                        null;
                     const role = student.role || student.dataValues?.role;
-                    roleName = role?.roleName || role?.dataValues?.roleName || 'student';
+                    roleName =
+                        role?.roleName ||
+                        role?.dataValues?.roleName ||
+                        'student';
                 }
 
                 const studentData = {
@@ -328,27 +375,37 @@ export default {
                     email: email || 'No email',
                     phone_number: mobileNumber || null, // Keep phone_number in response for frontend compatibility
                     role: roleName,
-                    started_at: started_at ? (started_at instanceof Date ? started_at.toISOString() : new Date(started_at).toISOString()) : null,
+                    started_at: started_at
+                        ? started_at instanceof Date
+                            ? started_at.toISOString()
+                            : new Date(started_at).toISOString()
+                        : null,
                     completed_steps: completedSteps,
                     total_steps: totalSteps,
                     percentage,
                     is_completed: isCompleted,
                 };
 
-                console.log(`[getCourseStudents] Formatted student ${userId}:`, {
-                    full_name: studentData.full_name,
-                    completed_steps: studentData.completed_steps,
-                    total_steps: studentData.total_steps,
-                    is_completed: studentData.is_completed,
-                });
+                console.log(
+                    `[getCourseStudents] Formatted student ${userId}:`,
+                    {
+                        full_name: studentData.full_name,
+                        completed_steps: studentData.completed_steps,
+                        total_steps: studentData.total_steps,
+                        is_completed: studentData.is_completed,
+                    },
+                );
 
                 return studentData;
-            })
+            }),
         );
 
         // Filter out any null values
         const finalStudents = formattedStudents.filter((s: any) => s !== null);
-        console.log('[getCourseStudents] Final students count:', finalStudents.length);
+        console.log(
+            '[getCourseStudents] Final students count:',
+            finalStudents.length,
+        );
         return finalStudents;
     },
 
@@ -466,9 +523,15 @@ export default {
         const students = await this.getCourseStudents(course_id);
 
         const totalEnrolled = students.length;
-        const completedStudents = students.filter((s) => s != null && s.is_completed).length;
-        const inProgressStudents = students.filter((s) => s != null && !s.is_completed && s.completed_steps > 0).length;
-        const notStartedStudents = students.filter((s) => s != null && s.completed_steps === 0).length;
+        const completedStudents = students.filter(
+            s => s != null && s.is_completed,
+        ).length;
+        const inProgressStudents = students.filter(
+            s => s != null && !s.is_completed && s.completed_steps > 0,
+        ).length;
+        const notStartedStudents = students.filter(
+            s => s != null && s.completed_steps === 0,
+        ).length;
 
         return {
             course_id: course.course_id,
@@ -478,7 +541,10 @@ export default {
             completed_students: completedStudents,
             in_progress_students: inProgressStudents,
             not_started_students: notStartedStudents,
-            completion_rate: totalEnrolled > 0 ? Math.round((completedStudents / totalEnrolled) * 100) : 0,
+            completion_rate:
+                totalEnrolled > 0
+                    ? Math.round((completedStudents / totalEnrolled) * 100)
+                    : 0,
         };
     },
 };

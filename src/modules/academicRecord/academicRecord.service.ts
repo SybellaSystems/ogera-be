@@ -14,13 +14,14 @@ type AcademicRecordsTableShape = Record<string, unknown>;
 
 let cachedAcademicRecordsShape: AcademicRecordsTableShape | null = null;
 
-const getAcademicRecordsTableShape = async (): Promise<AcademicRecordsTableShape> => {
-    if (cachedAcademicRecordsShape) return cachedAcademicRecordsShape;
-    const queryInterface = DB.sequelize.getQueryInterface();
-    const shape = await queryInterface.describeTable('academic_records');
-    cachedAcademicRecordsShape = shape;
-    return shape;
-};
+const getAcademicRecordsTableShape =
+    async (): Promise<AcademicRecordsTableShape> => {
+        if (cachedAcademicRecordsShape) return cachedAcademicRecordsShape;
+        const queryInterface = DB.sequelize.getQueryInterface();
+        const shape = await queryInterface.describeTable('academic_records');
+        cachedAcademicRecordsShape = shape;
+        return shape;
+    };
 
 const normalizeAcademicProfileFromLegacy = (
     classLevel?: string | null,
@@ -113,7 +114,8 @@ export const addAcademicRecordService = async (
 
     const tableShape = await getAcademicRecordsTableShape();
     const isLegacySchema =
-        Boolean(tableShape.class_level) && !Boolean(tableShape.academic_profile);
+        Boolean(tableShape.class_level) &&
+        !Boolean(tableShape.academic_profile);
 
     const createData: Record<string, unknown> = {
         user_id,
@@ -218,7 +220,10 @@ export const getAllAcademicRecordsService = async () => {
 export const getAcademicRecordByIdService = async (record_id: string) => {
     const row = await DB.AcademicRecords.findOne({ where: { record_id } });
     if (!row) {
-        throw new CustomError('Academic record not found', StatusCodes.NOT_FOUND);
+        throw new CustomError(
+            'Academic record not found',
+            StatusCodes.NOT_FOUND,
+        );
     }
     return normalizeRecordForResponse(row);
 };
@@ -229,7 +234,10 @@ export const deleteAcademicRecordService = async (
 ) => {
     const row = await DB.AcademicRecords.findOne({ where: { record_id } });
     if (!row) {
-        throw new CustomError('Academic record not found', StatusCodes.NOT_FOUND);
+        throw new CustomError(
+            'Academic record not found',
+            StatusCodes.NOT_FOUND,
+        );
     }
 
     const record = normalizeRecordForResponse(row) as any;

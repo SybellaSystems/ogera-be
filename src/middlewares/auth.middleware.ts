@@ -1,42 +1,44 @@
-import { Request, Response, NextFunction } from "express";
-import { verifyAccessToken } from "@/middlewares/jwt.service";
-import { CustomError } from "@/utils/custom-error";
+import { Request, Response, NextFunction } from 'express';
+import { verifyAccessToken } from '@/middlewares/jwt.service';
+import { CustomError } from '@/utils/custom-error';
 
+/* eslint-disable @typescript-eslint/no-namespace */
 declare global {
-  namespace Express {
-    interface Request {
-      user?: { user_id: string; role: string };
+    namespace Express {
+        interface Request {
+            user?: { user_id: string; role: string };
+        }
     }
-  }
 }
+/* eslint-enable @typescript-eslint/no-namespace */
 
 export const authMiddleware = (
-  req: Request,
-  _res: Response,
-  next: NextFunction
+    req: Request,
+    _res: Response,
+    next: NextFunction,
 ) => {
-  const authHeader = req.headers.authorization;
+    const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    throw new CustomError("Access denied. No token provided", 401);
-  }
-
-  const token = authHeader.split(" ")[1];
-
-  try {
-    const decoded = verifyAccessToken(token);
-
-    if (!decoded.user_id || !decoded.role) {
-      throw new CustomError("Invalid token payload", 401);
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new CustomError('Access denied. No token provided', 401);
     }
 
-    req.user = {
-      user_id: decoded.user_id as string,
-      role: decoded.role as string,
-    };
+    const token = authHeader.split(' ')[1];
 
-    next();
-  } catch (err) {
-    throw new CustomError("Invalid or expired access token", 401);
-  }
+    try {
+        const decoded = verifyAccessToken(token);
+
+        if (!decoded.user_id || !decoded.role) {
+            throw new CustomError('Invalid token payload', 401);
+        }
+
+        req.user = {
+            user_id: decoded.user_id as string,
+            role: decoded.role as string,
+        };
+
+        next();
+    } catch (err) {
+        throw new CustomError('Invalid or expired access token', 401);
+    }
 };

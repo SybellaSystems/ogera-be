@@ -16,9 +16,7 @@ export interface TrustscoreHistoryAttributes {
 
 export type TrustscoreHistoryCreationAttributes = Optional<
     TrustscoreHistoryAttributes,
-    | 'history_id'
-    | 'created_at'
-    | 'updated_at'
+    'history_id' | 'created_at' | 'updated_at'
 >;
 
 export class TrustscoreHistoryModel

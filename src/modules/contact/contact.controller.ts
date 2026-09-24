@@ -5,12 +5,20 @@ import logger from '@/utils/logger';
 
 const response = new ResponseFormat();
 
-export const submitContact = async (req: Request, res: Response): Promise<void> => {
+export const submitContact = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
         const { fullName, email, phone, countryCode, message } = req.body;
 
         if (!fullName || !email || !message) {
-            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'Full name, email, and message are required');
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'Full name, email, and message are required',
+            );
             return;
         }
 
@@ -19,8 +27,19 @@ export const submitContact = async (req: Request, res: Response): Promise<void> 
 
         // TODO: Send email notification or store in database
 
-        response.response(res, true, StatusCodes.OK, null, 'Message received! We will get back to you shortly.');
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            null,
+            'Message received! We will get back to you shortly.',
+        );
     } catch (error: any) {
-        response.errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, false, error.message);
+        response.errorResponse(
+            res,
+            StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message,
+        );
     }
 };

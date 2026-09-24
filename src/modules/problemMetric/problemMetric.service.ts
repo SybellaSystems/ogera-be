@@ -64,7 +64,9 @@ const validateQuestionMatchesCategory = (
     );
 };
 
-export const getProblemMetricAdminService = async (problem_metric_id: string) => {
+export const getProblemMetricAdminService = async (
+    problem_metric_id: string,
+) => {
     const metric = await DB.ProblemMetrics.findByPk(problem_metric_id, {
         include: [
             {
@@ -79,7 +81,10 @@ export const getProblemMetricAdminService = async (problem_metric_id: string) =>
         ],
     });
     if (!metric) {
-        throw new CustomError('Problem metric not found', StatusCodes.NOT_FOUND);
+        throw new CustomError(
+            'Problem metric not found',
+            StatusCodes.NOT_FOUND,
+        );
     }
     return metric.get({ plain: true });
 };
@@ -126,10 +131,9 @@ export const listProblemMetricsAdminService = async ({
         const searchTerm = `%${search.trim()}%`;
         where[Op.or] = [
             { title: { [Op.iLike]: searchTerm } },
-            Sequelize.where(
-                Sequelize.cast(Sequelize.col('category'), 'text'),
-                { [Op.iLike]: searchTerm },
-            ),
+            Sequelize.where(Sequelize.cast(Sequelize.col('category'), 'text'), {
+                [Op.iLike]: searchTerm,
+            }),
             { description: { [Op.iLike]: searchTerm } },
         ];
     }
@@ -148,7 +152,7 @@ export const listProblemMetricsAdminService = async ({
             },
         ],
     });
-    const data = rows.map((r) => {
+    const data = rows.map(r => {
         const plain = r.get({ plain: true }) as any;
         return {
             problem_metric_id: plain.problem_metric_id,
@@ -185,12 +189,18 @@ export const updateProblemMetricService = async (
 ) => {
     const metric = await DB.ProblemMetrics.findByPk(problem_metric_id);
     if (!metric) {
-        throw new CustomError('Problem metric not found', StatusCodes.NOT_FOUND);
+        throw new CustomError(
+            'Problem metric not found',
+            StatusCodes.NOT_FOUND,
+        );
     }
     const patch: Record<string, unknown> = {};
     if (body.title !== undefined) {
         if (!String(body.title).trim()) {
-            throw new CustomError('Title cannot be empty', StatusCodes.BAD_REQUEST);
+            throw new CustomError(
+                'Title cannot be empty',
+                StatusCodes.BAD_REQUEST,
+            );
         }
         patch.title = String(body.title).trim();
     }
@@ -207,7 +217,13 @@ export const updateProblemMetricService = async (
         if (body.category !== 'other') {
             const questions = await DB.ProblemMetricQuestions.findAll({
                 where: { problem_metric_id },
-                attributes: ['prompt', 'option_a', 'option_b', 'option_c', 'option_d'],
+                attributes: [
+                    'prompt',
+                    'option_a',
+                    'option_b',
+                    'option_c',
+                    'option_d',
+                ],
             });
             for (const question of questions) {
                 validateQuestionMatchesCategory(body.category, {
@@ -231,7 +247,10 @@ export const updateProblemMetricService = async (
 export const deleteProblemMetricService = async (problem_metric_id: string) => {
     const metric = await DB.ProblemMetrics.findByPk(problem_metric_id);
     if (!metric) {
-        throw new CustomError('Problem metric not found', StatusCodes.NOT_FOUND);
+        throw new CustomError(
+            'Problem metric not found',
+            StatusCodes.NOT_FOUND,
+        );
     }
     await metric.destroy();
     return { deleted: true };
@@ -252,7 +271,10 @@ export const addProblemMetricQuestionService = async (
 ) => {
     const metric = await DB.ProblemMetrics.findByPk(problem_metric_id);
     if (!metric) {
-        throw new CustomError('Problem metric not found', StatusCodes.NOT_FOUND);
+        throw new CustomError(
+            'Problem metric not found',
+            StatusCodes.NOT_FOUND,
+        );
     }
     const {
         prompt,
@@ -267,14 +289,22 @@ export const addProblemMetricQuestionService = async (
     if (!prompt?.trim()) {
         throw new CustomError('Prompt is required', StatusCodes.BAD_REQUEST);
     }
-    for (const [k, v] of Object.entries({ option_a, option_b, option_c, option_d })) {
+    for (const [k, v] of Object.entries({
+        option_a,
+        option_b,
+        option_c,
+        option_d,
+    })) {
         if (v == null || !String(v).trim()) {
             throw new CustomError(`${k} is required`, StatusCodes.BAD_REQUEST);
         }
     }
     const ci = Number(correct_index);
     if (!Number.isInteger(ci) || ci < 0 || ci > 3) {
-        throw new CustomError('correct_index must be 0–3', StatusCodes.BAD_REQUEST);
+        throw new CustomError(
+            'correct_index must be 0–3',
+            StatusCodes.BAD_REQUEST,
+        );
     }
     if (!validDifficulty(difficulty)) {
         throw new CustomError('Invalid difficulty', StatusCodes.BAD_REQUEST);
@@ -332,19 +362,33 @@ export const updateProblemMetricQuestionService = async (
     }
     const metric = await DB.ProblemMetrics.findByPk(problem_metric_id);
     if (!metric) {
-        throw new CustomError('Problem metric not found', StatusCodes.NOT_FOUND);
+        throw new CustomError(
+            'Problem metric not found',
+            StatusCodes.NOT_FOUND,
+        );
     }
     const patch: Record<string, unknown> = {};
     if (body.prompt !== undefined) {
         if (!String(body.prompt).trim()) {
-            throw new CustomError('Prompt cannot be empty', StatusCodes.BAD_REQUEST);
+            throw new CustomError(
+                'Prompt cannot be empty',
+                StatusCodes.BAD_REQUEST,
+            );
         }
         patch.prompt = String(body.prompt).trim();
     }
-    for (const key of ['option_a', 'option_b', 'option_c', 'option_d'] as const) {
+    for (const key of [
+        'option_a',
+        'option_b',
+        'option_c',
+        'option_d',
+    ] as const) {
         if (body[key] !== undefined) {
             if (!String(body[key]).trim()) {
-                throw new CustomError(`${key} cannot be empty`, StatusCodes.BAD_REQUEST);
+                throw new CustomError(
+                    `${key} cannot be empty`,
+                    StatusCodes.BAD_REQUEST,
+                );
             }
             patch[key] = String(body[key]).trim();
         }
@@ -352,13 +396,19 @@ export const updateProblemMetricQuestionService = async (
     if (body.correct_index !== undefined) {
         const ci = Number(body.correct_index);
         if (!Number.isInteger(ci) || ci < 0 || ci > 3) {
-            throw new CustomError('correct_index must be 0–3', StatusCodes.BAD_REQUEST);
+            throw new CustomError(
+                'correct_index must be 0–3',
+                StatusCodes.BAD_REQUEST,
+            );
         }
         patch.correct_index = ci;
     }
     if (body.difficulty !== undefined) {
         if (!validDifficulty(body.difficulty)) {
-            throw new CustomError('Invalid difficulty', StatusCodes.BAD_REQUEST);
+            throw new CustomError(
+                'Invalid difficulty',
+                StatusCodes.BAD_REQUEST,
+            );
         }
         patch.difficulty = body.difficulty;
     }
@@ -367,15 +417,25 @@ export const updateProblemMetricQuestionService = async (
     }
     validateQuestionMatchesCategory(metric.category, {
         prompt:
-            body.prompt !== undefined ? String(body.prompt) : String(q.get('prompt') || ''),
+            body.prompt !== undefined
+                ? String(body.prompt)
+                : String(q.get('prompt') || ''),
         option_a:
-            body.option_a !== undefined ? String(body.option_a) : String(q.get('option_a') || ''),
+            body.option_a !== undefined
+                ? String(body.option_a)
+                : String(q.get('option_a') || ''),
         option_b:
-            body.option_b !== undefined ? String(body.option_b) : String(q.get('option_b') || ''),
+            body.option_b !== undefined
+                ? String(body.option_b)
+                : String(q.get('option_b') || ''),
         option_c:
-            body.option_c !== undefined ? String(body.option_c) : String(q.get('option_c') || ''),
+            body.option_c !== undefined
+                ? String(body.option_c)
+                : String(q.get('option_c') || ''),
         option_d:
-            body.option_d !== undefined ? String(body.option_d) : String(q.get('option_d') || ''),
+            body.option_d !== undefined
+                ? String(body.option_d)
+                : String(q.get('option_d') || ''),
     });
     await q.update(patch);
     return getProblemMetricAdminService(problem_metric_id);
@@ -398,7 +458,13 @@ export const deleteProblemMetricQuestionService = async (
 export const listPublishedProblemMetricsService = async () => {
     const rows = await DB.ProblemMetrics.findAll({
         where: { published: true },
-        attributes: ['problem_metric_id', 'title', 'description', 'category', 'updated_at'],
+        attributes: [
+            'problem_metric_id',
+            'title',
+            'description',
+            'category',
+            'updated_at',
+        ],
         include: [
             {
                 model: DB.ProblemMetricQuestions,
@@ -408,7 +474,7 @@ export const listPublishedProblemMetricsService = async () => {
         ],
         order: [['title', 'ASC']],
     });
-    return rows.map((r) => {
+    return rows.map(r => {
         const plain = r.get({ plain: true }) as any;
         return {
             problem_metric_id: plain.problem_metric_id,
@@ -421,7 +487,9 @@ export const listPublishedProblemMetricsService = async () => {
     });
 };
 
-export const getPublishedProblemMetricForAttemptService = async (problem_metric_id: string) => {
+export const getPublishedProblemMetricForAttemptService = async (
+    problem_metric_id: string,
+) => {
     const metric = await DB.ProblemMetrics.findOne({
         where: { problem_metric_id, published: true },
         include: [
@@ -447,11 +515,17 @@ export const getPublishedProblemMetricForAttemptService = async (problem_metric_
         ],
     });
     if (!metric) {
-        throw new CustomError('Problem metric not found or not published', StatusCodes.NOT_FOUND);
+        throw new CustomError(
+            'Problem metric not found or not published',
+            StatusCodes.NOT_FOUND,
+        );
     }
     const plain = metric.get({ plain: true }) as any;
     if (!plain.questions?.length) {
-        throw new CustomError('This problem metric has no questions yet', StatusCodes.BAD_REQUEST);
+        throw new CustomError(
+            'This problem metric has no questions yet',
+            StatusCodes.BAD_REQUEST,
+        );
     }
     return {
         problem_metric_id: plain.problem_metric_id,
@@ -477,29 +551,44 @@ export const submitProblemMetricAttemptService = async (
         ],
     });
     if (!metric) {
-        throw new CustomError('Problem metric not found or not published', StatusCodes.NOT_FOUND);
+        throw new CustomError(
+            'Problem metric not found or not published',
+            StatusCodes.NOT_FOUND,
+        );
     }
     const questions = (metric as any).questions as Array<{
         question_id: string;
         correct_index: number;
     }>;
     if (!questions?.length) {
-        throw new CustomError('This problem metric has no questions', StatusCodes.BAD_REQUEST);
+        throw new CustomError(
+            'This problem metric has no questions',
+            StatusCodes.BAD_REQUEST,
+        );
     }
 
-    const qIds = new Set(questions.map((q) => q.question_id));
+    const qIds = new Set(questions.map(q => q.question_id));
     for (const id of qIds) {
         if (!(id in answers)) {
-            throw new CustomError('Answer every question', StatusCodes.BAD_REQUEST);
+            throw new CustomError(
+                'Answer every question',
+                StatusCodes.BAD_REQUEST,
+            );
         }
         const idx = Number(answers[id]);
         if (!Number.isInteger(idx) || idx < 0 || idx > 3) {
-            throw new CustomError(`Invalid answer for question ${id}`, StatusCodes.BAD_REQUEST);
+            throw new CustomError(
+                `Invalid answer for question ${id}`,
+                StatusCodes.BAD_REQUEST,
+            );
         }
     }
     for (const k of Object.keys(answers)) {
         if (!qIds.has(k)) {
-            throw new CustomError(`Unknown question ${k}`, StatusCodes.BAD_REQUEST);
+            throw new CustomError(
+                `Unknown question ${k}`,
+                StatusCodes.BAD_REQUEST,
+            );
         }
     }
 
@@ -527,13 +616,16 @@ export const submitProblemMetricAttemptService = async (
     return {
         score,
         max_score,
-        percentage: max_score > 0 ? Math.round((score / max_score) * 10000) / 100 : 0,
+        percentage:
+            max_score > 0 ? Math.round((score / max_score) * 10000) / 100 : 0,
         problem_metric_id,
         title: metric.get('title'),
     };
 };
 
-export const getMyProblemMetricAttemptHistoryService = async (user_id: string) => {
+export const getMyProblemMetricAttemptHistoryService = async (
+    user_id: string,
+) => {
     const rows = await DB.UserTests.findAll({
         where: { user_id, problem_metric_id: { [DB.Sequelize.Op.ne]: null } },
         include: [
@@ -544,13 +636,17 @@ export const getMyProblemMetricAttemptHistoryService = async (user_id: string) =
                 required: false,
             },
         ],
-        order: [['taken_at', 'DESC'], ['created_at', 'DESC']],
+        order: [
+            ['taken_at', 'DESC'],
+            ['created_at', 'DESC'],
+        ],
     });
 
     return rows.map((r: any) => {
         const score = Number(r.score) || 0;
         const max = Number(r.max_score) || 0;
-        const percentage = max > 0 ? Math.round((score / max) * 10000) / 100 : 0;
+        const percentage =
+            max > 0 ? Math.round((score / max) * 10000) / 100 : 0;
         const metric = r.problemMetric;
         return {
             test_id: r.test_id,
@@ -558,7 +654,10 @@ export const getMyProblemMetricAttemptHistoryService = async (user_id: string) =
             title:
                 metric?.title ||
                 r.test_name ||
-                `Problem metric ${String(r.problem_metric_id || '').slice(0, 8)}`,
+                `Problem metric ${String(r.problem_metric_id || '').slice(
+                    0,
+                    8,
+                )}`,
             category: metric?.category || 'other',
             score,
             max_score: max,

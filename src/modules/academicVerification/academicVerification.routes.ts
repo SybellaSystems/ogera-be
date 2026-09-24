@@ -4,39 +4,39 @@ import { authMiddleware } from '@/middlewares/auth.middleware';
 import { PermissionChecker } from '@/middlewares/role.middleware';
 
 import {
-  uploadAcademicDoc,
-  reuploadAcademicDoc,
-  reviewAcademicDoc,
-  getAcademicVerificationById,
-  getAcademicVerificationByUserId,
-  getMyAcademicVerification,
-  getAllAcademicVerifications,
-  getPendingAcademicVerifications,
-  getAcademicVerificationDocument,
+    uploadAcademicDoc,
+    reuploadAcademicDoc,
+    reviewAcademicDoc,
+    getAcademicVerificationById,
+    getAcademicVerificationByUserId,
+    getMyAcademicVerification,
+    getAllAcademicVerifications,
+    getPendingAcademicVerifications,
+    getAcademicVerificationDocument,
 } from './academicVerification.controller';
 
 const router = express.Router();
 
 /* -------------------- Multer Config -------------------- */
 const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
-  fileFilter: (req, file, cb) => {
-    const allowedMimes = [
-      'application/pdf',
-      'image/jpeg',
-      'image/jpg',
-      'image/png',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    ];
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+    fileFilter: (req, file, cb) => {
+        const allowedMimes = [
+            'application/pdf',
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ];
 
-    if (allowedMimes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Invalid file type'));
-    }
-  },
+        if (allowedMimes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Invalid file type'));
+        }
+    },
 });
 
 /* -------------------- Routes -------------------- */
@@ -46,11 +46,11 @@ const upload = multer({
  * Permission: create
  */
 router.post(
-  '/',
-  authMiddleware,
-  PermissionChecker('/academic-verifications', 'create'),
-  upload.single('document'),
-  uploadAcademicDoc
+    '/',
+    authMiddleware,
+    PermissionChecker('/academic-verifications', 'create'),
+    upload.single('document'),
+    uploadAcademicDoc,
 );
 
 /**
@@ -58,10 +58,10 @@ router.post(
  * Permission: view
  */
 router.get(
-  '/my-verification',
-  authMiddleware,
-  PermissionChecker('/academic-verifications', 'view'),
-  getMyAcademicVerification
+    '/my-verification',
+    authMiddleware,
+    PermissionChecker('/academic-verifications', 'view'),
+    getMyAcademicVerification,
 );
 
 /**
@@ -69,11 +69,11 @@ router.get(
  * Permission: edit
  */
 router.post(
-  '/:id/reupload',
-  authMiddleware,
-  PermissionChecker('/academic-verifications', 'edit'),
-  upload.single('document'),
-  reuploadAcademicDoc
+    '/:id/reupload',
+    authMiddleware,
+    PermissionChecker('/academic-verifications', 'edit'),
+    upload.single('document'),
+    reuploadAcademicDoc,
 );
 
 /**
@@ -81,10 +81,10 @@ router.post(
  * Permission: edit
  */
 router.patch(
-  '/:id/review',
-  authMiddleware,
-  PermissionChecker('/academic-verifications', 'edit'),
-  reviewAcademicDoc
+    '/:id/review',
+    authMiddleware,
+    PermissionChecker('/academic-verifications', 'edit'),
+    reviewAcademicDoc,
 );
 
 /**
@@ -92,10 +92,10 @@ router.patch(
  * Permission: view
  */
 router.get(
-  '/:id/document',
-  authMiddleware,
-  PermissionChecker('/academic-verifications', 'view'),
-  getAcademicVerificationDocument
+    '/:id/document',
+    authMiddleware,
+    PermissionChecker('/academic-verifications', 'view'),
+    getAcademicVerificationDocument,
 );
 
 /**
@@ -103,10 +103,10 @@ router.get(
  * Permission: view
  */
 router.get(
-  '/:id',
-  authMiddleware,
-  PermissionChecker('/academic-verifications', 'view'),
-  getAcademicVerificationById
+    '/:id',
+    authMiddleware,
+    PermissionChecker('/academic-verifications', 'view'),
+    getAcademicVerificationById,
 );
 
 /**
@@ -114,10 +114,10 @@ router.get(
  * Permission: view
  */
 router.get(
-  '/user/:user_id',
-  authMiddleware,
-  PermissionChecker('/academic-verifications', 'view'),
-  getAcademicVerificationByUserId
+    '/user/:user_id',
+    authMiddleware,
+    PermissionChecker('/academic-verifications', 'view'),
+    getAcademicVerificationByUserId,
 );
 
 /**
@@ -125,10 +125,10 @@ router.get(
  * Permission: view
  */
 router.get(
-  '/',
-  authMiddleware,
-  PermissionChecker('/academic-verifications', 'view'),
-  getAllAcademicVerifications
+    '/',
+    authMiddleware,
+    PermissionChecker('/academic-verifications', 'view'),
+    getAllAcademicVerifications,
 );
 
 /**
@@ -136,10 +136,10 @@ router.get(
  * Permission: view
  */
 router.get(
-  '/pending/list',
-  authMiddleware,
-  PermissionChecker('/academic-verifications', 'view'),
-  getPendingAcademicVerifications
+    '/pending/list',
+    authMiddleware,
+    PermissionChecker('/academic-verifications', 'view'),
+    getPendingAcademicVerifications,
 );
 
 /**
@@ -147,12 +147,10 @@ router.get(
  * Permission: view
  */
 router.get(
-  '/:id/document',
-  authMiddleware,
-  PermissionChecker('/academic-verifications', 'view'),
-  getAcademicVerificationDocument
+    '/:id/document',
+    authMiddleware,
+    PermissionChecker('/academic-verifications', 'view'),
+    getAcademicVerificationDocument,
 );
 
 export default router;
-
-

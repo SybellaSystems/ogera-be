@@ -162,7 +162,9 @@ export const uploadCourseContent = async (
             return;
         }
 
-        const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+        const files = req.files as {
+            [fieldname: string]: Express.Multer.File[];
+        };
         const pdfFile = files?.pdf?.[0];
         const imageFile = files?.image?.[0];
         const file = pdfFile || imageFile;

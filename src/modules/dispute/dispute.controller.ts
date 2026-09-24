@@ -25,10 +25,15 @@ const upload = multer({
 });
 
 // Create dispute
-export const createDispute = async (req: Request, res: Response): Promise<void> => {
+export const createDispute = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
         const user_id = req.user?.user_id;
-        const userRole = req.user?.role?.toLowerCase() as 'student' | 'employer';
+        const userRole = req.user?.role?.toLowerCase() as
+            | 'student'
+            | 'employer';
 
         if (!user_id || (userRole !== 'student' && userRole !== 'employer')) {
             response.errorResponse(
@@ -68,12 +73,15 @@ export const createDispute = async (req: Request, res: Response): Promise<void> 
 };
 
 // Get all disputes
-export const getAllDisputes = async (req: Request, res: Response): Promise<void> => {
+export const getAllDisputes = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
         const { status, priority, type, page, limit } = req.query;
         const user_id = req.user?.user_id;
         const userRole = req.user?.role?.toLowerCase();
-        
+
         // Handle multiple status values (for In Progress page)
         let statusFilter: any = status;
         if (status && typeof status === 'string' && status.includes(',')) {
@@ -81,7 +89,7 @@ export const getAllDisputes = async (req: Request, res: Response): Promise<void>
         } else if (Array.isArray(status)) {
             statusFilter = status;
         }
-        
+
         const result = await getAllDisputesService(
             {
                 status: statusFilter as any,
@@ -112,14 +120,25 @@ export const getAllDisputes = async (req: Request, res: Response): Promise<void>
 };
 
 // Get dispute by ID
-export const getDisputeById = async (req: Request, res: Response): Promise<void> => {
+export const getDisputeById = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
-        const id = typeof req.params.id === 'string' ? req.params.id : req.params.id?.[0];
+        const id =
+            typeof req.params.id === 'string'
+                ? req.params.id
+                : req.params.id?.[0];
         const user_id = req.user?.user_id;
         const userRole = req.user?.role?.toLowerCase();
 
         if (!id) {
-            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'Dispute ID is required');
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'Dispute ID is required',
+            );
             return;
         }
 
@@ -143,13 +162,24 @@ export const getDisputeById = async (req: Request, res: Response): Promise<void>
 };
 
 // Update dispute
-export const updateDispute = async (req: Request, res: Response): Promise<void> => {
+export const updateDispute = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
-        const id = typeof req.params.id === 'string' ? req.params.id : req.params.id?.[0];
+        const id =
+            typeof req.params.id === 'string'
+                ? req.params.id
+                : req.params.id?.[0];
         const user_id = req.user?.user_id;
         const userRole = req.user?.role?.toLowerCase();
 
-        const result = await updateDisputeService(id!, req.body, user_id!, userRole!);
+        const result = await updateDisputeService(
+            id!,
+            req.body,
+            user_id!,
+            userRole!,
+        );
 
         response.response(
             res,
@@ -169,9 +199,15 @@ export const updateDispute = async (req: Request, res: Response): Promise<void> 
 };
 
 // Resolve dispute
-export const resolveDispute = async (req: Request, res: Response): Promise<void> => {
+export const resolveDispute = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
-        const id = typeof req.params.id === 'string' ? req.params.id : req.params.id?.[0];
+        const id =
+            typeof req.params.id === 'string'
+                ? req.params.id
+                : req.params.id?.[0];
         const { resolution, resolution_notes, refund_amount } = req.body;
         const user_id = req.user?.user_id;
         const userRole = req.user?.role?.toLowerCase();
@@ -212,9 +248,15 @@ export const resolveDispute = async (req: Request, res: Response): Promise<void>
 };
 
 // Add message to dispute
-export const addDisputeMessage = async (req: Request, res: Response): Promise<void> => {
+export const addDisputeMessage = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
-        const id = typeof req.params.id === 'string' ? req.params.id : req.params.id?.[0];
+        const id =
+            typeof req.params.id === 'string'
+                ? req.params.id
+                : req.params.id?.[0];
         const { message, is_internal } = req.body;
         const user_id = req.user?.user_id;
         const userRole = req.user?.role?.toLowerCase() as any;
@@ -229,7 +271,12 @@ export const addDisputeMessage = async (req: Request, res: Response): Promise<vo
             return;
         }
 
-        const result = await addDisputeMessageService(id!, { message, is_internal }, user_id!, userRole);
+        const result = await addDisputeMessageService(
+            id!,
+            { message, is_internal },
+            user_id!,
+            userRole,
+        );
 
         response.response(
             res,
@@ -249,9 +296,15 @@ export const addDisputeMessage = async (req: Request, res: Response): Promise<vo
 };
 
 // Upload evidence
-export const uploadEvidence = async (req: Request, res: Response): Promise<void> => {
+export const uploadEvidence = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
-        const id = typeof req.params.id === 'string' ? req.params.id : req.params.id?.[0];
+        const id =
+            typeof req.params.id === 'string'
+                ? req.params.id
+                : req.params.id?.[0];
         const { description } = req.body;
         const user_id = req.user?.user_id;
         const file = req.file;
@@ -266,7 +319,12 @@ export const uploadEvidence = async (req: Request, res: Response): Promise<void>
             return;
         }
 
-        const result = await uploadEvidenceService(id!, file, description, user_id!);
+        const result = await uploadEvidenceService(
+            id!,
+            file,
+            description,
+            user_id!,
+        );
 
         response.response(
             res,
@@ -286,7 +344,10 @@ export const uploadEvidence = async (req: Request, res: Response): Promise<void>
 };
 
 // Check auto-escalation (admin endpoint, can be called by cron)
-export const checkAutoEscalation = async (req: Request, res: Response): Promise<void> => {
+export const checkAutoEscalation = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
         const result = await checkAutoEscalationService();
 
@@ -308,7 +369,10 @@ export const checkAutoEscalation = async (req: Request, res: Response): Promise<
 };
 
 // Get dispute statistics
-export const getDisputeStats = async (req: Request, res: Response): Promise<void> => {
+export const getDisputeStats = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
         const result = await getDisputeStatsService();
 
@@ -330,10 +394,15 @@ export const getDisputeStats = async (req: Request, res: Response): Promise<void
 };
 
 // Get user disputes
-export const getUserDisputes = async (req: Request, res: Response): Promise<void> => {
+export const getUserDisputes = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
         const user_id = req.user?.user_id;
-        const userRole = req.user?.role?.toLowerCase() as 'student' | 'employer';
+        const userRole = req.user?.role?.toLowerCase() as
+            | 'student'
+            | 'employer';
 
         if (!user_id || (userRole !== 'student' && userRole !== 'employer')) {
             response.errorResponse(
@@ -365,5 +434,3 @@ export const getUserDisputes = async (req: Request, res: Response): Promise<void
 };
 
 export { upload };
-
-

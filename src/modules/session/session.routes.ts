@@ -23,7 +23,11 @@ router.delete('/:sessionId', authMiddleware, sessionController.revokeSession);
  * POST /sessions/logout/others
  * @auth Required - User token
  */
-router.post('/logout/others', authMiddleware, sessionController.revokeOtherSessions);
+router.post(
+    '/logout/others',
+    authMiddleware,
+    sessionController.revokeOtherSessions,
+);
 
 /**
  * Revoke all sessions

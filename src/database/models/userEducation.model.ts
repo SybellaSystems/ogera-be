@@ -115,4 +115,3 @@ export default function (sequelize: Sequelize): typeof UserEducationModel {
 
     return UserEducationModel;
 }
-

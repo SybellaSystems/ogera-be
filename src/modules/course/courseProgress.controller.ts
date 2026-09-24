@@ -44,7 +44,11 @@ export const markStepComplete = async (
             return;
         }
 
-        const result = await markStepCompleteService(user_id, course_id, step_id);
+        const result = await markStepCompleteService(
+            user_id,
+            course_id,
+            step_id,
+        );
         response.response(
             res,
             true,
@@ -91,7 +95,11 @@ export const markStepIncomplete = async (
             return;
         }
 
-        const result = await markStepIncompleteService(user_id, course_id, step_id);
+        const result = await markStepIncompleteService(
+            user_id,
+            course_id,
+            step_id,
+        );
         response.response(
             res,
             true,
@@ -125,7 +133,10 @@ export const getCourseProgress = async (
             return;
         }
 
-        const course_id = typeof req.params.course_id === 'string' ? req.params.course_id : req.params.course_id?.[0];
+        const course_id =
+            typeof req.params.course_id === 'string'
+                ? req.params.course_id
+                : req.params.course_id?.[0];
         const user_id = req.user.user_id;
 
         if (!course_id) {
@@ -172,7 +183,10 @@ export const getCourseCompletion = async (
             return;
         }
 
-        const course_id = typeof req.params.course_id === 'string' ? req.params.course_id : req.params.course_id?.[0];
+        const course_id =
+            typeof req.params.course_id === 'string'
+                ? req.params.course_id
+                : req.params.course_id?.[0];
         const user_id = req.user.user_id;
 
         if (!course_id) {
@@ -254,7 +268,10 @@ export const checkCourseStarted = async (
             return;
         }
 
-        const course_id = typeof req.params.course_id === 'string' ? req.params.course_id : req.params.course_id?.[0];
+        const course_id =
+            typeof req.params.course_id === 'string'
+                ? req.params.course_id
+                : req.params.course_id?.[0];
         const user_id = req.user.user_id;
 
         if (!course_id) {
@@ -301,7 +318,10 @@ export const getCourseStudents = async (
             return;
         }
 
-        const course_id = typeof req.params.course_id === 'string' ? req.params.course_id : req.params.course_id?.[0];
+        const course_id =
+            typeof req.params.course_id === 'string'
+                ? req.params.course_id
+                : req.params.course_id?.[0];
 
         if (!course_id) {
             response.errorResponse(
@@ -314,10 +334,10 @@ export const getCourseStudents = async (
         }
 
         const result = await getCourseStudentsService(course_id);
-        
+
         // Ensure result is an array
         const studentsArray = Array.isArray(result) ? result : [];
-        
+
         response.response(
             res,
             true,
@@ -385,7 +405,10 @@ export const getCourseSpecificStatistics = async (
             return;
         }
 
-        const course_id = typeof req.params.course_id === 'string' ? req.params.course_id : req.params.course_id?.[0];
+        const course_id =
+            typeof req.params.course_id === 'string'
+                ? req.params.course_id
+                : req.params.course_id?.[0];
 
         if (!course_id) {
             response.errorResponse(

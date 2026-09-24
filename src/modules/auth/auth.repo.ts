@@ -54,7 +54,7 @@ const repo = {
 
         // Build where conditions for the Users table
         const usersWhere: any = {};
-        
+
         // Add search filter if provided - search by name or email
         if (search && search.trim()) {
             usersWhere[Op.or] = [
@@ -252,7 +252,10 @@ const repo = {
     },
 
     // Get counts for students and employers
-    getRoleCounts: async (): Promise<{ studentCount: number; employerCount: number }> => {
+    getRoleCounts: async (): Promise<{
+        studentCount: number;
+        employerCount: number;
+    }> => {
         const [studentCount, employerCount] = await Promise.all([
             DB.Users.count({
                 include: [

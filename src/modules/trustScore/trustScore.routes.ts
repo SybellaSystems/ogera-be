@@ -55,11 +55,7 @@ trustScoreRouter.get(
     getAdminTrustSummary,
 );
 
-trustScoreRouter.get(
-    '/history/:user_id',
-    authMiddleware,
-    getTrustHistory,
-);
+trustScoreRouter.get('/history/:user_id', authMiddleware, getTrustHistory);
 
 trustScoreRouter.post(
     '/calculate/:user_id',
@@ -74,7 +70,5 @@ trustScoreRouter.get(
 );
 
 trustScoreRouter.get('/:user_id', authMiddleware, getUserTrustScore);
-
-
 
 export default trustScoreRouter;

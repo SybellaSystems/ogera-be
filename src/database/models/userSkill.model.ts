@@ -4,7 +4,12 @@ import { UserModel } from './user.model';
 
 export type UserSkillCreationAttributes = Optional<
     UserSkill,
-    'skill_id' | 'proficiency_level' | 'years_of_experience' | 'last_used_year' | 'created_at' | 'updated_at'
+    | 'skill_id'
+    | 'proficiency_level'
+    | 'years_of_experience'
+    | 'last_used_year'
+    | 'created_at'
+    | 'updated_at'
 >;
 
 export class UserSkillModel
@@ -15,7 +20,11 @@ export class UserSkillModel
     public user_id!: string;
     public skill_name!: string;
     public skill_type!: 'key_skill' | 'it_skill';
-    public proficiency_level?: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+    public proficiency_level?:
+        | 'beginner'
+        | 'intermediate'
+        | 'advanced'
+        | 'expert';
     public years_of_experience?: number;
     public last_used_year?: number;
     public readonly created_at!: Date;
@@ -53,7 +62,12 @@ export default function (sequelize: Sequelize): typeof UserSkillModel {
                 defaultValue: 'key_skill',
             },
             proficiency_level: {
-                type: DataTypes.ENUM('beginner', 'intermediate', 'advanced', 'expert'),
+                type: DataTypes.ENUM(
+                    'beginner',
+                    'intermediate',
+                    'advanced',
+                    'expert',
+                ),
                 allowNull: true,
             },
             years_of_experience: {
@@ -96,4 +110,3 @@ export default function (sequelize: Sequelize): typeof UserSkillModel {
 
     return UserSkillModel;
 }
-

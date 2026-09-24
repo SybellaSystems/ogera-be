@@ -34,18 +34,10 @@ disputeRouter.get(
 );
 
 // Get user's disputes (student/employer)
-disputeRouter.get(
-    '/my-disputes',
-    authMiddleware,
-    getUserDisputes,
-);
+disputeRouter.get('/my-disputes', authMiddleware, getUserDisputes);
 
 // Get dispute by ID
-disputeRouter.get(
-    '/:id',
-    authMiddleware,
-    getDisputeById,
-);
+disputeRouter.get('/:id', authMiddleware, getDisputeById);
 
 // Create dispute (student/employer)
 disputeRouter.post(
@@ -72,11 +64,7 @@ disputeRouter.post(
 );
 
 // Add message to dispute
-disputeRouter.post(
-    '/:id/messages',
-    authMiddleware,
-    addDisputeMessage,
-);
+disputeRouter.post('/:id/messages', authMiddleware, addDisputeMessage);
 
 // Upload evidence
 disputeRouter.post(
@@ -95,9 +83,3 @@ disputeRouter.post(
 );
 
 export default disputeRouter;
-
-
-
-
-
-

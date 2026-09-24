@@ -99,31 +99,21 @@ jobReferralRouter.get(
 jobReferralRouter.get(
     '/available/:referral_id',
     authMiddleware,
-    PermissionChecker(
-        '/job-referrals',
-        'view',
-    ),
+    PermissionChecker('/job-referrals', 'view'),
     jobReferralController.getAvailableById,
 );
-
 
 jobReferralRouter.patch(
     '/:referral_id/approve',
     authMiddleware,
-    PermissionChecker(
-        '/job-referrals',
-        'edit',
-    ),
+    PermissionChecker('/job-referrals', 'edit'),
     jobReferralController.approveReferral,
 );
 
 jobReferralRouter.patch(
     '/:referral_id/reject',
     authMiddleware,
-    PermissionChecker(
-        '/job-referrals',
-        'edit',
-    ),
+    PermissionChecker('/job-referrals', 'edit'),
     jobReferralController.rejectReferral,
 );
 
@@ -135,10 +125,7 @@ jobReferralRouter.patch(
 jobReferralRouter.get(
     '/analytics',
     authMiddleware,
-    PermissionChecker(
-        '/job-referrals',
-        'view',
-    ),
+    PermissionChecker('/job-referrals', 'view'),
     jobReferralController.getAnalyticsSummary,
 );
 
@@ -148,10 +135,7 @@ jobReferralRouter.get(
 jobReferralRouter.get(
     '/analytics/top-performing',
     authMiddleware,
-    PermissionChecker(
-        '/job-referrals',
-        'view',
-    ),
+    PermissionChecker('/job-referrals', 'view'),
     jobReferralController.getTopPerformingReferrals,
 );
 
@@ -161,10 +145,7 @@ jobReferralRouter.get(
 jobReferralRouter.get(
     '/analytics/my',
     authMiddleware,
-    PermissionChecker(
-        '/job-referrals',
-        'view',
-    ),
+    PermissionChecker('/job-referrals', 'view'),
     jobReferralController.getCreatorAnalytics,
 );
 
@@ -174,10 +155,7 @@ jobReferralRouter.get(
 jobReferralRouter.get(
     '/:referral_id/analytics',
     authMiddleware,
-    PermissionChecker(
-        '/job-referrals',
-        'view',
-    ),
+    PermissionChecker('/job-referrals', 'view'),
     jobReferralController.getReferralAnalytics,
 );
 

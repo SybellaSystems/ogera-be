@@ -21,7 +21,12 @@ export class UserAccomplishmentModel
 {
     public accomplishment_id!: string;
     public user_id!: string;
-    public accomplishment_type!: 'certification' | 'award' | 'publication' | 'patent' | 'other';
+    public accomplishment_type!:
+        | 'certification'
+        | 'award'
+        | 'publication'
+        | 'patent'
+        | 'other';
     public title!: string;
     public issuing_organization?: string;
     public issue_date?: Date;
@@ -55,7 +60,13 @@ export default function (sequelize: Sequelize): typeof UserAccomplishmentModel {
                 onDelete: 'CASCADE',
             },
             accomplishment_type: {
-                type: DataTypes.ENUM('certification', 'award', 'publication', 'patent', 'other'),
+                type: DataTypes.ENUM(
+                    'certification',
+                    'award',
+                    'publication',
+                    'patent',
+                    'other',
+                ),
                 allowNull: false,
                 defaultValue: 'certification',
             },
@@ -115,4 +126,3 @@ export default function (sequelize: Sequelize): typeof UserAccomplishmentModel {
 
     return UserAccomplishmentModel;
 }
-

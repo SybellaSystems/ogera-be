@@ -3,12 +3,7 @@ import { JobReferralCreationAttributes } from '@/database/models/jobReferral.mod
 
 import { generateCreatedReferralId } from '@/utils/generateReferralId';
 
- type  ReferralTab =
-    | 'all'
-    | 'pending'
-    | 'verified'
-    | 'active'
-    | 'closed';
+type ReferralTab = 'all' | 'pending' | 'verified' | 'active' | 'closed';
 
 export class JobReferralService {
     /**
@@ -87,85 +82,68 @@ export class JobReferralService {
      * Get paginated job referrals
      */
 
-async getAllReferrals(
-    page = 1,
-    limit = 3,
-    status: ReferralTab = 'all',
-    getAll = false,
-) {
-    const safePage = Math.max(
-        1,
-        Number(page) || 1,
-    );
+    async getAllReferrals(
+        page = 1,
+        limit = 3,
+        status: ReferralTab = 'all',
+        getAll = false,
+    ) {
+        const safePage = Math.max(1, Number(page) || 1);
 
-    const safeLimit = Math.min(
-        100,
-        Math.max(
-            1,
-            Number(limit) || 3,
-        ),
-    );
+        const safeLimit = Math.min(100, Math.max(1, Number(limit) || 3));
 
-    const {
-        rows,
-        count,
-        counts,
-    } = await jobReferralRepository.findAll(
-        safePage,
-        safeLimit,
-        status,
-        getAll,
-    );
+        const { rows, count, counts } = await jobReferralRepository.findAll(
+            safePage,
+            safeLimit,
+            status,
+            getAll,
+        );
 
-    /*
-     * When all=true, pagination is not being used.
-     *
-     * Therefore we expose the complete result as one page.
-     */
-    if (getAll) {
+        /*
+         * When all=true, pagination is not being used.
+         *
+         * Therefore we expose the complete result as one page.
+         */
+        if (getAll) {
+            return {
+                referrals: rows,
+
+                pagination: {
+                    currentPage: 1,
+                    pageSize: rows.length,
+                    totalItems: count,
+                    totalPages: 1,
+
+                    hasNextPage: false,
+                    hasPreviousPage: false,
+                },
+
+                counts,
+            };
+        }
+
+        /*
+         * Existing pagination behavior.
+         */
+        const totalPages = Math.ceil(count / safeLimit);
+
         return {
             referrals: rows,
 
             pagination: {
-                currentPage: 1,
-                pageSize: rows.length,
+                currentPage: safePage,
+                pageSize: safeLimit,
                 totalItems: count,
-                totalPages: 1,
+                totalPages,
 
-                hasNextPage: false,
-                hasPreviousPage: false,
+                hasNextPage: safePage < totalPages,
+
+                hasPreviousPage: safePage > 1,
             },
 
             counts,
         };
     }
-
-    /*
-     * Existing pagination behavior.
-     */
-    const totalPages = Math.ceil(
-        count / safeLimit,
-    );
-
-    return {
-        referrals: rows,
-
-        pagination: {
-            currentPage: safePage,
-            pageSize: safeLimit,
-            totalItems: count,
-            totalPages,
-
-            hasNextPage:
-                safePage < totalPages,
-
-            hasPreviousPage:
-                safePage > 1,
-        },
-
-        counts,
-    };
-}
 
     /**
      * Search job referrals
@@ -626,30 +604,20 @@ async getAllReferrals(
         return jobReferralRepository.findByCreator(created_by);
     }
 
-    
     /**
- * Get active and verified referrals available to students
- *
- * Initial Recommended Jobs request:
- * - Returns maximum 9 referrals.
- *
- * View More request:
- * - Returns all available referrals.
- */
-async getActiveVerifiedReferrals(
-    limit = 9,
-    getAll = false,
-) {
-    const safeLimit = Math.min(
-        100,
-        Math.max(1, Number(limit) || 9),
-    );
+     * Get active and verified referrals available to students
+     *
+     * Initial Recommended Jobs request:
+     * - Returns maximum 9 referrals.
+     *
+     * View More request:
+     * - Returns all available referrals.
+     */
+    async getActiveVerifiedReferrals(limit = 9, getAll = false) {
+        const safeLimit = Math.min(100, Math.max(1, Number(limit) || 9));
 
-    return jobReferralRepository.findActiveVerified(
-        safeLimit,
-        getAll,
-    );
-}
+        return jobReferralRepository.findActiveVerified(safeLimit, getAll);
+    }
 
     /**
      * Get database transaction

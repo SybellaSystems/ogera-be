@@ -1,7 +1,21 @@
-export type DisputeType = 'Payment' | 'Contract Violation' | 'Quality Issue' | 'Timeline';
-export type DisputeStatus = 'Open' | 'Under Review' | 'Mediation' | 'Resolved' | 'Closed';
+export type DisputeType =
+    | 'Payment'
+    | 'Contract Violation'
+    | 'Quality Issue'
+    | 'Timeline';
+export type DisputeStatus =
+    | 'Open'
+    | 'Under Review'
+    | 'Mediation'
+    | 'Resolved'
+    | 'Closed';
 export type DisputePriority = 'High' | 'Medium' | 'Low';
-export type DisputeResolution = 'Refunded' | 'Settled' | 'Dismissed' | 'Escalated' | null;
+export type DisputeResolution =
+    | 'Refunded'
+    | 'Settled'
+    | 'Dismissed'
+    | 'Escalated'
+    | null;
 
 export interface Dispute {
     dispute_id: string;
@@ -89,9 +103,3 @@ export interface UploadDisputeEvidenceRequest {
     file: File;
     description?: string;
 }
-
-
-
-
-
-

@@ -1,1 +1,1 @@
-declare module "streamifier";
+declare module 'streamifier';

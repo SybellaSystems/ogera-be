@@ -1,4 +1,4 @@
-import { sendMail, EmailOptions } from "@/utils/mailer";
+import { sendMail, EmailOptions } from '@/utils/mailer';
 import {
     EmailTemplete,
     EmailVerificationTemplate,
@@ -15,58 +15,58 @@ import {
     JobNotFundedReminderEmailTemplate,
     type DigestJobRow,
     type UnfundedJobReminderRow,
-} from "@/templete/emailTemplete";
-import { EMAIL_CONFIG } from "@/config";
-import logger from "@/utils/logger";
+} from '@/templete/emailTemplete';
+import { EMAIL_CONFIG } from '@/config';
+import logger from '@/utils/logger';
 
 export enum EmailType {
     // Authentication & Account
-    EMAIL_VERIFICATION = "EMAIL_VERIFICATION",
-    PASSWORD_RESET_OTP = "PASSWORD_RESET_OTP",
-    PASSWORD_CHANGED = "PASSWORD_CHANGED",
-    WELCOME = "WELCOME",
-    ACCOUNT_LOCKED = "ACCOUNT_LOCKED",
-    ACCOUNT_UNLOCKED = "ACCOUNT_UNLOCKED",
-    
+    EMAIL_VERIFICATION = 'EMAIL_VERIFICATION',
+    PASSWORD_RESET_OTP = 'PASSWORD_RESET_OTP',
+    PASSWORD_CHANGED = 'PASSWORD_CHANGED',
+    WELCOME = 'WELCOME',
+    ACCOUNT_LOCKED = 'ACCOUNT_LOCKED',
+    ACCOUNT_UNLOCKED = 'ACCOUNT_UNLOCKED',
+
     // Job Application
-    JOB_APPLICATION_STATUS = "JOB_APPLICATION_STATUS",
-    JOB_APPLICATION_RECEIVED = "JOB_APPLICATION_RECEIVED",
-    JOB_POSTED = "JOB_POSTED",
-    
+    JOB_APPLICATION_STATUS = 'JOB_APPLICATION_STATUS',
+    JOB_APPLICATION_RECEIVED = 'JOB_APPLICATION_RECEIVED',
+    JOB_POSTED = 'JOB_POSTED',
+
     // Academic Verification
-    ACADEMIC_VERIFICATION_STATUS = "ACADEMIC_VERIFICATION_STATUS",
+    ACADEMIC_VERIFICATION_STATUS = 'ACADEMIC_VERIFICATION_STATUS',
 
     /** Periodic digest: active job listings for students */
-    ACTIVE_JOBS_DIGEST = "ACTIVE_JOBS_DIGEST",
+    ACTIVE_JOBS_DIGEST = 'ACTIVE_JOBS_DIGEST',
     /** Student: new task assigned on an approved job */
-    TASK_ASSIGNED = "TASK_ASSIGNED",
+    TASK_ASSIGNED = 'TASK_ASSIGNED',
     /** Employer: jobs still not funded via wallet / MoMo */
-    JOB_NOT_FUNDED_REMINDER = "JOB_NOT_FUNDED_REMINDER",
-    
+    JOB_NOT_FUNDED_REMINDER = 'JOB_NOT_FUNDED_REMINDER',
+
     // Custom
-    CUSTOM = "CUSTOM",
+    CUSTOM = 'CUSTOM',
 }
 
 export interface EmailData {
     // Common fields
     to: string | string[];
     type: EmailType;
-    
+
     // Email verification
     verificationLink?: string;
     verificationTokenExpiry?: Date;
-    
+
     // Password reset
     otp?: string;
     otpExpiry?: Date;
-    
+
     // Job application
     jobTitle?: string;
-    applicationStatus?: "Accepted" | "Rejected";
+    applicationStatus?: 'Accepted' | 'Rejected';
     studentName?: string;
     /** Also used for employer-facing reminders */
     employerName?: string;
-    
+
     // Welcome
     userName?: string;
     /** student | employer | admin | superAdmin — shapes welcome copy and CTAs */
@@ -85,16 +85,16 @@ export interface EmailData {
     /** Unfunded jobs reminder (employers) */
     unfundedJobs?: UnfundedJobReminderRow[];
     fundJobsUrl?: string;
-    
+
     // Academic verification
-    verificationStatus?: "Approved" | "Rejected";
+    verificationStatus?: 'Approved' | 'Rejected';
     rejectionReason?: string;
-    
+
     // Custom
     subject?: string;
     html?: string;
     text?: string;
-    
+
     // Additional options
     cc?: string | string[];
     bcc?: string | string[];
@@ -114,48 +114,49 @@ class EmailService {
     async sendEmail(data: EmailData): Promise<any> {
         try {
             const { type, to } = data;
-            
+
             let emailOptions: EmailOptions;
-            
+
             switch (type) {
                 case EmailType.EMAIL_VERIFICATION:
                     emailOptions = this.getEmailVerificationOptions(data);
                     break;
-                    
+
                 case EmailType.PASSWORD_RESET_OTP:
                     emailOptions = this.getPasswordResetOTPOptions(data);
                     break;
-                    
+
                 case EmailType.PASSWORD_CHANGED:
                     emailOptions = this.getPasswordChangedOptions(data);
                     break;
-                    
+
                 case EmailType.WELCOME:
                     emailOptions = this.getWelcomeEmailOptions(data);
                     break;
-                    
+
                 case EmailType.ACCOUNT_LOCKED:
                     emailOptions = this.getAccountLockedOptions(data);
                     break;
-                    
+
                 case EmailType.ACCOUNT_UNLOCKED:
                     emailOptions = this.getAccountUnlockedOptions(data);
                     break;
-                    
+
                 case EmailType.JOB_APPLICATION_STATUS:
                     emailOptions = this.getJobApplicationStatusOptions(data);
                     break;
-                    
+
                 case EmailType.JOB_APPLICATION_RECEIVED:
                     emailOptions = this.getJobApplicationReceivedOptions(data);
                     break;
-                    
+
                 case EmailType.JOB_POSTED:
                     emailOptions = this.getJobPostedOptions(data);
                     break;
-                    
+
                 case EmailType.ACADEMIC_VERIFICATION_STATUS:
-                    emailOptions = this.getAcademicVerificationStatusOptions(data);
+                    emailOptions =
+                        this.getAcademicVerificationStatusOptions(data);
                     break;
 
                 case EmailType.ACTIVE_JOBS_DIGEST:
@@ -169,18 +170,18 @@ class EmailService {
                 case EmailType.JOB_NOT_FUNDED_REMINDER:
                     emailOptions = this.getJobNotFundedReminderOptions(data);
                     break;
-                    
+
                 case EmailType.CUSTOM:
                     emailOptions = this.getCustomEmailOptions(data);
                     break;
-                    
+
                 default:
                     throw new Error(`Unknown email type: ${type}`);
             }
-            
+
             // Guarantee an app redirect CTA at the bottom of every email.
             // Some templates already include it; we avoid duplicating.
-            const APP_ROOT_URL = "https://app.ogera.sybellasystems.co.rw";
+            const APP_ROOT_URL = 'https://app.ogera.sybellasystems.co.rw';
             const footerHtml = `
   <div style="margin-top:22px;padding:16px 18px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;">
     <p style="margin:0 0 10px;font-size:13px;color:#475569;line-height:1.5;">
@@ -195,12 +196,12 @@ class EmailService {
 
             if (
                 emailOptions?.html &&
-                !emailOptions.html.includes("Open Ogera App") &&
-                typeof emailOptions.html === "string"
+                !emailOptions.html.includes('Open Ogera App') &&
+                typeof emailOptions.html === 'string'
             ) {
-                emailOptions.html = emailOptions.html.includes("</body>")
+                emailOptions.html = emailOptions.html.includes('</body>')
                     ? emailOptions.html.replace(
-                          "</body>",
+                          '</body>',
                           `${footerHtml}</body>`,
                       )
                     : `${emailOptions.html}${footerHtml}`;
@@ -208,14 +209,14 @@ class EmailService {
 
             if (
                 emailOptions?.text &&
-                !emailOptions.text.includes("Open Ogera App:")
+                !emailOptions.text.includes('Open Ogera App:')
             ) {
                 emailOptions.text = `${emailOptions.text}${footerText}`;
             }
 
             return await sendMail(emailOptions);
         } catch (error: any) {
-            logger.error("Email service error", {
+            logger.error('Email service error', {
                 type: data.type,
                 to: data.to,
                 error: error.message,
@@ -223,20 +224,22 @@ class EmailService {
             throw error;
         }
     }
-    
+
     private getEmailVerificationOptions(data: EmailData): EmailOptions {
         if (!data.verificationLink || !data.verificationTokenExpiry) {
-            throw new Error("verificationLink and verificationTokenExpiry are required for email verification");
+            throw new Error(
+                'verificationLink and verificationTokenExpiry are required for email verification',
+            );
         }
-        
+
         const { html, text } = EmailVerificationTemplate(
             data.verificationLink,
-            data.verificationTokenExpiry
+            data.verificationTokenExpiry,
         );
-        
+
         return {
             to: data.to,
-            subject: "Verify Your Email Address - Ogera",
+            subject: 'Verify Your Email Address - Ogera',
             html,
             text,
             cc: data.cc,
@@ -245,17 +248,19 @@ class EmailService {
             attachments: data.attachments,
         };
     }
-    
+
     private getPasswordResetOTPOptions(data: EmailData): EmailOptions {
         if (!data.otp || !data.otpExpiry) {
-            throw new Error("otp and otpExpiry are required for password reset");
+            throw new Error(
+                'otp and otpExpiry are required for password reset',
+            );
         }
-        
+
         const { html, text } = EmailTemplete(data.otp, data.otpExpiry);
-        
+
         return {
             to: data.to,
-            subject: "Password Reset OTP - Ogera",
+            subject: 'Password Reset OTP - Ogera',
             html,
             text,
             cc: data.cc,
@@ -264,13 +269,13 @@ class EmailService {
             attachments: data.attachments,
         };
     }
-    
+
     private getPasswordChangedOptions(data: EmailData): EmailOptions {
-        const { html, text } = PasswordChangedTemplate(data.userName || "User");
-        
+        const { html, text } = PasswordChangedTemplate(data.userName || 'User');
+
         return {
             to: data.to,
-            subject: "Password Changed Successfully - Ogera",
+            subject: 'Password Changed Successfully - Ogera',
             html,
             text,
             cc: data.cc,
@@ -279,13 +284,13 @@ class EmailService {
             attachments: data.attachments,
         };
     }
-    
+
     private getWelcomeEmailOptions(data: EmailData): EmailOptions {
-        const { html, text } = WelcomeEmailTemplate(data.userName || "User", {
+        const { html, text } = WelcomeEmailTemplate(data.userName || 'User', {
             roleType: data.userRoleType,
             frontendBaseUrl: EMAIL_CONFIG.frontendUrl,
         });
-        
+
         return {
             to: data.to,
             subject: "Welcome to Ogera — you're in!",
@@ -297,13 +302,13 @@ class EmailService {
             attachments: data.attachments,
         };
     }
-    
+
     private getAccountLockedOptions(data: EmailData): EmailOptions {
-        const { html, text } = AccountLockedTemplate(data.userName || "User");
-        
+        const { html, text } = AccountLockedTemplate(data.userName || 'User');
+
         return {
             to: data.to,
-            subject: "Account Locked - Ogera",
+            subject: 'Account Locked - Ogera',
             html,
             text,
             cc: data.cc,
@@ -312,13 +317,13 @@ class EmailService {
             attachments: data.attachments,
         };
     }
-    
+
     private getAccountUnlockedOptions(data: EmailData): EmailOptions {
-        const { html, text } = AccountUnlockedTemplate(data.userName || "User");
-        
+        const { html, text } = AccountUnlockedTemplate(data.userName || 'User');
+
         return {
             to: data.to,
-            subject: "Account Unlocked - Ogera",
+            subject: 'Account Unlocked - Ogera',
             html,
             text,
             cc: data.cc,
@@ -327,18 +332,20 @@ class EmailService {
             attachments: data.attachments,
         };
     }
-    
+
     private getJobApplicationStatusOptions(data: EmailData): EmailOptions {
         if (!data.jobTitle || !data.applicationStatus || !data.studentName) {
-            throw new Error("jobTitle, applicationStatus, and studentName are required for job application status");
+            throw new Error(
+                'jobTitle, applicationStatus, and studentName are required for job application status',
+            );
         }
-        
+
         const { html, text } = JobApplicationStatusTemplate(
             data.jobTitle,
             data.applicationStatus,
-            data.studentName
+            data.studentName,
         );
-        
+
         return {
             to: data.to,
             subject: `Job Application ${data.applicationStatus}: ${data.jobTitle}`,
@@ -350,18 +357,20 @@ class EmailService {
             attachments: data.attachments,
         };
     }
-    
+
     private getJobApplicationReceivedOptions(data: EmailData): EmailOptions {
         if (!data.jobTitle || !data.studentName || !data.employerName) {
-            throw new Error("jobTitle, studentName, and employerName are required for job application received");
+            throw new Error(
+                'jobTitle, studentName, and employerName are required for job application received',
+            );
         }
-        
+
         const { html, text } = ApplicationReceivedTemplate(
             data.jobTitle,
             data.studentName,
-            data.employerName
+            data.employerName,
         );
-        
+
         return {
             to: data.to,
             subject: `New Application Received: ${data.jobTitle}`,
@@ -373,14 +382,17 @@ class EmailService {
             attachments: data.attachments,
         };
     }
-    
+
     private getJobPostedOptions(data: EmailData): EmailOptions {
         if (!data.jobTitle) {
-            throw new Error("jobTitle is required for job posted email");
+            throw new Error('jobTitle is required for job posted email');
         }
-        
-        const { html, text } = JobPostedTemplate(data.jobTitle, data.userName || "Employer");
-        
+
+        const { html, text } = JobPostedTemplate(
+            data.jobTitle,
+            data.userName || 'Employer',
+        );
+
         return {
             to: data.to,
             subject: `Job Posted Successfully: ${data.jobTitle}`,
@@ -392,18 +404,22 @@ class EmailService {
             attachments: data.attachments,
         };
     }
-    
-    private getAcademicVerificationStatusOptions(data: EmailData): EmailOptions {
+
+    private getAcademicVerificationStatusOptions(
+        data: EmailData,
+    ): EmailOptions {
         if (!data.verificationStatus) {
-            throw new Error("verificationStatus is required for academic verification status");
+            throw new Error(
+                'verificationStatus is required for academic verification status',
+            );
         }
-        
+
         const { html, text } = AcademicVerificationStatusTemplate(
             data.verificationStatus,
-            data.userName || "Student",
-            data.rejectionReason
+            data.userName || 'Student',
+            data.rejectionReason,
         );
-        
+
         return {
             to: data.to,
             subject: `Academic Verification ${data.verificationStatus} - Ogera`,
@@ -420,9 +436,9 @@ class EmailService {
         const jobs = data.digestJobs ?? [];
         const browseUrl =
             data.browseJobsUrl ||
-            `${EMAIL_CONFIG.frontendUrl.replace(/\/$/, "")}/dashboard/jobs/all`;
+            `${EMAIL_CONFIG.frontendUrl.replace(/\/$/, '')}/dashboard/jobs/all`;
         const { html, text } = ActiveJobsDigestEmailTemplate(
-            data.userName || "there",
+            data.userName || 'there',
             jobs,
             browseUrl,
         );
@@ -431,8 +447,10 @@ class EmailService {
             to: data.to,
             subject:
                 count === 0
-                    ? "Ogera — open roles digest"
-                    : `Ogera — ${count} open role${count === 1 ? "" : "s"} for you`,
+                    ? 'Ogera — open roles digest'
+                    : `Ogera — ${count} open role${
+                          count === 1 ? '' : 's'
+                      } for you`,
             html,
             text,
             cc: data.cc,
@@ -445,14 +463,14 @@ class EmailService {
     private getTaskAssignedOptions(data: EmailData): EmailOptions {
         if (!data.jobTitle || !data.taskTitle) {
             throw new Error(
-                "jobTitle and taskTitle are required for task assigned email",
+                'jobTitle and taskTitle are required for task assigned email',
             );
         }
         const taskUrl =
             data.taskUrl ||
-            `${EMAIL_CONFIG.frontendUrl.replace(/\/$/, "")}/dashboard/tasks`;
+            `${EMAIL_CONFIG.frontendUrl.replace(/\/$/, '')}/dashboard/tasks`;
         const { html, text } = TaskAssignedEmailTemplate(
-            data.studentName || data.userName || "there",
+            data.studentName || data.userName || 'there',
             data.jobTitle,
             data.taskTitle,
             data.taskDeadline ?? null,
@@ -473,19 +491,26 @@ class EmailService {
     private getJobNotFundedReminderOptions(data: EmailData): EmailOptions {
         const jobs = data.unfundedJobs ?? [];
         if (jobs.length === 0) {
-            throw new Error("unfundedJobs is required for job not funded reminder");
+            throw new Error(
+                'unfundedJobs is required for job not funded reminder',
+            );
         }
         const fundUrl =
             data.fundJobsUrl ||
-            `${EMAIL_CONFIG.frontendUrl.replace(/\/$/, "")}/dashboard/jobs/unfunded`;
+            `${EMAIL_CONFIG.frontendUrl.replace(
+                /\/$/,
+                '',
+            )}/dashboard/jobs/unfunded`;
         const { html, text } = JobNotFundedReminderEmailTemplate(
-            data.userName || data.employerName || "there",
+            data.userName || data.employerName || 'there',
             jobs,
             fundUrl,
         );
         return {
             to: data.to,
-            subject: `Action needed: fund ${jobs.length} job${jobs.length === 1 ? "" : "s"} on Ogera`,
+            subject: `Action needed: fund ${jobs.length} job${
+                jobs.length === 1 ? '' : 's'
+            } on Ogera`,
             html,
             text,
             cc: data.cc,
@@ -494,12 +519,12 @@ class EmailService {
             attachments: data.attachments,
         };
     }
-    
+
     private getCustomEmailOptions(data: EmailData): EmailOptions {
         if (!data.subject || !data.html) {
-            throw new Error("subject and html are required for custom email");
+            throw new Error('subject and html are required for custom email');
         }
-        
+
         return {
             to: data.to,
             subject: data.subject,
@@ -520,7 +545,7 @@ export const emailService = new EmailService();
 export const sendEmailVerification = async (
     to: string,
     verificationLink: string,
-    expiry: Date
+    expiry: Date,
 ) => {
     return emailService.sendEmail({
         to,
@@ -533,7 +558,7 @@ export const sendEmailVerification = async (
 export const sendPasswordResetOTP = async (
     to: string,
     otp: string,
-    expiry: Date
+    expiry: Date,
 ) => {
     return emailService.sendEmail({
         to,
@@ -619,8 +644,8 @@ export const sendJobNotFundedReminderEmail = async (
 export const sendJobApplicationStatus = async (
     to: string,
     jobTitle: string,
-    status: "Accepted" | "Rejected",
-    studentName: string
+    status: 'Accepted' | 'Rejected',
+    studentName: string,
 ) => {
     return emailService.sendEmail({
         to,
@@ -630,4 +655,3 @@ export const sendJobApplicationStatus = async (
         studentName,
     });
 };
-

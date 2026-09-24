@@ -17,8 +17,8 @@ import {
     verifyResetOTP,
     resetPassword,
     getAllusers,
-   // getAllStudents,
-   // getAllEmployers,
+    // getAllStudents,
+    // getAllEmployers,
     getUserProfile,
     updateProfile,
     verifyEmail,
@@ -65,7 +65,10 @@ authRouter.post('/2fa/disable', authMiddleware, disable2FA);
 authRouter.post('/2fa/verify-login', verifyLogin2FA);
 // Lost authenticator routes
 authRouter.post('/2fa/lost-authenticator/send-otp', sendLostAuthenticatorOTP);
-authRouter.post('/2fa/lost-authenticator/verify-and-disable', verifyLostAuthenticatorOTPAndDisable2FA);
+authRouter.post(
+    '/2fa/lost-authenticator/verify-and-disable',
+    verifyLostAuthenticatorOTPAndDisable2FA,
+);
 authRouter.post('/2fa/lost-authenticator/setup', setup2FAWithToken);
 authRouter.post('/2fa/lost-authenticator/verify', verify2FAWithToken);
 
@@ -73,49 +76,94 @@ authRouter.get('/me', authMiddleware, async (req, res) => {
     try {
         const { DB } = await import('@/database');
         const roleName = req.user?.role;
-        
-        console.log('🔍 [AUTH/ME] Request received for user:', req.user?.user_id);
+
+        console.log(
+            '🔍 [AUTH/ME] Request received for user:',
+            req.user?.user_id,
+        );
         console.log('🔍 [AUTH/ME] User role:', roleName);
-        
+
         let permissions = null;
-        
+
         // Fetch role permissions if role exists and is not superadmin or exact "admin" roleName
         // Custom admin roles like "admin1", "admin2", "subadmin" etc. will fetch permissions
-        if (roleName && 
-            roleName.toLowerCase() !== 'superadmin' && 
-            roleName !== 'admin') {
-            console.log('🔍 [AUTH/ME] Fetching permissions for role:', roleName);
+        if (
+            roleName &&
+            roleName.toLowerCase() !== 'superadmin' &&
+            roleName !== 'admin'
+        ) {
+            console.log(
+                '🔍 [AUTH/ME] Fetching permissions for role:',
+                roleName,
+            );
             const role = await DB.Roles.findOne({ where: { roleName } });
             if (role) {
-                console.log('🔍 [AUTH/ME] Role found. permission_json type:', typeof role.permission_json);
-                console.log('🔍 [AUTH/ME] permission_json raw:', role.permission_json);
-                
+                console.log(
+                    '🔍 [AUTH/ME] Role found. permission_json type:',
+                    typeof role.permission_json,
+                );
+                console.log(
+                    '🔍 [AUTH/ME] permission_json raw:',
+                    role.permission_json,
+                );
+
                 // Parse permission_json if it's a string, otherwise use it as-is
-                permissions = typeof role.permission_json === 'string'
-                    ? JSON.parse(role.permission_json)
-                    : role.permission_json || [];
-                
-                console.log('🔍 [AUTH/ME] Parsed permissions:', JSON.stringify(permissions, null, 2));
+                permissions =
+                    typeof role.permission_json === 'string'
+                        ? JSON.parse(role.permission_json)
+                        : role.permission_json || [];
+
+                console.log(
+                    '🔍 [AUTH/ME] Parsed permissions:',
+                    JSON.stringify(permissions, null, 2),
+                );
             } else {
-                console.log('⚠️ [AUTH/ME] Role not found in database for roleName:', roleName);
+                console.log(
+                    '⚠️ [AUTH/ME] Role not found in database for roleName:',
+                    roleName,
+                );
             }
         } else {
-            console.log('🔍 [AUTH/ME] Skipping permission fetch (superadmin or exact "admin" roleName bypass)');
+            console.log(
+                '🔍 [AUTH/ME] Skipping permission fetch (superadmin or exact "admin" roleName bypass)',
+            );
         }
-        
+
         // Fetch full user from DB to include profile_image_url and other fields
         let fullUserData: any = req.user;
         try {
             const fullUser = await DB.Users.findOne({
                 where: { user_id: req.user?.user_id },
-                attributes: { exclude: ['password_hash', 'reset_otp', 'reset_otp_expiry', 'two_fa_secret', 'phone_verification_otp', 'phone_verification_otp_expiry', 'login_2fa_otp', 'login_2fa_otp_expiry', 'email_verification_token', 'email_verification_token_expiry'] },
-                include: [{ model: DB.Roles, as: 'role', attributes: ['id', 'roleName', 'roleType'] }],
+                attributes: {
+                    exclude: [
+                        'password_hash',
+                        'reset_otp',
+                        'reset_otp_expiry',
+                        'two_fa_secret',
+                        'phone_verification_otp',
+                        'phone_verification_otp_expiry',
+                        'login_2fa_otp',
+                        'login_2fa_otp_expiry',
+                        'email_verification_token',
+                        'email_verification_token_expiry',
+                    ],
+                },
+                include: [
+                    {
+                        model: DB.Roles,
+                        as: 'role',
+                        attributes: ['id', 'roleName', 'roleType'],
+                    },
+                ],
             });
             if (fullUser) {
                 fullUserData = fullUser.toJSON();
             }
         } catch (dbError: any) {
-            console.warn('⚠️ [AUTH/ME] Could not fetch full user, falling back to JWT data:', dbError.message);
+            console.warn(
+                '⚠️ [AUTH/ME] Could not fetch full user, falling back to JWT data:',
+                dbError.message,
+            );
         }
 
         const responseData = {

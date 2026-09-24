@@ -11,7 +11,10 @@ export async function runBadgeSubscriptionMaintenance(): Promise<void> {
     try {
         const expired = await processExpiredSubscriptions();
         const reminders = await sendSubscriptionExpiryReminders();
-        logger.info('Badge subscription maintenance completed', { expired, reminders });
+        logger.info('Badge subscription maintenance completed', {
+            expired,
+            reminders,
+        });
     } catch (error) {
         logger.error('Badge subscription maintenance failed', error);
     }
@@ -33,13 +36,13 @@ export function startBadgeSubscriptionScheduler(): void {
     }
 
     intervalHandle = setInterval(() => {
-        runBadgeSubscriptionMaintenance().catch((err) =>
+        runBadgeSubscriptionMaintenance().catch(err =>
             logger.error('Badge scheduler cycle error', err),
         );
     }, intervalMs);
 
     if (EMAIL_SCHEDULER_CONFIG.runOnStart) {
-        runBadgeSubscriptionMaintenance().catch((err) =>
+        runBadgeSubscriptionMaintenance().catch(err =>
             logger.error('Badge scheduler initial run error', err),
         );
     }

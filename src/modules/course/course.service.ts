@@ -12,17 +12,23 @@ export const createCourseService = async (
 ) => {
     // Validate required fields
     if (!courseData.course_name) {
-        throw new CustomError('Course name is required', StatusCodes.BAD_REQUEST);
+        throw new CustomError(
+            'Course name is required',
+            StatusCodes.BAD_REQUEST,
+        );
     }
     if (!courseData.type) {
-        throw new CustomError('Course type is required', StatusCodes.BAD_REQUEST);
+        throw new CustomError(
+            'Course type is required',
+            StatusCodes.BAD_REQUEST,
+        );
     }
     if (!courseData.tag) {
         throw new CustomError('Tag is required', StatusCodes.BAD_REQUEST);
     }
 
     const { steps, ...coursePayloadData } = courseData;
-    
+
     const coursePayload = {
         ...coursePayloadData,
     };
@@ -78,7 +84,7 @@ export const updateCourseService = async (
     if (steps !== undefined) {
         // Delete existing steps
         await repo.deleteCourseSteps(course_id);
-        
+
         // Create new steps if provided
         if (Array.isArray(steps) && steps.length > 0) {
             await repo.createCourseSteps(course_id, steps);
@@ -107,9 +113,7 @@ export const deleteCourseService = async (course_id: string) => {
     return { message: 'Course deleted successfully' };
 };
 
-export const uploadCourseContentService = async (
-    file: Express.Multer.File,
-) => {
+export const uploadCourseContentService = async (file: Express.Multer.File) => {
     if (!file) {
         throw new CustomError('File is required', StatusCodes.BAD_REQUEST);
     }
@@ -225,5 +229,3 @@ export const downloadCourseContentService = async (
         contentType,
     };
 };
-
-

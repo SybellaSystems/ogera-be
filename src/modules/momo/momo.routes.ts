@@ -25,19 +25,37 @@ momoRouter.get('/token', getToken);
 momoRouter.post('/fund-job', authMiddleware, fundJob);
 
 // Admin: employer payments / job funding status (includes Paid)
-momoRouter.get('/admin/payments', authMiddleware, adminOrSuperadminOnly, listJobPayments);
+momoRouter.get(
+    '/admin/payments',
+    authMiddleware,
+    adminOrSuperadminOnly,
+    listJobPayments,
+);
 
 // Employer/Admin: detailed payment + conversion breakdown for one job
-momoRouter.get('/job/:jobId/payment-detail', authMiddleware, getJobPaymentDetail);
+momoRouter.get(
+    '/job/:jobId/payment-detail',
+    authMiddleware,
+    getJobPaymentDetail,
+);
 
 // Admin: Ogera wallet balance (disbursement account total)
-momoRouter.get('/admin/wallet-balance', authMiddleware, adminOrSuperadminOnly, getWalletBalance);
+momoRouter.get(
+    '/admin/wallet-balance',
+    authMiddleware,
+    adminOrSuperadminOnly,
+    getWalletBalance,
+);
 
 // Employer: approve work and pay student via disbursement (job must be Funded, one Accepted application)
 momoRouter.post('/approve-work-and-pay', authMiddleware, approveWorkAndPay);
 
 // Disbursement transfer status (auth)
-momoRouter.get('/disbursement-status/:referenceId', authMiddleware, getDisbursementStatus);
+momoRouter.get(
+    '/disbursement-status/:referenceId',
+    authMiddleware,
+    getDisbursementStatus,
+);
 
 // Request to Pay - requires auth
 momoRouter.post('/request-to-pay', authMiddleware, requestToPay);
@@ -49,7 +67,11 @@ momoRouter.get('/status/:referenceId', authMiddleware, getStatus);
 momoRouter.post('/create-invoice', authMiddleware, createInvoice);
 
 // Invoice status - requires auth
-momoRouter.get('/invoice-status/:referenceId', authMiddleware, getInvoiceStatus);
+momoRouter.get(
+    '/invoice-status/:referenceId',
+    authMiddleware,
+    getInvoiceStatus,
+);
 
 // Callback from MTN - no auth (MTN server calls this)
 momoRouter.post('/callback', callback);

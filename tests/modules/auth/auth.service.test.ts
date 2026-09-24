@@ -1,18 +1,18 @@
-import {
-    signUpService,
-    signInService,
-} from '../../../src/modules/auth/auth.service';
-import { CustomError } from '../../../src/utils/custom-error';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { registerUser, loginUser } from '../../../src/modules/auth/auth.service';
 import repo from '../../../src/modules/auth/auth.repo';
-import { User } from '../../../src/interfaces/user.interfaces';
 import { DB } from '../../../src/database';
-import { hash, compareSync } from 'bcrypt';
-import { validateSignUp, validateSignIn } from '../../../src/modules/auth/auth.validator';
-import { generateJWT } from '../../../src/middlewares/jwt.service';
+import { compareSync, hash } from 'bcrypt';
 
 jest.mock('../../../src/modules/auth/auth.repo');
+
 jest.mock('../../../src/database', () => ({
     DB: {
+        Roles: { findOne: jest.fn() },
+        UserExtendedProfiles: { create: jest.fn() },
+        ActivityLogs: { create: jest.fn() },
+        UserSkills: { create: jest.fn() },
+        Users: { findOne: jest.fn(), create: jest.fn() },
         sequelize: {
             close: jest.fn(),
             authenticate: jest.fn(),
@@ -21,172 +21,173 @@ jest.mock('../../../src/database', () => ({
 }));
 
 jest.mock('bcrypt', () => ({
-    hash: jest.fn(() => Promise.resolve('hashedPassword')),
+    hash: jest.fn(async () => 'hashedPassword'),
     compareSync: jest.fn(() => true),
 }));
 
-jest.mock('../../../src/modules/auth/auth.validator', () => ({
-    validateSignUp: jest.fn(),
-    validateSignIn: jest.fn(() => ({ error: null })), 
+jest.mock('../../../src/services/email/email.service', () => ({
+    sendWelcomeEmail: jest.fn(),
 }));
 
-jest.mock('../../../src/middlewares/jwt.service');
+jest.mock('../../../src/modules/badge/badge.service', () => ({
+    assignFreeBadgeOnRegistration: jest.fn(async () => null),
+}));
 
-afterAll(async () => {
-    await DB.sequelize.close();
-});
+jest.mock('../../../src/modules/trustScore/trustScore.service', () => ({
+    calculateTrustScoreService: jest.fn(),
+}));
 
-describe('signUpService', () => {
-    it('should throw error if email already exists', async () => {
-        const userData: User = {
-            email: 'existing@example.com',
-            name: 'Existing User',
-            username: 'existinguser',
-            password: 'Password123!',
-            created_at: undefined,
-            updated_at: undefined,
-        };
+jest.mock('../../../src/modules/session/session.service', () => ({
+    parseDeviceType: jest.fn(() => 'desktop'),
+}));
 
-        (repo.findUserByEmail as jest.Mock).mockResolvedValue({
-            id: 1,
-            email: 'existing@example.com',
-        });
+jest.mock('../../../src/modules/session/session.repo', () => ({
+    __esModule: true,
+    default: {
+        createSession: jest.fn(),
+    },
+}));
 
-        (validateSignUp as jest.Mock).mockReturnValue({ error: null });
+jest.mock('../../../src/utils/captcha', () => ({
+    verifyCaptcha: jest.fn(),
+}));
 
-        await expect(signUpService(userData)).rejects.toThrow(
-            new CustomError(`Email ${userData.email} already exists`, 409),
-        );
+jest.mock('../../../src/middlewares/jwt.service', () => ({
+    generateAccessToken: jest.fn(() => 'access-token'),
+    generateRefreshToken: jest.fn(() => 'refresh-token'),
+    verifyRefreshToken: jest.fn(),
+}));
+
+describe('auth service', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
     });
 
-    it('should throw error if validation fails', async () => {
-        const userData: User = {
-            email: 'invalid-email',
-            name: 'Invalid User',
-            username: 'invaliduser',
-            password: 'Password123!',
-            created_at: undefined,
-            updated_at: undefined,
-        };
+    describe('registerUser', () => {
+        it('should throw if email already exists', async () => {
+            const payload = {
+                email: 'existing@example.com',
+                full_name: 'Existing User',
+                password: 'Password123!',
+                terms: true,
+                privacy: true,
+                role: 'student',
+            };
 
-        const validationError = {
-            details: [{ message: 'Email format is invalid' }],
-        };
-        (validateSignUp as jest.Mock).mockReturnValue({
-            error: validationError,
+            (repo.findUserByEmail as any).mockResolvedValue({
+                user_id: 'user-1',
+                email: 'existing@example.com',
+            });
+
+            await expect(registerUser(payload as any)).rejects.toThrow(
+                'Email already exists',
+            );
         });
 
-        await expect(signUpService(userData)).rejects.toThrow(
-            new CustomError('Email format is invalid', 400),
-        );
-    });
+        it('should register a new user successfully', async () => {
+            const payload = {
+                email: 'new@example.com',
+                full_name: 'New User',
+                password: 'Password123!',
+                terms: true,
+                privacy: true,
+                role: 'student',
+            };
 
-    it('should create new user if email is available', async () => {
-        const userData: User = {
-            email: 'new@example.com',
-            name: 'New User',
-            username: 'newuser',
-            password: 'Password123!',
-            created_at: undefined,
-            updated_at: undefined,
-        };
+            const createdUser = {
+                user_id: 'user-1',
+                full_name: 'New User',
+                email: 'new@example.com',
+                password_hash: 'hashedPassword',
+                role_id: 'role-1',
+                role_type: 'student',
+                terms_accepted: true,
+                privacy_accepted: true,
+                created_at: new Date(),
+                updated_at: new Date(),
+            };
 
-        (repo.findUserByEmail as jest.Mock).mockResolvedValue(null);
-        (validateSignUp as jest.Mock).mockReturnValue({ error: null });
+            (repo.findUserByEmail as any).mockResolvedValue(null);
+            (DB.Roles.findOne as any).mockResolvedValue({
+                id: 'role-1',
+                roleName: 'student',
+                roleType: 'student',
+            });
+            (hash as any).mockResolvedValue('hashedPassword');
+            (repo.createUser as any).mockResolvedValue(createdUser);
 
-        const newUser = {
-            id: 1,
-            email: 'new@example.com',
-            username: 'new-username',
-            password: 'hashedPassword',
-        };
+            const result = await registerUser(payload as any);
 
-        (repo.createUser as jest.Mock).mockResolvedValue(newUser);
-
-        const result = await signUpService(userData);
-        expect(result).toEqual({ user: newUser });
-        expect(hash).toHaveBeenCalledWith(userData.password, 10);
-    });
-});
-
-describe('signInService', () => {
-    const mockUser: User = {
-        email: 'test@example.com',
-        name: 'Test User',
-        username: 'testuser',
-        password: 'hashed_password',
-        created_at: undefined,
-        updated_at: undefined,
-    };
-
-    it('should return user and accessToken if credentials are correct', async () => {
-        (repo.findUserByEmail as jest.Mock).mockResolvedValue(mockUser);
-        (generateJWT as jest.Mock).mockResolvedValue('mocked_access_token');
-        jest.spyOn(require('bcrypt'), 'compareSync').mockReturnValue(true);
-
-        const result = await signInService({
-            email: 'test@example.com',
-            password: 'correct_password',
-            name: 'Test User',
-            username: 'testuser',
-            created_at: undefined,
-            updated_at: undefined,
-        });
-
-        expect(repo.findUserByEmail).toHaveBeenCalledWith('test@example.com');
-        expect(generateJWT).toHaveBeenCalled();
-        expect(result).toEqual({
-            user: mockUser,
-            accessToken: 'mocked_access_token',
+            expect(repo.findUserByEmail).toHaveBeenCalledWith('new@example.com');
+            expect(hash).toHaveBeenCalledWith('Password123!', 10);
+            expect(result.user).toMatchObject({
+                user_id: 'user-1',
+                email: 'new@example.com',
+                full_name: 'New User',
+            });
         });
     });
 
-    it('should throw 401 error if user is not found', async () => {
-        (repo.findUserByEmail as jest.Mock).mockResolvedValue(null);
-
-        await expect(
-            signInService({
+    describe('loginUser', () => {
+        it('should return access token for valid credentials', async () => {
+            const user = {
+                user_id: 'user-1',
                 email: 'test@example.com',
-                password: 'wrong_password',
-                name: 'Test User',
-                username: 'testuser',
-                created_at: undefined,
-                updated_at: undefined,
-            }),
-        ).rejects.toThrow('Email or password is invalid');
-    });
+                full_name: 'Test User',
+                password_hash: 'hashedPassword',
+                role_id: 'role-1',
+                role_type: 'student',
+                two_fa_enabled: false,
+                created_at: new Date(),
+                updated_at: new Date(),
+            };
 
-    it('should throw 401 error if password is incorrect', async () => {
-        (repo.findUserByEmail as jest.Mock).mockResolvedValue(mockUser);
-        jest.spyOn(require('bcrypt'), 'compareSync').mockReturnValue(false);
+            (repo.findUserByEmail as any).mockResolvedValue(user);
+            (compareSync as any).mockReturnValue(true);
+            (DB.Roles.findOne as any).mockResolvedValue({
+                id: 'role-1',
+                roleName: 'student',
+            });
 
-        await expect(
-            signInService({
+            const result = await loginUser({
                 email: 'test@example.com',
-                password: 'wrong_password',
-                name: 'Test User',
-                username: 'testuser',
-                created_at: undefined,
-                updated_at: undefined,
-            }),
-        ).rejects.toThrow('Email or password is invalid');
-    });
+                password: 'Password123!',
+            } as any);
 
-    it('should throw 400 error if validation fails', async () => {
-        (validateSignIn as jest.Mock).mockReturnValue({
-            error: { details: [{ message: 'Email and password are required' }] }
+            expect(repo.findUserByEmail).toHaveBeenCalledWith('test@example.com');
+            expect(compareSync).toHaveBeenCalledWith(
+                'Password123!',
+                'hashedPassword',
+            );
+            expect(result).toMatchObject({
+                user: expect.objectContaining({ user_id: 'user-1' }),
+                accessToken: 'access-token',
+                refreshToken: 'refresh-token',
+            });
         });
-    
-        await expect(
-            signInService({
-                email: '',
-                password: '',
-                name: '',
-                username: '',
-                created_at: undefined,
-                updated_at: undefined,
-            }),
-        ).rejects.toThrow('Email and password are required');
+
+        it('should throw when password is invalid', async () => {
+            const user = {
+                user_id: 'user-1',
+                email: 'test@example.com',
+                full_name: 'Test User',
+                password_hash: 'hashedPassword',
+                role_id: 'role-1',
+                role_type: 'student',
+                two_fa_enabled: false,
+                created_at: new Date(),
+                updated_at: new Date(),
+            };
+
+            (repo.findUserByEmail as any).mockResolvedValue(user);
+            (compareSync as any).mockReturnValue(false);
+
+            await expect(
+                loginUser({
+                    email: 'test@example.com',
+                    password: 'wrong-password',
+                } as any),
+            ).rejects.toThrow('Invalid credentials');
+        });
     });
-    
 });

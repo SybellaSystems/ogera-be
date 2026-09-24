@@ -25,11 +25,25 @@ export const createProblemMetric = async (
 ): Promise<void> => {
     try {
         if (!req.user) {
-            response.errorResponse(res, StatusCodes.UNAUTHORIZED, false, 'Unauthorized');
+            response.errorResponse(
+                res,
+                StatusCodes.UNAUTHORIZED,
+                false,
+                'Unauthorized',
+            );
             return;
         }
-        const data = await createProblemMetricService(req.body, req.user.user_id);
-        response.response(res, true, StatusCodes.CREATED, data as any, 'Problem metric created');
+        const data = await createProblemMetricService(
+            req.body,
+            req.user.user_id,
+        );
+        response.response(
+            res,
+            true,
+            StatusCodes.CREATED,
+            data as any,
+            'Problem metric created',
+        );
     } catch (error: any) {
         response.errorResponse(
             res,
@@ -78,7 +92,9 @@ export const getProblemMetricAdmin = async (
     _next: NextFunction,
 ): Promise<void> => {
     try {
-        const data = await getProblemMetricAdminService(req.params.id as string);
+        const data = await getProblemMetricAdminService(
+            req.params.id as string,
+        );
         response.response(res, true, StatusCodes.OK, data as any, 'OK');
     } catch (error: any) {
         response.errorResponse(
@@ -96,7 +112,10 @@ export const updateProblemMetric = async (
     _next: NextFunction,
 ): Promise<void> => {
     try {
-        const data = await updateProblemMetricService(req.params.id as string, req.body);
+        const data = await updateProblemMetricService(
+            req.params.id as string,
+            req.body,
+        );
         response.response(res, true, StatusCodes.OK, data as any, 'Updated');
     } catch (error: any) {
         response.errorResponse(
@@ -132,8 +151,17 @@ export const addProblemMetricQuestion = async (
     _next: NextFunction,
 ): Promise<void> => {
     try {
-        const data = await addProblemMetricQuestionService(req.params.id as string, req.body);
-        response.response(res, true, StatusCodes.OK, data as any, 'Question added');
+        const data = await addProblemMetricQuestionService(
+            req.params.id as string,
+            req.body,
+        );
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            data as any,
+            'Question added',
+        );
     } catch (error: any) {
         response.errorResponse(
             res,
@@ -155,7 +183,13 @@ export const updateProblemMetricQuestion = async (
             req.params.questionId as string,
             req.body,
         );
-        response.response(res, true, StatusCodes.OK, data as any, 'Question updated');
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            data as any,
+            'Question updated',
+        );
     } catch (error: any) {
         response.errorResponse(
             res,
@@ -172,8 +206,17 @@ export const deleteProblemMetricQuestion = async (
     _next: NextFunction,
 ): Promise<void> => {
     try {
-        const data = await deleteProblemMetricQuestionService(req.params.id as string, req.params.questionId as string);
-        response.response(res, true, StatusCodes.OK, data as any, 'Question deleted');
+        const data = await deleteProblemMetricQuestionService(
+            req.params.id as string,
+            req.params.questionId as string,
+        );
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            data as any,
+            'Question deleted',
+        );
     } catch (error: any) {
         response.errorResponse(
             res,
@@ -208,7 +251,9 @@ export const getPublishedProblemMetricForAttempt = async (
     _next: NextFunction,
 ): Promise<void> => {
     try {
-        const data = await getPublishedProblemMetricForAttemptService(req.params.id as string);
+        const data = await getPublishedProblemMetricForAttemptService(
+            req.params.id as string,
+        );
         response.response(res, true, StatusCodes.OK, data as any, 'OK');
     } catch (error: any) {
         response.errorResponse(
@@ -227,16 +272,36 @@ export const submitProblemMetricAttempt = async (
 ): Promise<void> => {
     try {
         if (!req.user) {
-            response.errorResponse(res, StatusCodes.UNAUTHORIZED, false, 'Unauthorized');
+            response.errorResponse(
+                res,
+                StatusCodes.UNAUTHORIZED,
+                false,
+                'Unauthorized',
+            );
             return;
         }
         const { answers } = req.body as { answers?: Record<string, number> };
         if (!answers || typeof answers !== 'object') {
-            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'answers object required');
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'answers object required',
+            );
             return;
         }
-        const data = await submitProblemMetricAttemptService(req.user.user_id, req.params.id as string, answers);
-        response.response(res, true, StatusCodes.OK, data as any, 'Attempt recorded');
+        const data = await submitProblemMetricAttemptService(
+            req.user.user_id,
+            req.params.id as string,
+            answers,
+        );
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            data as any,
+            'Attempt recorded',
+        );
     } catch (error: any) {
         response.errorResponse(
             res,
@@ -254,10 +319,17 @@ export const getMyProblemMetricAttemptHistory = async (
 ): Promise<void> => {
     try {
         if (!req.user) {
-            response.errorResponse(res, StatusCodes.UNAUTHORIZED, false, 'Unauthorized');
+            response.errorResponse(
+                res,
+                StatusCodes.UNAUTHORIZED,
+                false,
+                'Unauthorized',
+            );
             return;
         }
-        const data = await getMyProblemMetricAttemptHistoryService(req.user.user_id);
+        const data = await getMyProblemMetricAttemptHistoryService(
+            req.user.user_id,
+        );
         response.response(res, true, StatusCodes.OK, data as any, 'OK');
     } catch (error: any) {
         response.errorResponse(

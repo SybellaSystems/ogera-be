@@ -81,7 +81,9 @@ export const assignFreeBadgeOnRegistration = async (
     };
 };
 
-export const getStudentApplicationCount = async (studentId: string): Promise<number> => {
+export const getStudentApplicationCount = async (
+    studentId: string,
+): Promise<number> => {
     return DB.JobApplications.count({
         where: { student_id: studentId },
     });
@@ -100,7 +102,10 @@ export const assertCanApplyForJob = async (student: any): Promise<void> => {
     }
 };
 
-export const filterJobsForStudentBadge = (jobs: any[], badge: BadgeType): any[] => {
+export const filterJobsForStudentBadge = (
+    jobs: any[],
+    badge: BadgeType,
+): any[] => {
     const config = getBadgeConfig(badge);
     if (config.canSeeLatestJobs && !config.jobDelayDays) {
         return jobs;
@@ -112,13 +117,15 @@ export const filterJobsForStudentBadge = (jobs: any[], badge: BadgeType): any[] 
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - delayDays);
 
-    return jobs.filter((job) => {
+    return jobs.filter(job => {
         const createdAt = new Date(job.created_at || job.createdAt);
         return createdAt <= cutoff;
     });
 };
 
-export const checkAndAwardPioneerBadge = async (userId: string): Promise<boolean> => {
+export const checkAndAwardPioneerBadge = async (
+    userId: string,
+): Promise<boolean> => {
     const user = await DB.Users.findOne({ where: { user_id: userId } });
     if (!user || user.role_type !== 'student') return false;
     if (user.badge === 'PIONEER') return false;
@@ -159,7 +166,10 @@ export const initiatePremiumSubscription = async (
 ) => {
     const user = await DB.Users.findOne({ where: { user_id: userId } });
     if (!user || user.role_type !== 'student') {
-        throw new CustomError('Only students can upgrade subscription', StatusCodes.FORBIDDEN);
+        throw new CustomError(
+            'Only students can upgrade subscription',
+            StatusCodes.FORBIDDEN,
+        );
     }
 
     if (user.badge === 'PIONEER') {
@@ -169,7 +179,9 @@ export const initiatePremiumSubscription = async (
         );
     }
 
-    const normalizedCurrency = String(currency || 'EUR').trim().toUpperCase();
+    const normalizedCurrency = String(currency || 'EUR')
+        .trim()
+        .toUpperCase();
     const amountStr = PREMIUM_PRICE.toFixed(0);
 
     const purchase = await DB.BadgePurchases.create({
@@ -216,7 +228,9 @@ export const initiatePremiumSubscription = async (
     };
 };
 
-export const settleBadgeSubscription = async (referenceId: string): Promise<boolean> => {
+export const settleBadgeSubscription = async (
+    referenceId: string,
+): Promise<boolean> => {
     const purchase = await DB.BadgePurchases.findOne({
         where: { momo_reference_id: referenceId },
     });
@@ -224,7 +238,9 @@ export const settleBadgeSubscription = async (referenceId: string): Promise<bool
         return false;
     }
 
-    const user = await DB.Users.findOne({ where: { user_id: purchase.user_id } });
+    const user = await DB.Users.findOne({
+        where: { user_id: purchase.user_id },
+    });
     if (!user) return false;
 
     const sourceCurrency = String(purchase.currency).toUpperCase();
@@ -235,7 +251,11 @@ export const settleBadgeSubscription = async (referenceId: string): Promise<bool
 
     if (sourceCurrency !== OGERA_WALLET_CURRENCY) {
         try {
-            const fx = await convertCurrency(sourceAmount, sourceCurrency, OGERA_WALLET_CURRENCY);
+            const fx = await convertCurrency(
+                sourceAmount,
+                sourceCurrency,
+                OGERA_WALLET_CURRENCY,
+            );
             usdAmount = fx.convertedAmount;
             exchangeRate = fx.rate;
         } catch (err) {
@@ -269,7 +289,10 @@ export const settleBadgeSubscription = async (referenceId: string): Promise<bool
 
     if (DB.Transactions) {
         const alreadyLogged = await DB.Transactions.findOne({
-            where: { reference_id: referenceId, type: 'BADGE_SUBSCRIPTION_CREDIT' },
+            where: {
+                reference_id: referenceId,
+                type: 'BADGE_SUBSCRIPTION_CREDIT',
+            },
         });
         if (!alreadyLogged) {
             await DB.Transactions.create({
@@ -310,7 +333,10 @@ export const settleBadgeSubscription = async (referenceId: string): Promise<bool
     return true;
 };
 
-export const pollBadgePaymentStatus = async (referenceId: string, userId: string) => {
+export const pollBadgePaymentStatus = async (
+    referenceId: string,
+    userId: string,
+) => {
     const purchase = await DB.BadgePurchases.findOne({
         where: { momo_reference_id: referenceId, user_id: userId },
     });
@@ -328,9 +354,14 @@ export const pollBadgePaymentStatus = async (referenceId: string, userId: string
 
     let momoStatus: { status?: string } = { status: 'PENDING' };
     try {
-        momoStatus = (await getMoMoTransactionStatus(referenceId)) as { status?: string };
+        momoStatus = (await getMoMoTransactionStatus(referenceId)) as {
+            status?: string;
+        };
     } catch (err) {
-        logger.warn(`MoMo status check failed for badge payment ${referenceId}`, err);
+        logger.warn(
+            `MoMo status check failed for badge payment ${referenceId}`,
+            err,
+        );
     }
 
     await purchase.reload();
@@ -398,7 +429,13 @@ export const getAdminBadgePurchaseHistory = async (page = 1, limit = 20) => {
             {
                 model: DB.Users,
                 as: 'user',
-                attributes: ['user_id', 'full_name', 'email', 'mobile_number', 'badge'],
+                attributes: [
+                    'user_id',
+                    'full_name',
+                    'email',
+                    'mobile_number',
+                    'badge',
+                ],
             },
         ],
         order: [['created_at', 'DESC']],
@@ -418,12 +455,17 @@ export const getAdminBadgePurchaseHistory = async (page = 1, limit = 20) => {
 };
 
 export const getAdminBadgeStats = async () => {
-    const [totalStudents, freeCount, premiumCount, pioneerCount] = await Promise.all([
-        DB.Users.count({ where: { role_type: 'student' } }),
-        DB.Users.count({ where: { role_type: 'student', badge: 'FREE' } }),
-        DB.Users.count({ where: { role_type: 'student', badge: 'PREMIUM' } }),
-        DB.Users.count({ where: { role_type: 'student', badge: 'PIONEER' } }),
-    ]);
+    const [totalStudents, freeCount, premiumCount, pioneerCount] =
+        await Promise.all([
+            DB.Users.count({ where: { role_type: 'student' } }),
+            DB.Users.count({ where: { role_type: 'student', badge: 'FREE' } }),
+            DB.Users.count({
+                where: { role_type: 'student', badge: 'PREMIUM' },
+            }),
+            DB.Users.count({
+                where: { role_type: 'student', badge: 'PIONEER' },
+            }),
+        ]);
 
     return {
         totalStudents,
@@ -455,7 +497,8 @@ export const processExpiredSubscriptions = async (): Promise<number> => {
                 user_id: user.user_id,
                 type: 'system',
                 title: 'Premium Subscription Expired',
-                message: 'Your Premium subscription has expired. Your badge is now FREE.',
+                message:
+                    'Your Premium subscription has expired. Your badge is now FREE.',
                 action_url: '/dashboard/profile',
             });
         } catch (err) {
@@ -504,12 +547,17 @@ export const sendSubscriptionExpiryReminders = async (): Promise<number> => {
                     to: user.email,
                     subject: 'Your Ogera Premium Subscription is expiring soon',
                     text: message,
-                    html: `<p>Hi ${user.full_name || 'there'},</p><p>${message}</p><p>Upgrade again from your profile to keep Premium access.</p>`,
+                    html: `<p>Hi ${
+                        user.full_name || 'there'
+                    },</p><p>${message}</p><p>Upgrade again from your profile to keep Premium access.</p>`,
                 });
             }
             sent += 1;
         } catch (err) {
-            logger.warn(`Failed to send expiry reminder to ${user.user_id}`, err);
+            logger.warn(
+                `Failed to send expiry reminder to ${user.user_id}`,
+                err,
+            );
         }
     }
 

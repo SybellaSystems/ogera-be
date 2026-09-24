@@ -16,7 +16,13 @@ export interface UserTestAttributes {
 
 export type UserTestCreationAttributes = Optional<
     UserTestAttributes,
-    'test_id' | 'cognitive_test_id' | 'problem_metric_id' | 'test_name' | 'taken_at' | 'created_at' | 'updated_at'
+    | 'test_id'
+    | 'cognitive_test_id'
+    | 'problem_metric_id'
+    | 'test_name'
+    | 'taken_at'
+    | 'created_at'
+    | 'updated_at'
 >;
 
 export class UserTestModel
@@ -54,14 +60,20 @@ export default function (sequelize: Sequelize): typeof UserTestModel {
             cognitive_test_id: {
                 type: DataTypes.UUID,
                 allowNull: true,
-                references: { model: 'cognitive_tests', key: 'cognitive_test_id' },
+                references: {
+                    model: 'cognitive_tests',
+                    key: 'cognitive_test_id',
+                },
                 onUpdate: 'CASCADE',
                 onDelete: 'SET NULL',
             },
             problem_metric_id: {
                 type: DataTypes.UUID,
                 allowNull: true,
-                references: { model: 'problem_metrics', key: 'problem_metric_id' },
+                references: {
+                    model: 'problem_metrics',
+                    key: 'problem_metric_id',
+                },
                 onUpdate: 'CASCADE',
                 onDelete: 'SET NULL',
             },

@@ -18,7 +18,10 @@ const assertSelfOrAdmin = async (req: Request, targetUserId: string) => {
     const requester = req.user?.user_id;
     const roleName = req.user?.role;
     if (!requester) {
-        throw new CustomError('User not authenticated', StatusCodes.UNAUTHORIZED);
+        throw new CustomError(
+            'User not authenticated',
+            StatusCodes.UNAUTHORIZED,
+        );
     }
     if (requester === targetUserId) return;
     const low = roleName?.toLowerCase();
@@ -221,5 +224,3 @@ export const getAdminTrustSummary = async (
         );
     }
 };
-
-

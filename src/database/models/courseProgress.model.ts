@@ -16,7 +16,10 @@ export type CourseProgressCreationAttributes = Optional<
     'progress_id' | 'completed_at' | 'created_at' | 'updated_at'
 >;
 
-export class CourseProgressModel extends Model<CourseProgress, CourseProgressCreationAttributes> implements CourseProgress {
+export class CourseProgressModel
+    extends Model<CourseProgress, CourseProgressCreationAttributes>
+    implements CourseProgress
+{
     public progress_id!: string;
     public user_id!: string;
     public course_id!: string;

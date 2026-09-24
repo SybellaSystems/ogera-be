@@ -70,5 +70,3 @@ export default function (sequelize: Sequelize): typeof PermissionModel {
 
     return PermissionModel;
 }
-
-

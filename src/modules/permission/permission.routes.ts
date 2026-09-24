@@ -13,40 +13,15 @@ import { superadminOnly } from '@/middlewares/role.middleware';
 const permissionRouter = express.Router();
 
 // All routes require authentication and superadmin role
-permissionRouter.post(
-    '/',
-    authMiddleware,
-    superadminOnly,
-    createPermission,
-);
+permissionRouter.post('/', authMiddleware, superadminOnly, createPermission);
 
-permissionRouter.get(
-    '/',
-    authMiddleware,
-    superadminOnly,
-    getAllPermissions,
-);
+permissionRouter.get('/', authMiddleware, superadminOnly, getAllPermissions);
 
-permissionRouter.get(
-    '/routes',
-    authMiddleware,
-    superadminOnly,
-    getAllRoutes,
-);
+permissionRouter.get('/routes', authMiddleware, superadminOnly, getAllRoutes);
 
-permissionRouter.get(
-    '/:id',
-    authMiddleware,
-    superadminOnly,
-    getPermissionById,
-);
+permissionRouter.get('/:id', authMiddleware, superadminOnly, getPermissionById);
 
-permissionRouter.put(
-    '/:id',
-    authMiddleware,
-    superadminOnly,
-    updatePermission,
-);
+permissionRouter.put('/:id', authMiddleware, superadminOnly, updatePermission);
 
 permissionRouter.delete(
     '/:id',
@@ -56,5 +31,3 @@ permissionRouter.delete(
 );
 
 export default permissionRouter;
-
-

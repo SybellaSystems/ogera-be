@@ -23,11 +23,16 @@ export const createCategoryService = async (
 
     // Validate required fields
     if (!categoryData.name || !categoryData.name.trim()) {
-        throw new CustomError('Category name is required', StatusCodes.BAD_REQUEST);
+        throw new CustomError(
+            'Category name is required',
+            StatusCodes.BAD_REQUEST,
+        );
     }
 
     // Check if category with same name already exists
-    const existingCategory = await repo.findCategoryByName(categoryData.name.trim());
+    const existingCategory = await repo.findCategoryByName(
+        categoryData.name.trim(),
+    );
     if (existingCategory) {
         throw new CustomError(
             'A category with this name already exists',
@@ -40,7 +45,10 @@ export const createCategoryService = async (
         description: categoryData.description?.trim(),
         icon: categoryData.icon?.trim(),
         color: categoryData.color?.trim(),
-        job_count: categoryData.job_count !== undefined ? Number(categoryData.job_count) : 0,
+        job_count:
+            categoryData.job_count !== undefined
+                ? Number(categoryData.job_count)
+                : 0,
     });
 
     return category;
@@ -48,10 +56,10 @@ export const createCategoryService = async (
 
 export const getAllCategoriesService = async () => {
     const categories = await repo.findAllCategories();
-    
+
     // Return categories with their job_count field (or calculate from actual jobs if not set)
     const categoriesWithCounts = await Promise.all(
-        categories.map(async (category) => {
+        categories.map(async category => {
             // If job_count is manually set, use it; otherwise calculate from actual jobs
             let jobCount = category.job_count || 0;
             if (!category.job_count || category.job_count === 0) {
@@ -63,7 +71,7 @@ export const getAllCategoriesService = async () => {
                 ...category.toJSON(),
                 jobCount: jobCount,
             };
-        })
+        }),
     );
 
     return categoriesWithCounts;
@@ -72,10 +80,7 @@ export const getAllCategoriesService = async () => {
 export const getCategoryByIdService = async (category_id: string) => {
     const category = await repo.findCategoryById(category_id);
     if (!category) {
-        throw new CustomError(
-            'Category not found',
-            StatusCodes.NOT_FOUND,
-        );
+        throw new CustomError('Category not found', StatusCodes.NOT_FOUND);
     }
 
     // Use manual job_count if set (including 0), otherwise calculate from actual jobs
@@ -101,15 +106,14 @@ export const updateCategoryService = async (
 
     const category = await repo.findCategoryById(category_id);
     if (!category) {
-        throw new CustomError(
-            'Category not found',
-            StatusCodes.NOT_FOUND,
-        );
+        throw new CustomError('Category not found', StatusCodes.NOT_FOUND);
     }
 
     // If name is being updated, check for duplicates
     if (updates.name && updates.name.trim() !== category.name) {
-        const existingCategory = await repo.findCategoryByName(updates.name.trim());
+        const existingCategory = await repo.findCategoryByName(
+            updates.name.trim(),
+        );
         if (existingCategory) {
             throw new CustomError(
                 'A category with this name already exists',
@@ -123,7 +127,10 @@ export const updateCategoryService = async (
         description: updates.description?.trim(),
         icon: updates.icon?.trim(),
         color: updates.color?.trim(),
-        job_count: updates.job_count !== undefined ? Number(updates.job_count) : category.job_count,
+        job_count:
+            updates.job_count !== undefined
+                ? Number(updates.job_count)
+                : category.job_count,
     });
 
     if (!updated) {
@@ -144,10 +151,7 @@ export const deleteCategoryService = async (
 
     const category = await repo.findCategoryById(category_id);
     if (!category) {
-        throw new CustomError(
-            'Category not found',
-            StatusCodes.NOT_FOUND,
-        );
+        throw new CustomError('Category not found', StatusCodes.NOT_FOUND);
     }
 
     // Check if any jobs are using this category
@@ -172,4 +176,3 @@ export const deleteCategoryService = async (
 
     return { message: 'Category deleted successfully' };
 };
-
