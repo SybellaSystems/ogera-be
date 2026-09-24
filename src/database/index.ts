@@ -58,6 +58,8 @@ import {
     NODE_ENV,
 } from '@/config';
 
+const isTestEnvironment = NODE_ENV === 'test';
+
 // Fix IPv6 timeout issues by forcing IPv4 DNS resolution
 const originalLookup = dns.lookup;
 dns.lookup = function (hostname: any, options: any, callback: any) {
@@ -124,26 +126,33 @@ const sequelize = new Sequelize.Sequelize(DB_NAME!, DB_USERNAME!, DB_PASSWORD, {
 });
 
 // Test DB connection with improved error handling
-sequelize
-    .authenticate()
-    .then(() => {
-        logger.info('✅ Database connected successfully');
-        logger.info(`📊 Database: ${DB_NAME} | Host: ${DB_HOST}:${DB_PORT}`);
-    })
-    .catch((err: any) => {
-        logger.error('❌ Database connection error:');
-        logger.error('Error name:', err.name);
-        logger.error('Error message:', err.message);
-        if (err.parent) {
-            logger.error('Parent error:', err.parent.message);
-            logger.error('Parent error code:', err.parent.code);
-        }
-        logger.error('Full error:', err);
-        logger.error(
-            'Please check your database configuration and ensure the database server is running',
-        );
-        // Don't exit process - let the app continue and handle errors gracefully
-    });
+if (!isTestEnvironment) {
+    sequelize
+        .authenticate()
+        .then(() => {
+            logger.info('✅ Database connected successfully');
+            logger.info(
+                `📊 Database: ${DB_NAME} | Host: ${DB_HOST}:${DB_PORT}`,
+            );
+        })
+        .catch((err: any) => {
+            logger.error('❌ Database connection error:');
+            logger.error('Error name:', err.name);
+            logger.error('Error message:', err.message);
+
+            if (err.parent) {
+                logger.error('Parent error:', err.parent.message);
+                logger.error('Parent error code:', err.parent.code);
+            }
+
+            logger.error('Full error:', err);
+            logger.error(
+                'Please check your database configuration and ensure the database server is running',
+            );
+
+            // Don't exit process - let the app continue and handle errors gracefully
+        });
+}
 
 // Initialize models
 const Users = userModel(sequelize);
@@ -895,131 +904,133 @@ const ensureUserTableColumns = async () => {
 // For schema changes, use migrations instead of sync
 
 // Initialize sync process
-(async () => {
-    try {
-        // First, ensure user table columns exist (this handles adding role_type if needed)
-        logger.info('Ensuring user table columns exist...');
-        await ensureUserTableColumns();
-
-        // Ensure job_categories table has job_count column
-        logger.info('Ensuring job_categories table columns exist...');
-        await ensureJobCategoriesTableColumns();
-
-        logger.info('Ensuring jobs table columns exist...');
-        await ensureJobsTableColumns();
-
-        // Ensure job_applications table has FX-related columns added after initial launch
-        logger.info('Ensuring job_applications table columns exist...');
-        await ensureJobApplicationsTableColumns();
-
-        // Fix any NULL role_type values BEFORE syncing
-        logger.info('Checking for NULL role_type values...');
-        const fixSuccess = await fixNullRoleTypeValues();
-
-        if (!fixSuccess) {
-            logger.warn(
-                '⚠️  Could not fix all NULL role_type values, but proceeding with sync...',
-            );
-        }
-
-        // Now proceed with sync - but first temporarily make role_type nullable in sync
-        // We'll fix it after sync completes
-        logger.info('Starting database sync...');
-
-        // Use sync with alter, but catch and handle role_type errors specifically
+if (!isTestEnvironment) {
+    (async () => {
         try {
-            await sequelize.sync({ alter: false });
-            logger.info('✅ Database synced');
-        } catch (syncErr: any) {
-            // If sync fails due to role_type null values, try to fix and retry
-            if (
-                (syncErr.message &&
-                    syncErr.message.includes('role_type') &&
-                    syncErr.message.includes('null values')) ||
-                syncErr.message.includes('contains null values')
-            ) {
-                logger.info(
-                    '⚠️  Database sync failed due to NULL role_type values, fixing and retrying...',
+            // First, ensure user table columns exist (this handles adding role_type if needed)
+            logger.info('Ensuring user table columns exist...');
+            await ensureUserTableColumns();
+
+            // Ensure job_categories table has job_count column
+            logger.info('Ensuring job_categories table columns exist...');
+            await ensureJobCategoriesTableColumns();
+
+            logger.info('Ensuring jobs table columns exist...');
+            await ensureJobsTableColumns();
+
+            // Ensure job_applications table has FX-related columns added after initial launch
+            logger.info('Ensuring job_applications table columns exist...');
+            await ensureJobApplicationsTableColumns();
+
+            // Fix any NULL role_type values BEFORE syncing
+            logger.info('Checking for NULL role_type values...');
+            const fixSuccess = await fixNullRoleTypeValues();
+
+            if (!fixSuccess) {
+                logger.warn(
+                    '⚠️  Could not fix all NULL role_type values, but proceeding with sync...',
                 );
+            }
 
-                // Fix NULL values
-                const retryFixSuccess = await fixNullRoleTypeValues();
+            // Now proceed with sync - but first temporarily make role_type nullable in sync
+            // We'll fix it after sync completes
+            logger.info('Starting database sync...');
 
-                if (retryFixSuccess) {
-                    // Retry sync
-                    try {
-                        await sequelize.sync({ alter: false });
-                        logger.info(
-                            '✅ Database synced successfully after fixing NULL values',
-                        );
-                    } catch (retryErr: any) {
+            // Use sync with alter, but catch and handle role_type errors specifically
+            try {
+                await sequelize.sync({ alter: false });
+                logger.info('✅ Database synced');
+            } catch (syncErr: any) {
+                // If sync fails due to role_type null values, try to fix and retry
+                if (
+                    (syncErr.message &&
+                        syncErr.message.includes('role_type') &&
+                        syncErr.message.includes('null values')) ||
+                    syncErr.message.includes('contains null values')
+                ) {
+                    logger.info(
+                        '⚠️  Database sync failed due to NULL role_type values, fixing and retrying...',
+                    );
+
+                    // Fix NULL values
+                    const retryFixSuccess = await fixNullRoleTypeValues();
+
+                    if (retryFixSuccess) {
+                        // Retry sync
+                        try {
+                            await sequelize.sync({ alter: false });
+                            logger.info(
+                                '✅ Database synced successfully after fixing NULL values',
+                            );
+                        } catch (retryErr: any) {
+                            logger.error(
+                                '❌ Database sync still failed after fixing NULL values:',
+                                retryErr.message,
+                            );
+                            // Continue anyway - ensure columns
+                            await ensureUserTableColumns().catch(() => {
+                                // Intentionally ignore errors here; the process should continue.
+                            });
+                        }
+                    } else {
                         logger.error(
-                            '❌ Database sync still failed after fixing NULL values:',
-                            retryErr.message,
+                            '❌ Could not fix NULL role_type values, sync may fail',
                         );
-                        // Continue anyway - ensure columns
+                        // Try to continue anyway
                         await ensureUserTableColumns().catch(() => {
                             // Intentionally ignore errors here; the process should continue.
                         });
                     }
                 } else {
+                    // Other sync errors
                     logger.error(
-                        '❌ Could not fix NULL role_type values, sync may fail',
+                        '❌ Database sync error:',
+                        syncErr.message || syncErr,
                     );
-                    // Try to continue anyway
-                    await ensureUserTableColumns().catch(() => {
-                        // Intentionally ignore errors here; the process should continue.
-                    });
-                }
-            } else {
-                // Other sync errors
-                logger.error(
-                    '❌ Database sync error:',
-                    syncErr.message || syncErr,
-                );
-                // If it's a foreign key or constraint error and table might exist, continue
-                if (
-                    syncErr.message &&
-                    (syncErr.message.includes('FOREIGN KEY') ||
-                        syncErr.message.includes('constraint') ||
-                        syncErr.message.includes('already exists'))
-                ) {
-                    logger.warn(
-                        '⚠️  Sync warning (table may already exist) - continuing anyway',
-                    );
-                    await ensureUserTableColumns().catch(() => {
-                        // Intentionally ignore errors here; the process should continue.
-                    });
+                    // If it's a foreign key or constraint error and table might exist, continue
+                    if (
+                        syncErr.message &&
+                        (syncErr.message.includes('FOREIGN KEY') ||
+                            syncErr.message.includes('constraint') ||
+                            syncErr.message.includes('already exists'))
+                    ) {
+                        logger.warn(
+                            '⚠️  Sync warning (table may already exist) - continuing anyway',
+                        );
+                        await ensureUserTableColumns().catch(() => {
+                            // Intentionally ignore errors here; the process should continue.
+                        });
+                    }
                 }
             }
-        }
 
-        // Final check and fix
-        logger.info('Performing final check on role_type column...');
-        await fixNullRoleTypeValues();
+            // Final check and fix
+            logger.info('Performing final check on role_type column...');
+            await fixNullRoleTypeValues();
 
-        // Ensure all columns are correct
-        await ensureUserTableColumns();
-        await ensureJobCategoriesTableColumns();
-        await ensureJobsTableColumns();
-        await ensureJobApplicationsTableColumns();
-    } catch (err: any) {
-        logger.error(
-            '❌ Error during database initialization:',
-            err.message || err,
-        );
-        // Try to continue anyway
-        try {
+            // Ensure all columns are correct
             await ensureUserTableColumns();
             await ensureJobCategoriesTableColumns();
             await ensureJobsTableColumns();
             await ensureJobApplicationsTableColumns();
-            await fixNullRoleTypeValues();
-        } catch (finalErr) {
-            logger.warn('⚠️  Could not complete final column checks');
+        } catch (err: any) {
+            logger.error(
+                '❌ Error during database initialization:',
+                err.message || err,
+            );
+            // Try to continue anyway
+            try {
+                await ensureUserTableColumns();
+                await ensureJobCategoriesTableColumns();
+                await ensureJobsTableColumns();
+                await ensureJobApplicationsTableColumns();
+                await fixNullRoleTypeValues();
+            } catch (finalErr) {
+                logger.warn('⚠️  Could not complete final column checks');
+            }
         }
-    }
-})();
+    })();
+}
 export const DB = {
     Users,
     Roles,
