@@ -19,7 +19,12 @@ export interface ProblemMetricAttributes {
 
 export type ProblemMetricCreationAttributes = Optional<
     ProblemMetricAttributes,
-    'problem_metric_id' | 'description' | 'published' | 'created_by' | 'created_at' | 'updated_at'
+    | 'problem_metric_id'
+    | 'description'
+    | 'published'
+    | 'created_by'
+    | 'created_at'
+    | 'updated_at'
 >;
 
 export class ProblemMetricModel
@@ -53,7 +58,12 @@ export default function (sequelize: Sequelize): typeof ProblemMetricModel {
                 allowNull: true,
             },
             category: {
-                type: DataTypes.ENUM('visual_puzzle', 'situational_puzzle', 'riddle', 'other'),
+                type: DataTypes.ENUM(
+                    'visual_puzzle',
+                    'situational_puzzle',
+                    'riddle',
+                    'other',
+                ),
                 allowNull: false,
                 defaultValue: 'visual_puzzle',
             },

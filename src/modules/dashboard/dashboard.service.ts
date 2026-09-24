@@ -113,7 +113,7 @@ export interface EmployerDashboardResponse {
         status: string;
         applied_at: Date;
     }>;
-     quickStats: {
+    quickStats: {
         newApplicantsThisWeek: number;
         positionsFilledThisMonth: number;
     };
@@ -341,7 +341,7 @@ export const getEmployerDashboard = async (
                     currentEnd,
                 ),
                 repo.getEmployerSpentBetween(employerId, prevStart, prevEnd),
-                 // New quick stats
+                // New quick stats
                 repo.getNewApplicantsThisWeek(),
 
                 repo.getPositionsFilledThisMonth(),
@@ -375,7 +375,7 @@ export const getEmployerDashboard = async (
                 weeklyActivity,
                 applicationBreakdown,
                 recentApplicants,
-                 // Employer quick stats
+                // Employer quick stats
                 quickStats: {
                     newApplicantsThisWeek,
                     positionsFilledThisMonth,
@@ -452,17 +452,11 @@ export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
             },
         };
 
-        logger.info(
-            '[Dashboard] Metrics fetched successfully:',
-            metrics,
-        );
+        logger.info('[Dashboard] Metrics fetched successfully:', metrics);
 
         return metrics;
     } catch (error) {
-        logger.error(
-            '[Dashboard] Error fetching metrics:',
-            error,
-        );
+        logger.error('[Dashboard] Error fetching metrics:', error);
 
         throw new CustomError(
             'Failed to fetch dashboard metrics',

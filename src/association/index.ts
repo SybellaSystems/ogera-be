@@ -33,11 +33,11 @@ import { TaskModel } from '@/database/models/task.model';
 import { ConversationModel } from '@/database/models/conversation.model';
 import { MessageModel } from '@/database/models/message.model';
 import { TransactionModel } from '@/database/models/transaction.model';
-import { JobReactionModel } from "@/database/models/jobReaction.model";
+import { JobReactionModel } from '@/database/models/jobReaction.model';
 import { BadgePurchaseModel } from '@/database/models/badgePurchase.model';
 import { StudentLinkModel } from '@/database/models/studentLink.model';
 import { PeerReviewModel } from '@/database/models/peerReview.model';
-import { PeerReviewReplyModel } from "@/database/models/peerReviewReply.model";
+import { PeerReviewReplyModel } from '@/database/models/peerReviewReply.model';
 import { JobReferralModel } from '@/database/models/jobReferral.model';
 
 export const setupAssociations = () => {
@@ -688,290 +688,289 @@ export const setupAssociations = () => {
         onDelete: 'CASCADE',
     });
 
-SessionModel.belongsTo(UserModel, {
-    foreignKey: 'user_id',
-    as: 'user',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
-
-// ====================== JOB TASKS ======================
-JobModel.hasMany(TaskModel, {
-    foreignKey: 'job_id',
-    as: 'tasks',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
-
-TaskModel.belongsTo(JobModel, {
-    foreignKey: 'job_id',
-    as: 'job',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
-
-UserModel.hasMany(TaskModel, {
-    foreignKey: 'assigned_student_id',
-    as: 'assignedTasks',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
-
-TaskModel.belongsTo(UserModel, {
-    foreignKey: 'assigned_student_id',
-    as: 'assignedStudent',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
-
-// ====================== CONVERSATIONS ======================
-JobModel.hasMany(ConversationModel, {
-    foreignKey: 'job_id',
-    as: 'conversations',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
-
-ConversationModel.belongsTo(JobModel, {
-    foreignKey: 'job_id',
-    as: 'job',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
-
-UserModel.hasMany(ConversationModel, {
-    foreignKey: 'employer_id',
-    as: 'employerConversations',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
-
-ConversationModel.belongsTo(UserModel, {
-    foreignKey: 'employer_id',
-    as: 'employer',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
-
-UserModel.hasMany(ConversationModel, {
-    foreignKey: 'student_id',
-    as: 'studentConversations',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
-
-ConversationModel.belongsTo(UserModel, {
-    foreignKey: 'student_id',
-    as: 'student',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
-
-// ====================== MESSAGES ======================
-ConversationModel.hasMany(MessageModel, {
-    foreignKey: 'conversation_id',
-    as: 'messages',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
-
-MessageModel.belongsTo(ConversationModel, {
-    foreignKey: 'conversation_id',
-    as: 'conversation',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
-
-UserModel.hasMany(MessageModel, {
-    foreignKey: 'sender_id',
-    as: 'sentMessages',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
-
-MessageModel.belongsTo(UserModel, {
-    foreignKey: 'sender_id',
-    as: 'sender',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
-
-UserModel.hasMany(MessageModel, {
-    foreignKey: 'receiver_id',
-    as: 'receivedMessages',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
-
-MessageModel.belongsTo(UserModel, {
-    foreignKey: 'receiver_id',
-    as: 'receiver',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
-// ====================== JOB REACTIONS ======================
-
-// One Job can have many reactions
-JobModel.hasMany(JobReactionModel, {
-    foreignKey: "job_id",
-    as: "reactions",
-    onUpdate: "CASCADE",
-    onDelete: "CASCADE",
-});
-
-// One reaction belongs to one Job
-JobReactionModel.belongsTo(JobModel, {
-    foreignKey: "job_id",
-    as: "job",
-    onUpdate: "CASCADE",
-    onDelete: "CASCADE",
-});
-
-// One User can react to many jobs
-UserModel.hasMany(JobReactionModel, {
-    foreignKey: "user_id",
-    as: "jobReactions",
-    onUpdate: "CASCADE",
-    onDelete: "CASCADE",
-});
-
-// One reaction belongs to one User
-JobReactionModel.belongsTo(UserModel, {
-    foreignKey: "user_id",
-    as: "user",
-    onUpdate: "CASCADE",
-    onDelete: "CASCADE",
+    SessionModel.belongsTo(UserModel, {
+        foreignKey: 'user_id',
+        as: 'user',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
     });
 
-// ====================== USER ↔ BADGE PURCHASES ======================
-UserModel.hasMany(BadgePurchaseModel, {
-    foreignKey: 'user_id',
-    sourceKey: 'user_id',
-    as: 'badgePurchases',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
+    // ====================== JOB TASKS ======================
+    JobModel.hasMany(TaskModel, {
+        foreignKey: 'job_id',
+        as: 'tasks',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
 
-BadgePurchaseModel.belongsTo(UserModel, {
-    foreignKey: 'user_id',
-    targetKey: 'user_id',
-    as: 'user',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
+    TaskModel.belongsTo(JobModel, {
+        foreignKey: 'job_id',
+        as: 'job',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
 
-// ====================== COMMUNITY WORKSPACE ======================
+    UserModel.hasMany(TaskModel, {
+        foreignKey: 'assigned_student_id',
+        as: 'assignedTasks',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
 
-// -------------------------------------------------
-// USER ↔ STUDENT LINK
-// One student can have one submitted profile link
-// -------------------------------------------------
+    TaskModel.belongsTo(UserModel, {
+        foreignKey: 'assigned_student_id',
+        as: 'assignedStudent',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
 
-UserModel.hasOne(StudentLinkModel, {
-    foreignKey: 'user_id',
-    as: 'studentLink',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
+    // ====================== CONVERSATIONS ======================
+    JobModel.hasMany(ConversationModel, {
+        foreignKey: 'job_id',
+        as: 'conversations',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
 
-StudentLinkModel.belongsTo(UserModel, {
-    foreignKey: 'user_id',
-    as: 'student',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
+    ConversationModel.belongsTo(JobModel, {
+        foreignKey: 'job_id',
+        as: 'job',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
 
-// -------------------------------------------------
-// STUDENT LINK ↔ PEER REVIEWS
-// One submitted profile can have many peer reviews
-// -------------------------------------------------
+    UserModel.hasMany(ConversationModel, {
+        foreignKey: 'employer_id',
+        as: 'employerConversations',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
 
-StudentLinkModel.hasMany(PeerReviewModel, {
-    foreignKey: 'link_id',
-    as: 'peerReviews',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
+    ConversationModel.belongsTo(UserModel, {
+        foreignKey: 'employer_id',
+        as: 'employer',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
 
-PeerReviewModel.belongsTo(StudentLinkModel, {
-    foreignKey: 'link_id',
-    as: 'studentLink',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
+    UserModel.hasMany(ConversationModel, {
+        foreignKey: 'student_id',
+        as: 'studentConversations',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
 
-// -------------------------------------------------
-// USER ↔ PEER REVIEWS
-// One student can write many reviews
-// -------------------------------------------------
+    ConversationModel.belongsTo(UserModel, {
+        foreignKey: 'student_id',
+        as: 'student',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
 
-UserModel.hasMany(PeerReviewModel, {
-    foreignKey: 'reviewer_id',
-    as: 'writtenPeerReviews',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
+    // ====================== MESSAGES ======================
+    ConversationModel.hasMany(MessageModel, {
+        foreignKey: 'conversation_id',
+        as: 'messages',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
 
-PeerReviewModel.belongsTo(UserModel, {
-    foreignKey: 'reviewer_id',
-    as: 'reviewer',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
+    MessageModel.belongsTo(ConversationModel, {
+        foreignKey: 'conversation_id',
+        as: 'conversation',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
 
-// -------------------------------------------------
-// PEER REVIEW ↔ REPLY
-// One review can have one reply from the profile owner
-// -------------------------------------------------
+    UserModel.hasMany(MessageModel, {
+        foreignKey: 'sender_id',
+        as: 'sentMessages',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
 
-PeerReviewModel.hasOne(PeerReviewReplyModel, {
-    foreignKey: 'review_id',
-    as: 'reply',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
+    MessageModel.belongsTo(UserModel, {
+        foreignKey: 'sender_id',
+        as: 'sender',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
 
-PeerReviewReplyModel.belongsTo(PeerReviewModel, {
-    foreignKey: 'review_id',
-    as: 'review',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
+    UserModel.hasMany(MessageModel, {
+        foreignKey: 'receiver_id',
+        as: 'receivedMessages',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
 
-// -------------------------------------------------
-// USER ↔ REVIEW REPLIES
-// One user can write many replies
-// -------------------------------------------------
+    MessageModel.belongsTo(UserModel, {
+        foreignKey: 'receiver_id',
+        as: 'receiver',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+    // ====================== JOB REACTIONS ======================
 
-UserModel.hasMany(PeerReviewReplyModel, {
-    foreignKey: 'user_id',
-    as: 'reviewReplies',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
+    // One Job can have many reactions
+    JobModel.hasMany(JobReactionModel, {
+        foreignKey: 'job_id',
+        as: 'reactions',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
 
-PeerReviewReplyModel.belongsTo(UserModel, {
-    foreignKey: 'user_id',
-    as: 'author',
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-});
+    // One reaction belongs to one Job
+    JobReactionModel.belongsTo(JobModel, {
+        foreignKey: 'job_id',
+        as: 'job',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
 
-// ====================== USER ↔ JOB REFERRAL ======================
-// One user can create many job referrals
-UserModel.hasMany(JobReferralModel, {
-    foreignKey: 'created_by',
-    as: 'jobReferrals',
-    onUpdate: 'CASCADE',
-    onDelete: 'SET NULL',
-});
+    // One User can react to many jobs
+    UserModel.hasMany(JobReactionModel, {
+        foreignKey: 'user_id',
+        as: 'jobReactions',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
 
-// A job referral belongs to the user who created it
-JobReferralModel.belongsTo(UserModel, {
-    foreignKey: 'created_by',
-    as: 'creator',
-    onUpdate: 'CASCADE',
-    onDelete: 'SET NULL',
-});
+    // One reaction belongs to one User
+    JobReactionModel.belongsTo(UserModel, {
+        foreignKey: 'user_id',
+        as: 'user',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
 
-}
+    // ====================== USER ↔ BADGE PURCHASES ======================
+    UserModel.hasMany(BadgePurchaseModel, {
+        foreignKey: 'user_id',
+        sourceKey: 'user_id',
+        as: 'badgePurchases',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    BadgePurchaseModel.belongsTo(UserModel, {
+        foreignKey: 'user_id',
+        targetKey: 'user_id',
+        as: 'user',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // ====================== COMMUNITY WORKSPACE ======================
+
+    // -------------------------------------------------
+    // USER ↔ STUDENT LINK
+    // One student can have one submitted profile link
+    // -------------------------------------------------
+
+    UserModel.hasOne(StudentLinkModel, {
+        foreignKey: 'user_id',
+        as: 'studentLink',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    StudentLinkModel.belongsTo(UserModel, {
+        foreignKey: 'user_id',
+        as: 'student',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // -------------------------------------------------
+    // STUDENT LINK ↔ PEER REVIEWS
+    // One submitted profile can have many peer reviews
+    // -------------------------------------------------
+
+    StudentLinkModel.hasMany(PeerReviewModel, {
+        foreignKey: 'link_id',
+        as: 'peerReviews',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    PeerReviewModel.belongsTo(StudentLinkModel, {
+        foreignKey: 'link_id',
+        as: 'studentLink',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // -------------------------------------------------
+    // USER ↔ PEER REVIEWS
+    // One student can write many reviews
+    // -------------------------------------------------
+
+    UserModel.hasMany(PeerReviewModel, {
+        foreignKey: 'reviewer_id',
+        as: 'writtenPeerReviews',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    PeerReviewModel.belongsTo(UserModel, {
+        foreignKey: 'reviewer_id',
+        as: 'reviewer',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // -------------------------------------------------
+    // PEER REVIEW ↔ REPLY
+    // One review can have one reply from the profile owner
+    // -------------------------------------------------
+
+    PeerReviewModel.hasOne(PeerReviewReplyModel, {
+        foreignKey: 'review_id',
+        as: 'reply',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    PeerReviewReplyModel.belongsTo(PeerReviewModel, {
+        foreignKey: 'review_id',
+        as: 'review',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // -------------------------------------------------
+    // USER ↔ REVIEW REPLIES
+    // One user can write many replies
+    // -------------------------------------------------
+
+    UserModel.hasMany(PeerReviewReplyModel, {
+        foreignKey: 'user_id',
+        as: 'reviewReplies',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    PeerReviewReplyModel.belongsTo(UserModel, {
+        foreignKey: 'user_id',
+        as: 'author',
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+    });
+
+    // ====================== USER ↔ JOB REFERRAL ======================
+    // One user can create many job referrals
+    UserModel.hasMany(JobReferralModel, {
+        foreignKey: 'created_by',
+        as: 'jobReferrals',
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
+    });
+
+    // A job referral belongs to the user who created it
+    JobReferralModel.belongsTo(UserModel, {
+        foreignKey: 'created_by',
+        as: 'creator',
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
+    });
+};

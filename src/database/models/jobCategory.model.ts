@@ -3,10 +3,19 @@ import { JobCategory } from '@/interfaces/jobCategory.interfaces';
 
 export type JobCategoryCreationAttributes = Optional<
     JobCategory,
-    'category_id' | 'description' | 'icon' | 'color' | 'job_count' | 'created_at' | 'updated_at'
+    | 'category_id'
+    | 'description'
+    | 'icon'
+    | 'color'
+    | 'job_count'
+    | 'created_at'
+    | 'updated_at'
 >;
 
-export class JobCategoryModel extends Model<JobCategory, JobCategoryCreationAttributes> implements JobCategory {
+export class JobCategoryModel
+    extends Model<JobCategory, JobCategoryCreationAttributes>
+    implements JobCategory
+{
     public category_id!: string;
     public name!: string;
     public description?: string;
@@ -67,4 +76,3 @@ export default function (sequelize: Sequelize): typeof JobCategoryModel {
 
     return JobCategoryModel;
 }
-

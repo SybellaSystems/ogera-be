@@ -39,12 +39,16 @@ interface ResetTokenPayload extends JwtPayload {
 
 type SafeUser = Partial<User> & { user_id: string; email: string };
 
-const refreshTrustScoreAfterAuthProfileChange = async (user_id: string): Promise<void> => {
+const refreshTrustScoreAfterAuthProfileChange = async (
+    user_id: string,
+): Promise<void> => {
     try {
         await calculateTrustScoreService(user_id);
     } catch (err: any) {
         console.warn(
-            `TrustScore refresh after auth profile change failed for ${user_id}: ${err?.message || err}`,
+            `TrustScore refresh after auth profile change failed for ${user_id}: ${
+                err?.message || err
+            }`,
         );
     }
 };
@@ -223,42 +227,44 @@ export const registerUser = async (data: any, frontendOrigin?: string) => {
               }
             : {}),
     });
-     
+
     // CREATE EXTENDED PROFILE RECORD
     await DB.UserExtendedProfiles.create({
-    user_id: user.user_id,
-});
+        user_id: user.user_id,
+    });
 
-        // Log activity: Admin added user
-        try {
-            await DB.ActivityLogs.create({
-                user_id: null,
-                action: 'CREATE',
-                entity_type: 'User',
-                entity_id: user.user_id,
-                description: `User added by admin: ${user.email}`,
-            } as any);
-        } catch (e) {
-            // swallow
-        }
+    // Log activity: Admin added user
+    try {
+        await DB.ActivityLogs.create({
+            user_id: null,
+            action: 'CREATE',
+            entity_type: 'User',
+            entity_id: user.user_id,
+            description: `User added by admin: ${user.email}`,
+        } as any);
+    } catch (e) {
+        // swallow
+    }
 
-        // Log activity: CREATE User
-        try {
-            await DB.ActivityLogs.create({
-                user_id: null,
-                action: 'CREATE',
-                entity_type: 'User',
-                entity_id: user.user_id,
-                description: `User registered: ${user.email}`,
-            } as any);
-        } catch (e) {
-            // swallow
-        }
+    // Log activity: CREATE User
+    try {
+        await DB.ActivityLogs.create({
+            user_id: null,
+            action: 'CREATE',
+            entity_type: 'User',
+            entity_id: user.user_id,
+            description: `User registered: ${user.email}`,
+        } as any);
+    } catch (e) {
+        // swallow
+    }
 
     // Send verification email
     // Prefer the request origin (local during development), then env fallback.
     const frontendUrl = getVerificationFrontendUrl(frontendOrigin);
-    const verificationLink = `${frontendUrl}/auth/verify-email?token=${encodeURIComponent(verificationToken)}`;
+    const verificationLink = `${frontendUrl}/auth/verify-email?token=${encodeURIComponent(
+        verificationToken,
+    )}`;
     const { html, text } = EmailVerificationTemplate(
         verificationLink,
         verificationTokenExpiry,
@@ -383,7 +389,9 @@ export const addUser = async (data: any) => {
 
     // Send verification email
     const frontendUrl = getVerificationFrontendUrl();
-    const verificationLink = `${frontendUrl}/auth/verify-email?token=${encodeURIComponent(verificationToken)}`;
+    const verificationLink = `${frontendUrl}/auth/verify-email?token=${encodeURIComponent(
+        verificationToken,
+    )}`;
     const { html, text } = EmailVerificationTemplate(
         verificationLink,
         verificationTokenExpiry,
@@ -420,7 +428,9 @@ export const loginUser = async (body: any, req?: Request) => {
     if (body.captchaToken) {
         await verifyCaptcha(body.captchaToken);
     } else {
-        console.warn('⚠️ [LOGIN] No CAPTCHA token provided - consider requiring it');
+        console.warn(
+            '⚠️ [LOGIN] No CAPTCHA token provided - consider requiring it',
+        );
         // Optionally uncomment to require CAPTCHA:
         // throw new CustomError('CAPTCHA verification is required', StatusCodes.BAD_REQUEST);
     }
@@ -470,17 +480,27 @@ export const loginUser = async (body: any, req?: Request) => {
     // Create session record if request object is available
     if (req) {
         try {
-            console.log('🔵 [Auth Service] Attempting to create session for user:', user.user_id);
+            console.log(
+                '🔵 [Auth Service] Attempting to create session for user:',
+                user.user_id,
+            );
             const userAgent = req.headers['user-agent'] || 'Unknown';
             const xForwardedFor = req.headers['x-forwarded-for'];
-            const ipAddress = 
-                (typeof xForwardedFor === 'string' ? xForwardedFor.split(',')[0].trim() : xForwardedFor?.[0]) ||
+            const ipAddress =
+                (typeof xForwardedFor === 'string'
+                    ? xForwardedFor.split(',')[0].trim()
+                    : xForwardedFor?.[0]) ||
                 req.connection?.remoteAddress ||
                 req.socket?.remoteAddress ||
                 'Unknown';
             const deviceType = parseDeviceType(userAgent);
 
-            console.log('🔵 [Auth Service] Device type:', deviceType, 'IP:', ipAddress);
+            console.log(
+                '🔵 [Auth Service] Device type:',
+                deviceType,
+                'IP:',
+                ipAddress,
+            );
 
             // Set session expiry to 7 days (same as refresh token maxAge)
             const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -495,11 +515,16 @@ export const loginUser = async (body: any, req?: Request) => {
             });
             console.log('✅ [Auth Service] Session created successfully');
         } catch (error) {
-            console.error('❌ [Auth Service] Failed to create session record:', error);
+            console.error(
+                '❌ [Auth Service] Failed to create session record:',
+                error,
+            );
             // Don't throw - session creation failure shouldn't prevent login
         }
     } else {
-        console.warn('⚠️ [Auth Service] No request object available for session creation');
+        console.warn(
+            '⚠️ [Auth Service] No request object available for session creation',
+        );
     }
 
     return {
@@ -758,7 +783,10 @@ export const verifyLostAuthenticatorOTPAndDisable2FAService = async (
     ) as ResetTokenPayload & { type?: string };
 
     if (decoded.type !== 'lost_authenticator') {
-        throw new CustomError('Invalid recovery token', StatusCodes.BAD_REQUEST);
+        throw new CustomError(
+            'Invalid recovery token',
+            StatusCodes.BAD_REQUEST,
+        );
     }
 
     const user = await repo.findUserByEmail(decoded.email);
@@ -792,7 +820,11 @@ export const verifyLostAuthenticatorOTPAndDisable2FAService = async (
 
     // Generate a token for setting up new 2FA
     const setupToken = jwt.sign(
-        { user_id: user.user_id, email: user.email, type: 'lost_authenticator_setup' },
+        {
+            user_id: user.user_id,
+            email: user.email,
+            type: 'lost_authenticator_setup',
+        },
         JWT_SECRET as string,
         { expiresIn: '30m' },
     );
@@ -858,17 +890,27 @@ export const verifyLogin2FAService = async (
     // Create session record if request object is available
     if (req) {
         try {
-            console.log('🔵 [Auth Service 2FA] Attempting to create session for user:', user.user_id);
+            console.log(
+                '🔵 [Auth Service 2FA] Attempting to create session for user:',
+                user.user_id,
+            );
             const userAgent = req.headers['user-agent'] || 'Unknown';
             const xForwardedFor = req.headers['x-forwarded-for'];
-            const ipAddress = 
-                (typeof xForwardedFor === 'string' ? xForwardedFor.split(',')[0].trim() : xForwardedFor?.[0]) ||
+            const ipAddress =
+                (typeof xForwardedFor === 'string'
+                    ? xForwardedFor.split(',')[0].trim()
+                    : xForwardedFor?.[0]) ||
                 req.connection?.remoteAddress ||
                 req.socket?.remoteAddress ||
                 'Unknown';
             const deviceType = parseDeviceType(userAgent);
 
-            console.log('🔵 [Auth Service 2FA] Device type:', deviceType, 'IP:', ipAddress);
+            console.log(
+                '🔵 [Auth Service 2FA] Device type:',
+                deviceType,
+                'IP:',
+                ipAddress,
+            );
 
             // Set session expiry to 7 days (same as refresh token maxAge)
             const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -883,11 +925,16 @@ export const verifyLogin2FAService = async (
             });
             console.log('✅ [Auth Service 2FA] Session created successfully');
         } catch (error) {
-            console.error('❌ [Auth Service 2FA] Failed to create session record:', error);
+            console.error(
+                '❌ [Auth Service 2FA] Failed to create session record:',
+                error,
+            );
             // Don't throw - session creation failure shouldn't prevent login
         }
     } else {
-        console.warn('⚠️ [Auth Service 2FA] No request object available for session creation');
+        console.warn(
+            '⚠️ [Auth Service 2FA] No request object available for session creation',
+        );
     }
 
     return {
@@ -925,7 +972,7 @@ export const logoutUser = async (req?: Request) => {
             const authHeader = req.headers.authorization;
             if (authHeader && authHeader.startsWith('Bearer ')) {
                 const token = authHeader.split(' ')[1];
-                
+
                 // Find session by token
                 const session = await sessionRepo.getSessionByToken(token);
                 if (session) {
@@ -1018,7 +1065,12 @@ export const resetPasswordService = async (
 };
 
 export const getAllUsersService = async (
-    { page, limit, type, search }: PaginationQuery & { type?: string; search?: string },
+    {
+        page,
+        limit,
+        type,
+        search,
+    }: PaginationQuery & { type?: string; search?: string },
     _currentUserRole?: string,
     roleWhere?: any,
 ) => {
@@ -1065,7 +1117,7 @@ export const getAllUsersService = async (
     });
 
     console.log('rows', rows);
-    console.log("hello this is console log");
+    console.log('hello this is console log');
     // break;
 
     // Get counts for students and employers to include in response
@@ -1160,19 +1212,33 @@ export const verifyEmailService = async (token: string) => {
             throw new CustomError('User not found', StatusCodes.NOT_FOUND);
 
         // Debug info to assist in development: log whether stored token matches and expiry
-        console.log('🔍 [VERIFY EMAIL] Stored token present:', !!user.email_verification_token);
+        console.log(
+            '🔍 [VERIFY EMAIL] Stored token present:',
+            !!user.email_verification_token,
+        );
         console.log(
             '🔍 [VERIFY EMAIL] Stored token (truncated):',
-            user.email_verification_token ? user.email_verification_token.slice(0, 30) + '...' : null,
+            user.email_verification_token
+                ? user.email_verification_token.slice(0, 30) + '...'
+                : null,
         );
-        console.log('🔍 [VERIFY EMAIL] Provided token (truncated):', token.slice(0, 30) + '...');
-        console.log('🔍 [VERIFY EMAIL] Token expiry:', user.email_verification_token_expiry);
+        console.log(
+            '🔍 [VERIFY EMAIL] Provided token (truncated):',
+            token.slice(0, 30) + '...',
+        );
+        console.log(
+            '🔍 [VERIFY EMAIL] Token expiry:',
+            user.email_verification_token_expiry,
+        );
 
         // Check if token matches and is not expired.
         // In some environments the token string can differ due to URL encoding/transport,
         // but jwt.verify already ensures signature validity + expiry.
         // So we accept the verification as long as the token is valid for this email.
-        if (user.email_verification_token && user.email_verification_token !== token) {
+        if (
+            user.email_verification_token &&
+            user.email_verification_token !== token
+        ) {
             console.warn(
                 '[VERIFY EMAIL] Token mismatch detected, accepting based on jwt.verify result.',
             );
@@ -1253,7 +1319,9 @@ export const resendVerificationEmailService = async (
 
     // Send verification email
     const frontendUrl = getVerificationFrontendUrl(frontendOrigin);
-    const verificationLink = `${frontendUrl}/auth/verify-email?token=${encodeURIComponent(verificationToken)}`;
+    const verificationLink = `${frontendUrl}/auth/verify-email?token=${encodeURIComponent(
+        verificationToken,
+    )}`;
     const { html, text } = EmailVerificationTemplate(
         verificationLink,
         verificationTokenExpiry,
@@ -1305,8 +1373,11 @@ export const updateProfileService = async (
         updateData.full_name = data.full_name.trim();
     }
     // If mobile number is being updated, reset phone verification
-    const phoneChanged = data.mobile_number && data.mobile_number !== user.mobile_number;
-    const countryChanged = data.country_code !== undefined && data.country_code !== user.country_code;
+    const phoneChanged =
+        data.mobile_number && data.mobile_number !== user.mobile_number;
+    const countryChanged =
+        data.country_code !== undefined &&
+        data.country_code !== user.country_code;
     if (phoneChanged) {
         updateData.mobile_number = data.mobile_number;
         updateData.phone_verified = false;
@@ -1327,8 +1398,7 @@ export const updateProfileService = async (
         updateData.national_id_number = data.national_id_number;
     if (data.business_registration_id !== undefined)
         updateData.business_registration_id = data.business_registration_id;
-    if (data.resume_url !== undefined)
-        updateData.resume_url = data.resume_url;
+    if (data.resume_url !== undefined) updateData.resume_url = data.resume_url;
     if (data.cover_letter !== undefined)
         updateData.cover_letter = data.cover_letter;
     if (data.preferred_location !== undefined)
@@ -1352,7 +1422,9 @@ export const updateProfileService = async (
 
         // Send verification email to new email
         const frontendUrl = getVerificationFrontendUrl();
-        const verificationLink = `${frontendUrl}/auth/verify-email?token=${encodeURIComponent(verificationToken)}`;
+        const verificationLink = `${frontendUrl}/auth/verify-email?token=${encodeURIComponent(
+            verificationToken,
+        )}`;
         const { html, text } = EmailVerificationTemplate(
             verificationLink,
             verificationTokenExpiry,
@@ -1387,7 +1459,6 @@ export const updateProfileService = async (
 
     return updatedUser;
 };
-
 
 // -------------------- CREATE SUBADMIN (SUPERADMIN ONLY) --------------------
 export const createSubAdmin = async (
@@ -1493,7 +1564,11 @@ export const getAllSubAdminsService = async ({
     limit,
     search,
 }: PaginationQuery & { search?: string }) => {
-    const { rows, count } = await repo.findAllSubAdmins({ page, limit, search });
+    const { rows, count } = await repo.findAllSubAdmins({
+        page,
+        limit,
+        search,
+    });
 
     return {
         data: rows,
@@ -1509,16 +1584,12 @@ export const getAllSubAdminsService = async ({
 // -------------------- GET SUBADMIN BY ID (SUPERADMIN ONLY) --------------------
 export const getSubAdminByIdService = async (user_id: string) => {
     const user = await repo.findUserProfileById(user_id);
-    if (!user)
-        throw new CustomError('Admin not found', StatusCodes.NOT_FOUND);
+    if (!user) throw new CustomError('Admin not found', StatusCodes.NOT_FOUND);
 
     // Check if user is an admin-type account (roleType === 'admin')
     const roleType = user.role?.roleType;
     if (roleType !== 'admin') {
-        throw new CustomError(
-            'User is not an admin',
-            StatusCodes.BAD_REQUEST,
-        );
+        throw new CustomError('User is not an admin', StatusCodes.BAD_REQUEST);
     }
 
     return user;
@@ -1538,16 +1609,12 @@ export const updateSubAdminService = async (
 ) => {
     // Check if user exists and is a subadmin
     const user = await repo.findUserById(user_id);
-    if (!user)
-        throw new CustomError('Admin not found', StatusCodes.NOT_FOUND);
+    if (!user) throw new CustomError('Admin not found', StatusCodes.NOT_FOUND);
 
     // Verify user is an admin-type account
     const role = await DB.Roles.findOne({ where: { id: user.role_id } });
     if (!role || role.roleType !== 'admin') {
-        throw new CustomError(
-            'User is not an admin',
-            StatusCodes.BAD_REQUEST,
-        );
+        throw new CustomError('User is not an admin', StatusCodes.BAD_REQUEST);
     }
 
     // If email is being updated, check if it's already taken by another user
@@ -1623,16 +1690,12 @@ export const updateSubAdminService = async (
 export const deleteSubAdminService = async (user_id: string) => {
     // Check if user exists and is a subadmin
     const user = await repo.findUserById(user_id);
-    if (!user)
-        throw new CustomError('Admin not found', StatusCodes.NOT_FOUND);
+    if (!user) throw new CustomError('Admin not found', StatusCodes.NOT_FOUND);
 
     // Verify user is an admin-type account
     const role = await DB.Roles.findOne({ where: { id: user.role_id } });
     if (!role || role.roleType !== 'admin') {
-        throw new CustomError(
-            'User is not an admin',
-            StatusCodes.BAD_REQUEST,
-        );
+        throw new CustomError('User is not an admin', StatusCodes.BAD_REQUEST);
     }
 
     // Delete the subadmin
@@ -1645,8 +1708,7 @@ export const deleteSubAdminService = async (user_id: string) => {
 export const deleteUserService = async (user_id: string) => {
     // Check if user exists
     const user = await repo.findUserById(user_id);
-    if (!user)
-        throw new CustomError('User not found', StatusCodes.NOT_FOUND);
+    if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
 
     // Delete the user
     await repo.deleteUser(user_id);
@@ -1678,10 +1740,7 @@ export const sendPhoneVerificationOTPService = async (user_id: string) => {
 
     // Send OTP via SMS
     try {
-        await sendOTPSMS(
-  `${user.country_code}${user.mobile_number}`,
-  otp
-);
+        await sendOTPSMS(`${user.country_code}${user.mobile_number}`, otp);
     } catch (smsError: any) {
         // Log error but don't fail the request - OTP is still stored
         console.error('Failed to send SMS:', smsError.message);
@@ -1689,7 +1748,8 @@ export const sendPhoneVerificationOTPService = async (user_id: string) => {
         if (process.env.NODE_ENV === 'development') {
             return {
                 success: true,
-                message: 'Verification OTP generated successfully (SMS send failed - check console)',
+                message:
+                    'Verification OTP generated successfully (SMS send failed - check console)',
                 otp: otp,
             };
         }
@@ -1706,10 +1766,7 @@ export const sendPhoneVerificationOTPService = async (user_id: string) => {
 };
 
 // -------------------- VERIFY PHONE NUMBER --------------------
-export const verifyPhoneService = async (
-    user_id: string,
-    otp: string,
-) => {
+export const verifyPhoneService = async (user_id: string, otp: string) => {
     const user = await repo.findUserById(user_id);
     if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
 
@@ -1756,7 +1813,10 @@ export const verifyAccountService = async (email: string, otp: string) => {
     if (!user) throw new CustomError('User not found', StatusCodes.NOT_FOUND);
 
     if (user.phone_verified) {
-        throw new CustomError('Phone number already verified', StatusCodes.BAD_REQUEST);
+        throw new CustomError(
+            'Phone number already verified',
+            StatusCodes.BAD_REQUEST,
+        );
     }
 
     if (!user.phone_verification_otp) {

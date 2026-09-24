@@ -55,78 +55,69 @@ class CommunityWorkspaceRepo {
     }
 
     async getPeerFeed(userId: string) {
-    return DB.StudentLinks.findAll({
-        where: {
-            status: 'active',
-            visibility: true,
-            user_id: {
-                [Op.ne]: userId,
-            },
-        },
-
-        include: [
-            {
-                model: DB.Users,
-                as: 'student',
-
-                attributes: [
-                    'user_id',
-                    'full_name',
-                    'profile_image_url',
-                ],
+        return DB.StudentLinks.findAll({
+            where: {
+                status: 'active',
+                visibility: true,
+                user_id: {
+                    [Op.ne]: userId,
+                },
             },
 
-            {
-                model: DB.PeerReviews,
-                as: 'peerReviews',
+            include: [
+                {
+                    model: DB.Users,
+                    as: 'student',
 
-                required: false,
-
-                where: {
-                    reviewer_id: userId,
+                    attributes: ['user_id', 'full_name', 'profile_image_url'],
                 },
 
-                attributes: [
-                    'id',
-                    'rating',
-                    'review',
-                    'created_at',
-                ],
+                {
+                    model: DB.PeerReviews,
+                    as: 'peerReviews',
 
-                include: [
-                    {
-                        model: DB.PeerReviewReplies,
-                        as: 'reply',
+                    required: false,
 
-                        required: false,
-
-                        attributes: [
-                            'id',
-                            'reply',
-                            'created_at',
-                            'updated_at',
-                        ],
-
-                        include: [
-                            {
-                                model: DB.Users,
-                                as: 'author',
-
-                                attributes: [
-                                    'user_id',
-                                    'full_name',
-                                    'profile_image_url',
-                                ],
-                            },
-                        ],
+                    where: {
+                        reviewer_id: userId,
                     },
-                ],
-            },
-        ],
 
-        order: [['created_at', 'DESC']],
-    });
-}
+                    attributes: ['id', 'rating', 'review', 'created_at'],
+
+                    include: [
+                        {
+                            model: DB.PeerReviewReplies,
+                            as: 'reply',
+
+                            required: false,
+
+                            attributes: [
+                                'id',
+                                'reply',
+                                'created_at',
+                                'updated_at',
+                            ],
+
+                            include: [
+                                {
+                                    model: DB.Users,
+                                    as: 'author',
+
+                                    attributes: [
+                                        'user_id',
+                                        'full_name',
+                                        'profile_image_url',
+                                    ],
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ],
+
+            order: [['created_at', 'DESC']],
+        });
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -143,14 +134,14 @@ class CommunityWorkspaceRepo {
         });
     }
 
-        // async findReviewByReviewerAndLink(reviewerId: string, linkId: string) {
-        //     return DB.PeerReviews.findOne({
-        //         where: {
-        //             reviewer_id: reviewerId,
-        //             link_id: linkId,
-        //         },
-        //     });
-        // }
+    // async findReviewByReviewerAndLink(reviewerId: string, linkId: string) {
+    //     return DB.PeerReviews.findOne({
+    //         where: {
+    //             reviewer_id: reviewerId,
+    //             link_id: linkId,
+    //         },
+    //     });
+    // }
 
     async getReviewsByLinkId(linkId: string) {
         return DB.PeerReviews.findAll({

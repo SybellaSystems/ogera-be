@@ -1,5 +1,9 @@
 import { DB } from '@/database';
-import { Dispute, DisputeStatus, DisputePriority } from '@/interfaces/dispute.interfaces';
+import {
+    Dispute,
+    DisputeStatus,
+    DisputePriority,
+} from '@/interfaces/dispute.interfaces';
 import { Op } from 'sequelize';
 
 const repo = {
@@ -120,7 +124,10 @@ const repo = {
         });
     },
 
-    findDisputesByUser: async (user_id: string, role: 'student' | 'employer') => {
+    findDisputesByUser: async (
+        user_id: string,
+        role: 'student' | 'employer',
+    ) => {
         // Filter by both role and reported_by to show only disputes created by the user
         const whereClause: any = {
             reported_by: role,
@@ -130,7 +137,7 @@ const repo = {
         } else {
             whereClause.employer_id = user_id;
         }
-        
+
         return await DB.Disputes.findAll({
             where: whereClause,
             include: [
@@ -164,7 +171,9 @@ const repo = {
     },
 
     updateDispute: async (dispute_id: string, updates: Partial<Dispute>) => {
-        const [rows] = await DB.Disputes.update(updates, { where: { dispute_id } });
+        const [rows] = await DB.Disputes.update(updates, {
+            where: { dispute_id },
+        });
         if (rows === 0) return null;
         return await repo.findDisputeById(dispute_id);
     },
@@ -172,11 +181,15 @@ const repo = {
     assignModerator: async (dispute_id: string, moderator_id: string) => {
         return await DB.Disputes.update(
             { moderator_id, status: 'Under Review' },
-            { where: { dispute_id } }
+            { where: { dispute_id } },
         );
     },
 
-    escalateDispute: async (dispute_id: string, escalated_to: string, fee_penalty: number) => {
+    escalateDispute: async (
+        dispute_id: string,
+        escalated_to: string,
+        fee_penalty: number,
+    ) => {
         return await DB.Disputes.update(
             {
                 escalated_to,
@@ -184,7 +197,7 @@ const repo = {
                 auto_escalated_at: new Date(),
                 status: 'Under Review',
             },
-            { where: { dispute_id } }
+            { where: { dispute_id } },
         );
     },
 
@@ -192,7 +205,7 @@ const repo = {
         dispute_id: string,
         resolution: 'Refunded' | 'Settled' | 'Dismissed' | 'Escalated',
         resolution_notes?: string,
-        refund_amount?: number
+        refund_amount?: number,
     ) => {
         return await DB.Disputes.update(
             {
@@ -202,7 +215,7 @@ const repo = {
                 refund_amount,
                 resolved_at: new Date(),
             },
-            { where: { dispute_id } }
+            { where: { dispute_id } },
         );
     },
 
@@ -246,7 +259,11 @@ const repo = {
     getDisputeMessages: async (dispute_id: string, userRole?: string) => {
         const whereClause: any = { dispute_id };
         // Students and employers can't see internal moderator messages
-        if (userRole !== 'moderator' && userRole !== 'admin' && userRole !== 'superadmin') {
+        if (
+            userRole !== 'moderator' &&
+            userRole !== 'admin' &&
+            userRole !== 'superadmin'
+        ) {
             whereClause.is_internal = false;
         }
 
@@ -294,8 +311,12 @@ const repo = {
     // Auto-escalation: Find disputes that need escalation
     findDisputesNeedingEscalation: async () => {
         const now = new Date();
-        const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+        const twentyFourHoursAgo = new Date(
+            now.getTime() - 24 * 60 * 60 * 1000,
+        );
+        const fortyEightHoursAgo = new Date(
+            now.getTime() - 48 * 60 * 60 * 1000,
+        );
 
         // Disputes with no response for 24+ hours (need reassignment)
         const needsReassignment = await DB.Disputes.findAll({
@@ -329,7 +350,11 @@ const repo = {
                 where: {
                     status: 'Resolved',
                     created_at: {
-                        [Op.gte]: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+                        [Op.gte]: new Date(
+                            new Date().getFullYear(),
+                            new Date().getMonth(),
+                            1,
+                        ),
                     },
                 },
             }),
@@ -358,5 +383,3 @@ const repo = {
 };
 
 export default repo;
-
-

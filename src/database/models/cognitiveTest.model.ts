@@ -1,6 +1,10 @@
 import { Sequelize, DataTypes, Model, Optional } from 'sequelize';
 
-export type CognitiveTestCategory = 'numerical' | 'verbal' | 'logical' | 'mixed';
+export type CognitiveTestCategory =
+    | 'numerical'
+    | 'verbal'
+    | 'logical'
+    | 'mixed';
 
 export interface CognitiveTestAttributes {
     cognitive_test_id: string;
@@ -15,7 +19,12 @@ export interface CognitiveTestAttributes {
 
 export type CognitiveTestCreationAttributes = Optional<
     CognitiveTestAttributes,
-    'cognitive_test_id' | 'description' | 'published' | 'created_by' | 'created_at' | 'updated_at'
+    | 'cognitive_test_id'
+    | 'description'
+    | 'published'
+    | 'created_by'
+    | 'created_at'
+    | 'updated_at'
 >;
 
 export class CognitiveTestModel

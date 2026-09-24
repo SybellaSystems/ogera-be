@@ -64,7 +64,9 @@ const validateQuestionMatchesCategory = (
     );
 };
 
-export const getCognitiveTestAdminService = async (cognitive_test_id: string) => {
+export const getCognitiveTestAdminService = async (
+    cognitive_test_id: string,
+) => {
     const test = await DB.CognitiveTests.findByPk(cognitive_test_id, {
         include: [
             {
@@ -79,7 +81,10 @@ export const getCognitiveTestAdminService = async (cognitive_test_id: string) =>
         ],
     });
     if (!test) {
-        throw new CustomError('Cognitive test not found', StatusCodes.NOT_FOUND);
+        throw new CustomError(
+            'Cognitive test not found',
+            StatusCodes.NOT_FOUND,
+        );
     }
     return test.get({ plain: true });
 };
@@ -125,10 +130,9 @@ export const listCognitiveTestsAdminService = async ({
     if (search?.trim()) {
         where[Op.or] = [
             { title: { [Op.iLike]: `%${search.trim()}%` } },
-            Sequelize.where(
-                Sequelize.cast(Sequelize.col('category'), 'text'),
-                { [Op.iLike]: `%${search.trim()}%` },
-            ),
+            Sequelize.where(Sequelize.cast(Sequelize.col('category'), 'text'), {
+                [Op.iLike]: `%${search.trim()}%`,
+            }),
             { description: { [Op.iLike]: `%${search.trim()}%` } },
         ];
     }
@@ -147,7 +151,7 @@ export const listCognitiveTestsAdminService = async ({
             },
         ],
     });
-    const data = rows.map((r) => {
+    const data = rows.map(r => {
         const plain = r.get({ plain: true }) as any;
         return {
             cognitive_test_id: plain.cognitive_test_id,
@@ -184,12 +188,18 @@ export const updateCognitiveTestService = async (
 ) => {
     const test = await DB.CognitiveTests.findByPk(cognitive_test_id);
     if (!test) {
-        throw new CustomError('Cognitive test not found', StatusCodes.NOT_FOUND);
+        throw new CustomError(
+            'Cognitive test not found',
+            StatusCodes.NOT_FOUND,
+        );
     }
     const patch: Record<string, unknown> = {};
     if (body.title !== undefined) {
         if (!String(body.title).trim()) {
-            throw new CustomError('Title cannot be empty', StatusCodes.BAD_REQUEST);
+            throw new CustomError(
+                'Title cannot be empty',
+                StatusCodes.BAD_REQUEST,
+            );
         }
         patch.title = String(body.title).trim();
     }
@@ -206,7 +216,13 @@ export const updateCognitiveTestService = async (
         if (body.category !== 'mixed') {
             const questions = await DB.CognitiveQuestions.findAll({
                 where: { cognitive_test_id },
-                attributes: ['prompt', 'option_a', 'option_b', 'option_c', 'option_d'],
+                attributes: [
+                    'prompt',
+                    'option_a',
+                    'option_b',
+                    'option_c',
+                    'option_d',
+                ],
             });
             for (const question of questions) {
                 validateQuestionMatchesCategory(body.category, {
@@ -230,7 +246,10 @@ export const updateCognitiveTestService = async (
 export const deleteCognitiveTestService = async (cognitive_test_id: string) => {
     const test = await DB.CognitiveTests.findByPk(cognitive_test_id);
     if (!test) {
-        throw new CustomError('Cognitive test not found', StatusCodes.NOT_FOUND);
+        throw new CustomError(
+            'Cognitive test not found',
+            StatusCodes.NOT_FOUND,
+        );
     }
     await test.destroy();
     return { deleted: true };
@@ -251,7 +270,10 @@ export const addQuestionService = async (
 ) => {
     const test = await DB.CognitiveTests.findByPk(cognitive_test_id);
     if (!test) {
-        throw new CustomError('Cognitive test not found', StatusCodes.NOT_FOUND);
+        throw new CustomError(
+            'Cognitive test not found',
+            StatusCodes.NOT_FOUND,
+        );
     }
     const {
         prompt,
@@ -278,7 +300,10 @@ export const addQuestionService = async (
     }
     const ci = Number(correct_index);
     if (!Number.isInteger(ci) || ci < 0 || ci > 3) {
-        throw new CustomError('correct_index must be 0–3', StatusCodes.BAD_REQUEST);
+        throw new CustomError(
+            'correct_index must be 0–3',
+            StatusCodes.BAD_REQUEST,
+        );
     }
     if (!validDifficulty(difficulty)) {
         throw new CustomError('Invalid difficulty', StatusCodes.BAD_REQUEST);
@@ -336,19 +361,33 @@ export const updateQuestionService = async (
     }
     const test = await DB.CognitiveTests.findByPk(cognitive_test_id);
     if (!test) {
-        throw new CustomError('Cognitive test not found', StatusCodes.NOT_FOUND);
+        throw new CustomError(
+            'Cognitive test not found',
+            StatusCodes.NOT_FOUND,
+        );
     }
     const patch: Record<string, unknown> = {};
     if (body.prompt !== undefined) {
         if (!String(body.prompt).trim()) {
-            throw new CustomError('Prompt cannot be empty', StatusCodes.BAD_REQUEST);
+            throw new CustomError(
+                'Prompt cannot be empty',
+                StatusCodes.BAD_REQUEST,
+            );
         }
         patch.prompt = String(body.prompt).trim();
     }
-    for (const key of ['option_a', 'option_b', 'option_c', 'option_d'] as const) {
+    for (const key of [
+        'option_a',
+        'option_b',
+        'option_c',
+        'option_d',
+    ] as const) {
         if (body[key] !== undefined) {
             if (!String(body[key]).trim()) {
-                throw new CustomError(`${key} cannot be empty`, StatusCodes.BAD_REQUEST);
+                throw new CustomError(
+                    `${key} cannot be empty`,
+                    StatusCodes.BAD_REQUEST,
+                );
             }
             patch[key] = String(body[key]).trim();
         }
@@ -356,13 +395,19 @@ export const updateQuestionService = async (
     if (body.correct_index !== undefined) {
         const ci = Number(body.correct_index);
         if (!Number.isInteger(ci) || ci < 0 || ci > 3) {
-            throw new CustomError('correct_index must be 0–3', StatusCodes.BAD_REQUEST);
+            throw new CustomError(
+                'correct_index must be 0–3',
+                StatusCodes.BAD_REQUEST,
+            );
         }
         patch.correct_index = ci;
     }
     if (body.difficulty !== undefined) {
         if (!validDifficulty(body.difficulty)) {
-            throw new CustomError('Invalid difficulty', StatusCodes.BAD_REQUEST);
+            throw new CustomError(
+                'Invalid difficulty',
+                StatusCodes.BAD_REQUEST,
+            );
         }
         patch.difficulty = body.difficulty;
     }
@@ -371,15 +416,25 @@ export const updateQuestionService = async (
     }
     validateQuestionMatchesCategory(test.category, {
         prompt:
-            body.prompt !== undefined ? String(body.prompt) : String(q.get('prompt') || ''),
+            body.prompt !== undefined
+                ? String(body.prompt)
+                : String(q.get('prompt') || ''),
         option_a:
-            body.option_a !== undefined ? String(body.option_a) : String(q.get('option_a') || ''),
+            body.option_a !== undefined
+                ? String(body.option_a)
+                : String(q.get('option_a') || ''),
         option_b:
-            body.option_b !== undefined ? String(body.option_b) : String(q.get('option_b') || ''),
+            body.option_b !== undefined
+                ? String(body.option_b)
+                : String(q.get('option_b') || ''),
         option_c:
-            body.option_c !== undefined ? String(body.option_c) : String(q.get('option_c') || ''),
+            body.option_c !== undefined
+                ? String(body.option_c)
+                : String(q.get('option_c') || ''),
         option_d:
-            body.option_d !== undefined ? String(body.option_d) : String(q.get('option_d') || ''),
+            body.option_d !== undefined
+                ? String(body.option_d)
+                : String(q.get('option_d') || ''),
     });
     await q.update(patch);
     return getCognitiveTestAdminService(cognitive_test_id);
@@ -403,7 +458,13 @@ export const deleteQuestionService = async (
 export const listPublishedCognitiveTestsService = async () => {
     const rows = await DB.CognitiveTests.findAll({
         where: { published: true },
-        attributes: ['cognitive_test_id', 'title', 'description', 'category', 'updated_at'],
+        attributes: [
+            'cognitive_test_id',
+            'title',
+            'description',
+            'category',
+            'updated_at',
+        ],
         include: [
             {
                 model: DB.CognitiveQuestions,
@@ -413,7 +474,7 @@ export const listPublishedCognitiveTestsService = async () => {
         ],
         order: [['title', 'ASC']],
     });
-    return rows.map((r) => {
+    return rows.map(r => {
         const plain = r.get({ plain: true }) as any;
         return {
             cognitive_test_id: plain.cognitive_test_id,
@@ -426,7 +487,9 @@ export const listPublishedCognitiveTestsService = async () => {
     });
 };
 
-export const getPublishedTestForAttemptService = async (cognitive_test_id: string) => {
+export const getPublishedTestForAttemptService = async (
+    cognitive_test_id: string,
+) => {
     const test = await DB.CognitiveTests.findOne({
         where: { cognitive_test_id, published: true },
         include: [
@@ -452,11 +515,17 @@ export const getPublishedTestForAttemptService = async (cognitive_test_id: strin
         ],
     });
     if (!test) {
-        throw new CustomError('Test not found or not published', StatusCodes.NOT_FOUND);
+        throw new CustomError(
+            'Test not found or not published',
+            StatusCodes.NOT_FOUND,
+        );
     }
     const plain = test.get({ plain: true }) as any;
     if (!plain.questions?.length) {
-        throw new CustomError('This test has no questions yet', StatusCodes.BAD_REQUEST);
+        throw new CustomError(
+            'This test has no questions yet',
+            StatusCodes.BAD_REQUEST,
+        );
     }
     return {
         cognitive_test_id: plain.cognitive_test_id,
@@ -482,29 +551,44 @@ export const submitCognitiveAttemptService = async (
         ],
     });
     if (!test) {
-        throw new CustomError('Test not found or not published', StatusCodes.NOT_FOUND);
+        throw new CustomError(
+            'Test not found or not published',
+            StatusCodes.NOT_FOUND,
+        );
     }
     const questions = (test as any).questions as Array<{
         question_id: string;
         correct_index: number;
     }>;
     if (!questions?.length) {
-        throw new CustomError('This test has no questions', StatusCodes.BAD_REQUEST);
+        throw new CustomError(
+            'This test has no questions',
+            StatusCodes.BAD_REQUEST,
+        );
     }
 
-    const qIds = new Set(questions.map((q) => q.question_id));
+    const qIds = new Set(questions.map(q => q.question_id));
     for (const id of qIds) {
         if (!(id in answers)) {
-            throw new CustomError('Answer every question', StatusCodes.BAD_REQUEST);
+            throw new CustomError(
+                'Answer every question',
+                StatusCodes.BAD_REQUEST,
+            );
         }
         const idx = Number(answers[id]);
         if (!Number.isInteger(idx) || idx < 0 || idx > 3) {
-            throw new CustomError(`Invalid answer for question ${id}`, StatusCodes.BAD_REQUEST);
+            throw new CustomError(
+                `Invalid answer for question ${id}`,
+                StatusCodes.BAD_REQUEST,
+            );
         }
     }
     for (const k of Object.keys(answers)) {
         if (!qIds.has(k)) {
-            throw new CustomError(`Unknown question ${k}`, StatusCodes.BAD_REQUEST);
+            throw new CustomError(
+                `Unknown question ${k}`,
+                StatusCodes.BAD_REQUEST,
+            );
         }
     }
 
@@ -531,7 +615,8 @@ export const submitCognitiveAttemptService = async (
     return {
         score,
         max_score,
-        percentage: max_score > 0 ? Math.round((score / max_score) * 10000) / 100 : 0,
+        percentage:
+            max_score > 0 ? Math.round((score / max_score) * 10000) / 100 : 0,
         cognitive_test_id,
         title: test.get('title'),
     };
@@ -548,13 +633,17 @@ export const getMyCognitiveAttemptHistoryService = async (user_id: string) => {
                 required: false,
             },
         ],
-        order: [['taken_at', 'DESC'], ['created_at', 'DESC']],
+        order: [
+            ['taken_at', 'DESC'],
+            ['created_at', 'DESC'],
+        ],
     });
 
     return rows.map((r: any) => {
         const score = Number(r.score) || 0;
         const max = Number(r.max_score) || 0;
-        const percentage = max > 0 ? Math.round((score / max) * 10000) / 100 : 0;
+        const percentage =
+            max > 0 ? Math.round((score / max) * 10000) / 100 : 0;
         const test = r.cognitiveTest;
         return {
             test_id: r.test_id,
@@ -562,7 +651,10 @@ export const getMyCognitiveAttemptHistoryService = async (user_id: string) => {
             title:
                 test?.title ||
                 r.test_name ||
-                `Cognitive test ${String(r.cognitive_test_id || '').slice(0, 8)}`,
+                `Cognitive test ${String(r.cognitive_test_id || '').slice(
+                    0,
+                    8,
+                )}`,
             category: test?.category || 'mixed',
             score,
             max_score: max,

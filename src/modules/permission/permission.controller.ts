@@ -19,7 +19,10 @@ export const createPermission = async (
         // Check if permission already exists - return existing one with helpful message
         if (error.message && error.message.includes('already exists')) {
             try {
-                const existingPermission = await permissionService.getPermissionByApiName(req.body.api_name);
+                const existingPermission =
+                    await permissionService.getPermissionByApiName(
+                        req.body.api_name,
+                    );
                 if (existingPermission) {
                     // Return existing permission with a message suggesting to use update
                     res.status(StatusCodes.CONFLICT).json({
@@ -33,7 +36,7 @@ export const createPermission = async (
                 // If we can't find it, continue with original error
             }
         }
-        
+
         // Return error response instead of throwing (prevents app crash)
         res.status(StatusCodes.BAD_REQUEST).json({
             success: false,
@@ -64,7 +67,9 @@ export const getAllPermissions = async (_req: Request, res: Response) => {
 export const getPermissionById = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const permission = await permissionService.getPermissionById(id as string);
+        const permission = await permissionService.getPermissionById(
+            id as string,
+        );
         res.status(StatusCodes.OK).json({
             success: true,
             message: 'Permission retrieved successfully',
@@ -82,7 +87,10 @@ export const getPermissionById = async (req: Request, res: Response) => {
 export const updatePermission = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const permission = await permissionService.updatePermission(id as string, req.body);
+        const permission = await permissionService.updatePermission(
+            id as string,
+            req.body,
+        );
         res.status(StatusCodes.OK).json({
             success: true,
             message: 'Permission updated successfully',
@@ -152,5 +160,3 @@ export const getAllRoutes = async (_req: Request, res: Response) => {
         });
     }
 };
-
-

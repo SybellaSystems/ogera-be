@@ -17,7 +17,10 @@ export async function getToken(req: Request, res: Response): Promise<void> {
     } catch (error) {
         const { status, data } = momoService.toMoMoError(error);
         logger.error('MoMo getToken error:', error);
-        res.status(status).json({ success: false, ...(typeof data === 'object' ? data : { message: data }) });
+        res.status(status).json({
+            success: false,
+            ...(typeof data === 'object' ? data : { message: data }),
+        });
     }
 }
 
@@ -27,11 +30,13 @@ export async function getToken(req: Request, res: Response): Promise<void> {
  */
 export async function requestToPay(req: Request, res: Response): Promise<void> {
     try {
-        const { amount, currency, externalId, payer, payerMessage, payeeNote } = req.body;
+        const { amount, currency, externalId, payer, payerMessage, payeeNote } =
+            req.body;
         if (!amount || !currency || !externalId || !payer?.partyId) {
             res.status(400).json({
                 success: false,
-                message: 'amount, currency, externalId and payer.partyId are required',
+                message:
+                    'amount, currency, externalId and payer.partyId are required',
             });
             return;
         }
@@ -55,7 +60,10 @@ export async function requestToPay(req: Request, res: Response): Promise<void> {
     } catch (error) {
         const { status, data } = momoService.toMoMoError(error);
         logger.error('MoMo requestToPay error:', error);
-        res.status(status).json({ success: false, ...(typeof data === 'object' ? data : { message: data }) });
+        res.status(status).json({
+            success: false,
+            ...(typeof data === 'object' ? data : { message: data }),
+        });
     }
 }
 
@@ -66,28 +74,55 @@ export async function getStatus(req: Request, res: Response): Promise<void> {
     try {
         const { referenceId } = req.params;
         if (!referenceId) {
-            res.status(400).json({ success: false, message: 'referenceId is required' });
+            res.status(400).json({
+                success: false,
+                message: 'referenceId is required',
+            });
             return;
         }
-        const data = await momoService.getTransactionStatus(String(referenceId));
+        const data = await momoService.getTransactionStatus(
+            String(referenceId),
+        );
         res.json({ success: true, data });
     } catch (error) {
         const { status, data } = momoService.toMoMoError(error);
         logger.error('MoMo getStatus error:', error);
-        res.status(status).json({ success: false, ...(typeof data === 'object' ? data : { message: data }) });
+        res.status(status).json({
+            success: false,
+            ...(typeof data === 'object' ? data : { message: data }),
+        });
     }
 }
 
 /**
  * Create invoice. Body: externalId, amount, currency, validityDuration?, intendedPayer, payee, description.
  */
-export async function createInvoice(req: Request, res: Response): Promise<void> {
+export async function createInvoice(
+    req: Request,
+    res: Response,
+): Promise<void> {
     try {
-        const { externalId, amount, currency, validityDuration, intendedPayer, payee, description } = req.body;
-        if (!externalId || !amount || !currency || !intendedPayer?.partyId || !payee?.partyId || !description) {
+        const {
+            externalId,
+            amount,
+            currency,
+            validityDuration,
+            intendedPayer,
+            payee,
+            description,
+        } = req.body;
+        if (
+            !externalId ||
+            !amount ||
+            !currency ||
+            !intendedPayer?.partyId ||
+            !payee?.partyId ||
+            !description
+        ) {
             res.status(400).json({
                 success: false,
-                message: 'externalId, amount, currency, intendedPayer.partyId, payee.partyId and description are required',
+                message:
+                    'externalId, amount, currency, intendedPayer.partyId, payee.partyId and description are required',
             });
             return;
         }
@@ -115,18 +150,27 @@ export async function createInvoice(req: Request, res: Response): Promise<void> 
     } catch (error) {
         const { status, data } = momoService.toMoMoError(error);
         logger.error('MoMo createInvoice error:', error);
-        res.status(status).json({ success: false, ...(typeof data === 'object' ? data : { message: data }) });
+        res.status(status).json({
+            success: false,
+            ...(typeof data === 'object' ? data : { message: data }),
+        });
     }
 }
 
 /**
  * Get invoice status by reference ID.
  */
-export async function getInvoiceStatus(req: Request, res: Response): Promise<void> {
+export async function getInvoiceStatus(
+    req: Request,
+    res: Response,
+): Promise<void> {
     try {
         const { referenceId } = req.params;
         if (!referenceId) {
-            res.status(400).json({ success: false, message: 'referenceId is required' });
+            res.status(400).json({
+                success: false,
+                message: 'referenceId is required',
+            });
             return;
         }
         const data = await momoService.getInvoiceStatus(String(referenceId));
@@ -134,7 +178,10 @@ export async function getInvoiceStatus(req: Request, res: Response): Promise<voi
     } catch (error) {
         const { status, data } = momoService.toMoMoError(error);
         logger.error('MoMo getInvoiceStatus error:', error);
-        res.status(status).json({ success: false, ...(typeof data === 'object' ? data : { message: data }) });
+        res.status(status).json({
+            success: false,
+            ...(typeof data === 'object' ? data : { message: data }),
+        });
     }
 }
 
@@ -150,24 +197,36 @@ export async function fundJob(req: Request, res: Response): Promise<void> {
         }
         const { jobId, payerPartyId } = req.body;
         if (!jobId) {
-            res.status(400).json({ success: false, message: 'jobId is required' });
+            res.status(400).json({
+                success: false,
+                message: 'jobId is required',
+            });
             return;
         }
         let partyId = payerPartyId;
         if (!partyId) {
             const { DB } = await import('@/database');
-            const user = await DB.Users.findOne({ where: { user_id: userId }, attributes: ['mobile_number'] });
-            const mobile = (user as { mobile_number?: string } | null)?.mobile_number;
+            const user = await DB.Users.findOne({
+                where: { user_id: userId },
+                attributes: ['mobile_number'],
+            });
+            const mobile = (user as { mobile_number?: string } | null)
+                ?.mobile_number;
             if (!mobile) {
                 res.status(400).json({
                     success: false,
-                    message: 'MoMo number required. Add mobile number in Profile or pass payerPartyId.',
+                    message:
+                        'MoMo number required. Add mobile number in Profile or pass payerPartyId.',
                 });
                 return;
             }
             partyId = momoService.normalizePartyId(mobile);
         }
-        const result = await momoService.fundJob(jobId, String(partyId), userId);
+        const result = await momoService.fundJob(
+            jobId,
+            String(partyId),
+            userId,
+        );
         res.json({
             success: true,
             message: 'Payment request sent. Approve on your MoMo app.',
@@ -177,21 +236,39 @@ export async function fundJob(req: Request, res: Response): Promise<void> {
         const err = error as Error;
         const { status, data } = momoService.toMoMoError(error);
         logger.error('MoMo fundJob error:', error);
-        res.status(status).json({ success: false, message: err.message, ...(typeof data === 'object' ? data : { message: data }) });
+        res.status(status).json({
+            success: false,
+            message: err.message,
+            ...(typeof data === 'object' ? data : { message: data }),
+        });
     }
 }
 
 /**
  * Admin: list employer payments / job funding status (jobs with Pending or Funded).
  */
-export async function listJobPayments(req: Request, res: Response): Promise<void> {
+export async function listJobPayments(
+    req: Request,
+    res: Response,
+): Promise<void> {
     try {
         const { DB } = await import('@/database');
         const { Op } = await import('sequelize');
         const jobs = await DB.Jobs.findAll({
-            where: { funding_status: { [Op.in]: ['Pending', 'Funded', 'Paid'] } },
+            where: {
+                funding_status: { [Op.in]: ['Pending', 'Funded', 'Paid'] },
+            },
             include: [
-                { model: DB.Users, as: 'employer', attributes: ['user_id', 'full_name', 'email', 'mobile_number'] },
+                {
+                    model: DB.Users,
+                    as: 'employer',
+                    attributes: [
+                        'user_id',
+                        'full_name',
+                        'email',
+                        'mobile_number',
+                    ],
+                },
                 {
                     model: DB.Transactions,
                     as: 'transactions',
@@ -207,13 +284,22 @@ export async function listJobPayments(req: Request, res: Response): Promise<void
                     },
                 },
             ],
-            order: [['momo_paid_at', 'DESC'], ['updated_at', 'DESC']],
+            order: [
+                ['momo_paid_at', 'DESC'],
+                ['updated_at', 'DESC'],
+            ],
         });
-        const list = (jobs as Array<Record<string, any>>).map((j) => {
+        const list = (jobs as Array<Record<string, any>>).map(j => {
             const txs = (j as any).transactions || [];
-            const fundingTx = txs.find((t: any) => t.type === 'JOB_FUNDING_CREDIT');
-            const payoutWalletTx = txs.find((t: any) => t.type === 'JOB_PAYOUT_WALLET_DEBIT');
-            const payoutStudentTx = txs.find((t: any) => t.type === 'STUDENT_PAYOUT_DISBURSEMENT');
+            const fundingTx = txs.find(
+                (t: any) => t.type === 'JOB_FUNDING_CREDIT',
+            );
+            const payoutWalletTx = txs.find(
+                (t: any) => t.type === 'JOB_PAYOUT_WALLET_DEBIT',
+            );
+            const payoutStudentTx = txs.find(
+                (t: any) => t.type === 'STUDENT_PAYOUT_DISBURSEMENT',
+            );
             return {
                 job_id: j.job_id,
                 job_title: j.job_title,
@@ -224,16 +310,27 @@ export async function listJobPayments(req: Request, res: Response): Promise<void
                 momo_paid_at: j.momo_paid_at,
                 disbursement_reference_id: j.disbursement_reference_id,
                 paid_at: j.paid_at,
-                amount_paid_to_student: payoutStudentTx ? Number(payoutStudentTx.converted_amount) : null,
-                amount_paid_to_student_currency: payoutStudentTx?.converted_currency || null,
-                wallet_deduction_amount: payoutWalletTx ? Number(payoutWalletTx.converted_amount) : null,
-                wallet_currency: payoutWalletTx?.converted_currency || MOMO_DISBURSEMENT_CONFIG.currency,
+                amount_paid_to_student: payoutStudentTx
+                    ? Number(payoutStudentTx.converted_amount)
+                    : null,
+                amount_paid_to_student_currency:
+                    payoutStudentTx?.converted_currency || null,
+                wallet_deduction_amount: payoutWalletTx
+                    ? Number(payoutWalletTx.converted_amount)
+                    : null,
+                wallet_currency:
+                    payoutWalletTx?.converted_currency ||
+                    MOMO_DISBURSEMENT_CONFIG.currency,
                 transaction_details: {
                     funding: fundingTx
                         ? {
-                              original_amount: Number(fundingTx.original_amount),
+                              original_amount: Number(
+                                  fundingTx.original_amount,
+                              ),
                               original_currency: fundingTx.original_currency,
-                              converted_amount: Number(fundingTx.converted_amount),
+                              converted_amount: Number(
+                                  fundingTx.converted_amount,
+                              ),
                               converted_currency: fundingTx.converted_currency,
                               exchange_rate: Number(fundingTx.exchange_rate),
                               fx_timestamp: fundingTx.fx_timestamp,
@@ -241,49 +338,77 @@ export async function listJobPayments(req: Request, res: Response): Promise<void
                         : null,
                     wallet_deduction: payoutWalletTx
                         ? {
-                              original_amount: Number(payoutWalletTx.original_amount),
-                              original_currency: payoutWalletTx.original_currency,
-                              converted_amount: Number(payoutWalletTx.converted_amount),
-                              converted_currency: payoutWalletTx.converted_currency,
-                              exchange_rate: Number(payoutWalletTx.exchange_rate),
+                              original_amount: Number(
+                                  payoutWalletTx.original_amount,
+                              ),
+                              original_currency:
+                                  payoutWalletTx.original_currency,
+                              converted_amount: Number(
+                                  payoutWalletTx.converted_amount,
+                              ),
+                              converted_currency:
+                                  payoutWalletTx.converted_currency,
+                              exchange_rate: Number(
+                                  payoutWalletTx.exchange_rate,
+                              ),
                               fx_timestamp: payoutWalletTx.fx_timestamp,
                           }
                         : null,
                     student_payout: payoutStudentTx
                         ? {
-                              original_amount: Number(payoutStudentTx.original_amount),
-                              original_currency: payoutStudentTx.original_currency,
-                              converted_amount: Number(payoutStudentTx.converted_amount),
-                              converted_currency: payoutStudentTx.converted_currency,
-                              exchange_rate: Number(payoutStudentTx.exchange_rate),
+                              original_amount: Number(
+                                  payoutStudentTx.original_amount,
+                              ),
+                              original_currency:
+                                  payoutStudentTx.original_currency,
+                              converted_amount: Number(
+                                  payoutStudentTx.converted_amount,
+                              ),
+                              converted_currency:
+                                  payoutStudentTx.converted_currency,
+                              exchange_rate: Number(
+                                  payoutStudentTx.exchange_rate,
+                              ),
                               fx_timestamp: payoutStudentTx.fx_timestamp,
                           }
                         : null,
                 },
-                employer: (j as { employer?: Record<string, unknown> }).employer,
+                employer: (j as { employer?: Record<string, unknown> })
+                    .employer,
             };
         });
         res.json({ success: true, data: list });
     } catch (error) {
         logger.error('MoMo listJobPayments error:', error);
-        res.status(500).json({ success: false, message: (error as Error).message });
+        res.status(500).json({
+            success: false,
+            message: (error as Error).message,
+        });
     }
 }
 
 /**
  * Employer/Admin: get one job payment detail including FX conversion breakdown.
  */
-export async function getJobPaymentDetail(req: Request, res: Response): Promise<void> {
+export async function getJobPaymentDetail(
+    req: Request,
+    res: Response,
+): Promise<void> {
     try {
         const userId = req.user?.user_id;
-        const userRole = String(req.user?.role || '').toLowerCase().trim();
+        const userRole = String(req.user?.role || '')
+            .toLowerCase()
+            .trim();
         const { jobId } = req.params as { jobId: string };
         if (!userId) {
             res.status(401).json({ success: false, message: 'Unauthorized' });
             return;
         }
         if (!jobId) {
-            res.status(400).json({ success: false, message: 'jobId is required' });
+            res.status(400).json({
+                success: false,
+                message: 'jobId is required',
+            });
             return;
         }
 
@@ -292,7 +417,16 @@ export async function getJobPaymentDetail(req: Request, res: Response): Promise<
         const job = (await DB.Jobs.findOne({
             where: { job_id: jobId },
             include: [
-                { model: DB.Users, as: 'employer', attributes: ['user_id', 'full_name', 'email', 'mobile_number'] },
+                {
+                    model: DB.Users,
+                    as: 'employer',
+                    attributes: [
+                        'user_id',
+                        'full_name',
+                        'email',
+                        'mobile_number',
+                    ],
+                },
                 {
                     model: DB.Transactions,
                     as: 'transactions',
@@ -317,14 +451,21 @@ export async function getJobPaymentDetail(req: Request, res: Response): Promise<
 
         const isAdminLike = userRole.includes('admin');
         if (!isAdminLike && job.employer_id !== userId) {
-            res.status(403).json({ success: false, message: 'You can only view your own job payment details' });
+            res.status(403).json({
+                success: false,
+                message: 'You can only view your own job payment details',
+            });
             return;
         }
 
         const txs = job.transactions || [];
         const fundingTx = txs.find((t: any) => t.type === 'JOB_FUNDING_CREDIT');
-        const payoutWalletTx = txs.find((t: any) => t.type === 'JOB_PAYOUT_WALLET_DEBIT');
-        const payoutStudentTx = txs.find((t: any) => t.type === 'STUDENT_PAYOUT_DISBURSEMENT');
+        const payoutWalletTx = txs.find(
+            (t: any) => t.type === 'JOB_PAYOUT_WALLET_DEBIT',
+        );
+        const payoutStudentTx = txs.find(
+            (t: any) => t.type === 'STUDENT_PAYOUT_DISBURSEMENT',
+        );
 
         const payload = {
             job_id: job.job_id,
@@ -337,9 +478,14 @@ export async function getJobPaymentDetail(req: Request, res: Response): Promise<
             disbursement_reference_id: job.disbursement_reference_id,
             paid_at: job.paid_at,
             employer: job.employer,
-            amount_paid_to_student: payoutStudentTx ? Number(payoutStudentTx.converted_amount) : null,
-            amount_paid_to_student_currency: payoutStudentTx?.converted_currency || null,
-            wallet_deduction_amount: payoutWalletTx ? Number(payoutWalletTx.converted_amount) : null,
+            amount_paid_to_student: payoutStudentTx
+                ? Number(payoutStudentTx.converted_amount)
+                : null,
+            amount_paid_to_student_currency:
+                payoutStudentTx?.converted_currency || null,
+            wallet_deduction_amount: payoutWalletTx
+                ? Number(payoutWalletTx.converted_amount)
+                : null,
             wallet_currency: payoutWalletTx?.converted_currency || 'USD',
             transaction_details: {
                 funding: fundingTx
@@ -354,9 +500,13 @@ export async function getJobPaymentDetail(req: Request, res: Response): Promise<
                     : null,
                 wallet_deduction: payoutWalletTx
                     ? {
-                          original_amount: Number(payoutWalletTx.original_amount),
+                          original_amount: Number(
+                              payoutWalletTx.original_amount,
+                          ),
                           original_currency: payoutWalletTx.original_currency,
-                          converted_amount: Number(payoutWalletTx.converted_amount),
+                          converted_amount: Number(
+                              payoutWalletTx.converted_amount,
+                          ),
                           converted_currency: payoutWalletTx.converted_currency,
                           exchange_rate: Number(payoutWalletTx.exchange_rate),
                           fx_timestamp: payoutWalletTx.fx_timestamp,
@@ -364,10 +514,15 @@ export async function getJobPaymentDetail(req: Request, res: Response): Promise<
                     : null,
                 student_payout: payoutStudentTx
                     ? {
-                          original_amount: Number(payoutStudentTx.original_amount),
+                          original_amount: Number(
+                              payoutStudentTx.original_amount,
+                          ),
                           original_currency: payoutStudentTx.original_currency,
-                          converted_amount: Number(payoutStudentTx.converted_amount),
-                          converted_currency: payoutStudentTx.converted_currency,
+                          converted_amount: Number(
+                              payoutStudentTx.converted_amount,
+                          ),
+                          converted_currency:
+                              payoutStudentTx.converted_currency,
                           exchange_rate: Number(payoutStudentTx.exchange_rate),
                           fx_timestamp: payoutStudentTx.fx_timestamp,
                       }
@@ -378,7 +533,10 @@ export async function getJobPaymentDetail(req: Request, res: Response): Promise<
         res.json({ success: true, data: payload });
     } catch (error) {
         logger.error('MoMo getJobPaymentDetail error:', error);
-        res.status(500).json({ success: false, message: (error as Error).message });
+        res.status(500).json({
+            success: false,
+            message: (error as Error).message,
+        });
     }
 }
 
@@ -386,7 +544,10 @@ export async function getJobPaymentDetail(req: Request, res: Response): Promise<
  * Approve work and pay student (employer only). Body: jobId.
  * Job must be Funded and have one Accepted application. Transfers job.budget to student MoMo and marks job as Paid.
  */
-export async function approveWorkAndPay(req: Request, res: Response): Promise<void> {
+export async function approveWorkAndPay(
+    req: Request,
+    res: Response,
+): Promise<void> {
     try {
         const userId = req.user?.user_id;
         if (!userId) {
@@ -395,10 +556,16 @@ export async function approveWorkAndPay(req: Request, res: Response): Promise<vo
         }
         const { jobId } = req.body;
         if (!jobId) {
-            res.status(400).json({ success: false, message: 'jobId is required' });
+            res.status(400).json({
+                success: false,
+                message: 'jobId is required',
+            });
             return;
         }
-        const result = await momoService.payStudentForJob(String(jobId), userId);
+        const result = await momoService.payStudentForJob(
+            String(jobId),
+            userId,
+        );
         res.json({
             success: true,
             message: 'Student paid successfully. Job marked as Paid.',
@@ -408,7 +575,11 @@ export async function approveWorkAndPay(req: Request, res: Response): Promise<vo
         const err = error as Error;
         const { status, data } = momoService.toMoMoError(error);
         logger.error('MoMo approveWorkAndPay error:', error);
-        res.status(status).json({ success: false, message: err.message, ...(typeof data === 'object' ? data : { message: data }) });
+        res.status(status).json({
+            success: false,
+            message: err.message,
+            ...(typeof data === 'object' ? data : { message: data }),
+        });
     }
 }
 
@@ -416,13 +587,21 @@ export async function approveWorkAndPay(req: Request, res: Response): Promise<vo
  * Get Ogera wallet balance (computed from jobs – admin only).
  * We calculate: sum(employer payments: budget + fee) - sum(amounts paid to students).
  */
-export async function getWalletBalance(req: Request, res: Response): Promise<void> {
+export async function getWalletBalance(
+    req: Request,
+    res: Response,
+): Promise<void> {
     try {
         const { DB } = await import('@/database');
         const { Op } = await import('sequelize');
         const credits = await DB.Transactions.findAll({
             where: {
-                type: { [Op.in]: ['JOB_FUNDING_CREDIT', 'BADGE_SUBSCRIPTION_CREDIT'] },
+                type: {
+                    [Op.in]: [
+                        'JOB_FUNDING_CREDIT',
+                        'BADGE_SUBSCRIPTION_CREDIT',
+                    ],
+                },
             },
             attributes: ['converted_amount', 'converted_currency'],
         });
@@ -435,18 +614,25 @@ export async function getWalletBalance(req: Request, res: Response): Promise<voi
         let totalPaidToStudents = 0;
         let walletCurrency = 'USD';
 
-        for (const tx of credits as Array<{ converted_amount?: number; converted_currency?: string }>) {
+        for (const tx of credits as Array<{
+            converted_amount?: number;
+            converted_currency?: string;
+        }>) {
             totalReceived += Number(tx.converted_amount) || 0;
             walletCurrency = tx.converted_currency || walletCurrency;
         }
-        for (const tx of debits as Array<{ converted_amount?: number; converted_currency?: string }>) {
+        for (const tx of debits as Array<{
+            converted_amount?: number;
+            converted_currency?: string;
+        }>) {
             totalPaidToStudents += Number(tx.converted_amount) || 0;
             walletCurrency = tx.converted_currency || walletCurrency;
         }
 
         const available = Math.max(
             0,
-            Math.round((totalReceived - totalPaidToStudents) * 1_000_000) / 1_000_000,
+            Math.round((totalReceived - totalPaidToStudents) * 1_000_000) /
+                1_000_000,
         );
 
         res.json({
@@ -459,26 +645,40 @@ export async function getWalletBalance(req: Request, res: Response): Promise<voi
     } catch (error) {
         const { status, data } = momoService.toMoMoError(error);
         logger.error('MoMo getWalletBalance error:', error);
-        res.status(status).json({ success: false, ...(typeof data === 'object' ? data : { message: data }) });
+        res.status(status).json({
+            success: false,
+            ...(typeof data === 'object' ? data : { message: data }),
+        });
     }
 }
 
 /**
  * Get disbursement transfer status (for admin or employer to check payout status).
  */
-export async function getDisbursementStatus(req: Request, res: Response): Promise<void> {
+export async function getDisbursementStatus(
+    req: Request,
+    res: Response,
+): Promise<void> {
     try {
         const { referenceId } = req.params;
         if (!referenceId) {
-            res.status(400).json({ success: false, message: 'referenceId is required' });
+            res.status(400).json({
+                success: false,
+                message: 'referenceId is required',
+            });
             return;
         }
-        const data = await momoService.getDisbursementTransferStatus(String(referenceId));
+        const data = await momoService.getDisbursementTransferStatus(
+            String(referenceId),
+        );
         res.json({ success: true, data });
     } catch (error) {
         const { status, data } = momoService.toMoMoError(error);
         logger.error('MoMo getDisbursementStatus error:', error);
-        res.status(status).json({ success: false, ...(typeof data === 'object' ? data : { message: data }) });
+        res.status(status).json({
+            success: false,
+            ...(typeof data === 'object' ? data : { message: data }),
+        });
     }
 }
 

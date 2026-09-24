@@ -14,14 +14,16 @@ export const verifyCaptcha = async (token: string): Promise<boolean> => {
     try {
         // If RECAPTCHA_SECRET_KEY is not set, skip verification in development
         if (!RECAPTCHA_SECRET_KEY) {
-            console.warn('⚠️ RECAPTCHA_SECRET_KEY not found in environment. Skipping CAPTCHA verification.');
+            console.warn(
+                '⚠️ RECAPTCHA_SECRET_KEY not found in environment. Skipping CAPTCHA verification.',
+            );
             return true; // Allow login without actual verification
         }
 
         if (!token) {
             throw new CustomError(
                 'CAPTCHA token is missing',
-                StatusCodes.BAD_REQUEST
+                StatusCodes.BAD_REQUEST,
             );
         }
 
@@ -32,7 +34,8 @@ export const verifyCaptcha = async (token: string): Promise<boolean> => {
             },
         });
 
-        const { success, score, challenge_ts, hostname, error_codes } = response.data;
+        const { success, score, challenge_ts, hostname, error_codes } =
+            response.data;
 
         // Log verification result for debugging
         console.log('🔐 [CAPTCHA] Verification result:', {
@@ -47,7 +50,7 @@ export const verifyCaptcha = async (token: string): Promise<boolean> => {
             console.warn('⚠️ [CAPTCHA] Verification failed:', error_codes);
             throw new CustomError(
                 'CAPTCHA verification failed. Please try again.',
-                StatusCodes.BAD_REQUEST
+                StatusCodes.BAD_REQUEST,
             );
         }
 
@@ -58,7 +61,7 @@ export const verifyCaptcha = async (token: string): Promise<boolean> => {
             console.warn(`⚠️ [CAPTCHA] Low score detected: ${score}`);
             throw new CustomError(
                 'CAPTCHA verification score too low. Please try again.',
-                StatusCodes.BAD_REQUEST
+                StatusCodes.BAD_REQUEST,
             );
         }
 
@@ -70,7 +73,7 @@ export const verifyCaptcha = async (token: string): Promise<boolean> => {
         console.error('❌ [CAPTCHA] Verification error:', error.message);
         throw new CustomError(
             'CAPTCHA verification failed. Please try again.',
-            StatusCodes.BAD_REQUEST
+            StatusCodes.BAD_REQUEST,
         );
     }
 };

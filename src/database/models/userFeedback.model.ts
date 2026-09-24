@@ -13,11 +13,7 @@ export interface UserFeedbackAttributes {
 
 export type UserFeedbackCreationAttributes = Optional<
     UserFeedbackAttributes,
-    | 'feedback_id'
-    | 'rater_user_id'
-    | 'comment'
-    | 'created_at'
-    | 'updated_at'
+    'feedback_id' | 'rater_user_id' | 'comment' | 'created_at' | 'updated_at'
 >;
 
 export class UserFeedbackModel

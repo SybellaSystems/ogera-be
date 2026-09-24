@@ -17,7 +17,12 @@ export interface UserEmployment {
     user_id: string;
     job_title: string;
     company_name: string;
-    employment_type: 'full_time' | 'part_time' | 'contract' | 'internship' | 'freelance';
+    employment_type:
+        | 'full_time'
+        | 'part_time'
+        | 'contract'
+        | 'internship'
+        | 'freelance';
     start_date: Date;
     end_date?: Date | null;
     is_current: boolean;
@@ -68,7 +73,12 @@ export interface UserProject {
 export interface UserAccomplishment {
     accomplishment_id: string;
     user_id: string;
-    accomplishment_type: 'certification' | 'award' | 'publication' | 'patent' | 'other';
+    accomplishment_type:
+        | 'certification'
+        | 'award'
+        | 'publication'
+        | 'patent'
+        | 'other';
     title: string;
     issuing_organization?: string;
     issue_date?: Date;
@@ -97,7 +107,12 @@ export interface ExtendedUserProfile {
     notice_period?: string;
     date_of_birth?: Date;
     gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say';
-    marital_status?: 'single' | 'married' | 'divorced' | 'widowed' | 'prefer_not_to_say';
+    marital_status?:
+        | 'single'
+        | 'married'
+        | 'divorced'
+        | 'widowed'
+        | 'prefer_not_to_say';
     languages?: string[]; // JSON array of languages known
     social_profiles?: {
         linkedin?: string;
@@ -122,7 +137,12 @@ export interface CreateSkillRequest {
 export interface CreateEmploymentRequest {
     job_title: string;
     company_name: string;
-    employment_type: 'full_time' | 'part_time' | 'contract' | 'internship' | 'freelance';
+    employment_type:
+        | 'full_time'
+        | 'part_time'
+        | 'contract'
+        | 'internship'
+        | 'freelance';
     start_date: string;
     end_date?: string;
     is_current: boolean;
@@ -158,7 +178,12 @@ export interface CreateProjectRequest {
 }
 
 export interface CreateAccomplishmentRequest {
-    accomplishment_type: 'certification' | 'award' | 'publication' | 'patent' | 'other';
+    accomplishment_type:
+        | 'certification'
+        | 'award'
+        | 'publication'
+        | 'patent'
+        | 'other';
     title: string;
     issuing_organization?: string;
     issue_date?: string;
@@ -183,7 +208,12 @@ export interface UpdateExtendedProfileRequest {
     notice_period?: string;
     date_of_birth?: string;
     gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say';
-    marital_status?: 'single' | 'married' | 'divorced' | 'widowed' | 'prefer_not_to_say';
+    marital_status?:
+        | 'single'
+        | 'married'
+        | 'divorced'
+        | 'widowed'
+        | 'prefer_not_to_say';
     languages?: string[];
     social_profiles?: {
         linkedin?: string;
@@ -212,4 +242,3 @@ export interface UpdateOnlinePresenceRequest {
 export interface BulkSkillsRequest {
     skills: CreateSkillRequest[];
 }
-

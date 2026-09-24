@@ -24,7 +24,12 @@ export class UserEmploymentModel
     public user_id!: string;
     public job_title!: string;
     public company_name!: string;
-    public employment_type!: 'full_time' | 'part_time' | 'contract' | 'internship' | 'freelance';
+    public employment_type!:
+        | 'full_time'
+        | 'part_time'
+        | 'contract'
+        | 'internship'
+        | 'freelance';
     public start_date!: Date;
     public end_date?: Date | null;
     public is_current!: boolean;
@@ -68,7 +73,13 @@ export default function (sequelize: Sequelize): typeof UserEmploymentModel {
                 allowNull: false,
             },
             employment_type: {
-                type: DataTypes.ENUM('full_time', 'part_time', 'contract', 'internship', 'freelance'),
+                type: DataTypes.ENUM(
+                    'full_time',
+                    'part_time',
+                    'contract',
+                    'internship',
+                    'freelance',
+                ),
                 allowNull: false,
                 defaultValue: 'full_time',
             },
@@ -139,4 +150,3 @@ export default function (sequelize: Sequelize): typeof UserEmploymentModel {
 
     return UserEmploymentModel;
 }
-

@@ -1,6 +1,6 @@
 import express from 'express';
 import path from 'path';
-import { createServer } from "http";
+import { createServer } from 'http';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import router from '@routes/routes';
@@ -26,15 +26,15 @@ appServer.set('trust proxy', 1);
 const port = process.env.PORT || 5000;
 // const corsOrigin = FRONTEND_URL || 'http://localhost:5173';
 const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'https://ogera-frontend.vercel.app',
-  'https://ogera-frontend-hguj.vercel.app',
-  'https://app.ogera.sybellasystems.co.rw',
-  'https://dev-app.ogera.sybellasystems.co.rw',
-  'https://ogera.sybellasystems.co.rw',
-  ...(FRONTEND_URL ? [FRONTEND_URL.replace(/\/$/, '')] : []),
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'https://ogera-frontend.vercel.app',
+    'https://ogera-frontend-hguj.vercel.app',
+    'https://app.ogera.sybellasystems.co.rw',
+    'https://dev-app.ogera.sybellasystems.co.rw',
+    'https://ogera.sybellasystems.co.rw',
+    ...(FRONTEND_URL ? [FRONTEND_URL.replace(/\/$/, '')] : []),
 ].filter((origin, index, list) => list.indexOf(origin) === index);
 
 // In development we allow all origins; in production we reflect the configured frontend URL.
@@ -48,22 +48,22 @@ const allowedOrigins = [
 //     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
 // };
 const corsOptions: cors.CorsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else if (
-      NODE_ENV !== 'production' &&
-      /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)
-    ) {
-      // Allow Vercel preview deployments in non-production API environments.
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization']
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else if (
+            NODE_ENV !== 'production' &&
+            /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)
+        ) {
+            // Allow Vercel preview deployments in non-production API environments.
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
 // Enable CORS with the configured options
@@ -113,10 +113,10 @@ DB.sequelize
     .authenticate()
     .then(() => {
         logger.info('Database connected successfully!');
-        
+
         // Initialize Socket.IO
         initializeSocket(httpServer);
-        
+
         httpServer.listen(port, () => {
             // logger.info(`Server is running on http://localhost:${port}`);
             logger.info(`Server is running on port ${port}`);

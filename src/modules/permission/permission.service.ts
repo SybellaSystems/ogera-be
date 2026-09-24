@@ -40,7 +40,9 @@ export class PermissionService {
             payload.api_name,
         );
         if (existingPermission) {
-            throw new Error(`Permission with API name '${payload.api_name}' already exists`);
+            throw new Error(
+                `Permission with API name '${payload.api_name}' already exists`,
+            );
         }
 
         return this.repo.createPermission({
@@ -134,5 +136,3 @@ export class PermissionService {
         };
     }
 }
-
-

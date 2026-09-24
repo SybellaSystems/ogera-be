@@ -23,7 +23,10 @@ export type ProblemPuzzleQuestionCreationAttributes = Optional<
 >;
 
 export class ProblemPuzzleQuestionModel
-    extends Model<ProblemPuzzleQuestionAttributes, ProblemPuzzleQuestionCreationAttributes>
+    extends Model<
+        ProblemPuzzleQuestionAttributes,
+        ProblemPuzzleQuestionCreationAttributes
+    >
     implements ProblemPuzzleQuestionAttributes
 {
     public question_id!: string;
@@ -40,7 +43,9 @@ export class ProblemPuzzleQuestionModel
     public readonly updated_at!: Date;
 }
 
-export default function (sequelize: Sequelize): typeof ProblemPuzzleQuestionModel {
+export default function (
+    sequelize: Sequelize,
+): typeof ProblemPuzzleQuestionModel {
     ProblemPuzzleQuestionModel.init(
         {
             question_id: {
@@ -51,7 +56,10 @@ export default function (sequelize: Sequelize): typeof ProblemPuzzleQuestionMode
             problem_metric_id: {
                 type: DataTypes.UUID,
                 allowNull: false,
-                references: { model: 'problem_metrics', key: 'problem_metric_id' },
+                references: {
+                    model: 'problem_metrics',
+                    key: 'problem_metric_id',
+                },
                 onUpdate: 'CASCADE',
                 onDelete: 'CASCADE',
             },

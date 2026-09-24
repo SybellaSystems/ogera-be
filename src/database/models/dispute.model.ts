@@ -1,5 +1,11 @@
 import { Sequelize, DataTypes, Model, Optional } from 'sequelize';
-import { Dispute, DisputeType, DisputeStatus, DisputePriority, DisputeResolution } from '@/interfaces/dispute.interfaces';
+import {
+    Dispute,
+    DisputeType,
+    DisputeStatus,
+    DisputePriority,
+    DisputeResolution,
+} from '@/interfaces/dispute.interfaces';
 import { JobModel } from './job.model';
 import { UserModel } from './user.model';
 
@@ -102,11 +108,22 @@ export default function (sequelize: Sequelize): typeof DisputeModel {
                 onDelete: 'CASCADE',
             },
             type: {
-                type: DataTypes.ENUM('Payment', 'Contract Violation', 'Quality Issue', 'Timeline'),
+                type: DataTypes.ENUM(
+                    'Payment',
+                    'Contract Violation',
+                    'Quality Issue',
+                    'Timeline',
+                ),
                 allowNull: false,
             },
             status: {
-                type: DataTypes.ENUM('Open', 'Under Review', 'Mediation', 'Resolved', 'Closed'),
+                type: DataTypes.ENUM(
+                    'Open',
+                    'Under Review',
+                    'Mediation',
+                    'Resolved',
+                    'Closed',
+                ),
                 allowNull: false,
                 defaultValue: 'Open',
             },
@@ -146,7 +163,12 @@ export default function (sequelize: Sequelize): typeof DisputeModel {
                 onDelete: 'SET NULL',
             },
             resolution: {
-                type: DataTypes.ENUM('Refunded', 'Settled', 'Dismissed', 'Escalated'),
+                type: DataTypes.ENUM(
+                    'Refunded',
+                    'Settled',
+                    'Dismissed',
+                    'Escalated',
+                ),
                 allowNull: true,
             },
             resolution_notes: {
@@ -198,9 +220,3 @@ export default function (sequelize: Sequelize): typeof DisputeModel {
 
     return DisputeModel;
 }
-
-
-
-
-
-

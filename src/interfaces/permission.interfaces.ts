@@ -25,5 +25,3 @@ export interface UpdatePermissionDTO {
     route?: string;
     permission?: Permission;
 }
-
-

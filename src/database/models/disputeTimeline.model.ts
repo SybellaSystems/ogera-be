@@ -56,7 +56,12 @@ export default function (sequelize: Sequelize): typeof DisputeTimelineModel {
                 onDelete: 'CASCADE',
             },
             performed_by_type: {
-                type: DataTypes.ENUM('student', 'employer', 'moderator', 'system'),
+                type: DataTypes.ENUM(
+                    'student',
+                    'employer',
+                    'moderator',
+                    'system',
+                ),
                 allowNull: false,
             },
             details: {
@@ -79,9 +84,3 @@ export default function (sequelize: Sequelize): typeof DisputeTimelineModel {
 
     return DisputeTimelineModel;
 }
-
-
-
-
-
-

@@ -8,7 +8,7 @@ const esc = (raw: string | number | null | undefined) =>
         .replace(/'/g, '&#039;');
 
 // Footer CTA: all onboarding + list emails should end with an app redirect button.
-const APP_ROOT_URL = "https://app.ogera.sybellasystems.co.rw";
+const APP_ROOT_URL = 'https://app.ogera.sybellasystems.co.rw';
 const renderAppFooterHtml = () => `
   <div style="margin-top:22px;padding:16px 18px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;">
     <p style="margin:0 0 10px;font-size:13px;color:#475569;line-height:1.5;">
@@ -222,9 +222,7 @@ export const WelcomeEmailTemplate = (
     const isStudent = role === 'student';
     const isEmployer = role === 'employer';
     const isAdminLike =
-        role === 'admin' ||
-        role === 'superadmin' ||
-        role.includes('admin');
+        role === 'admin' || role === 'superadmin' || role.includes('admin');
 
     const primaryCtaHref = isStudent
         ? `${base}/dashboard/jobs/all`
@@ -433,13 +431,24 @@ export const ActiveJobsDigestEmailTemplate = (
     const listText = jobs
         .map(
             (j, i) =>
-                `${i + 1}. ${j.job_title}\n   ${j.location} · ${j.category} · ${j.currency} ${j.budget} · ${j.duration}\n   Posted: ${j.postedAt.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}\n   ${browseJobsUrl.replace(/\/$/, '')}/dashboard/jobs/${j.job_id}`,
+                `${i + 1}. ${j.job_title}\n   ${j.location} · ${j.category} · ${
+                    j.currency
+                } ${j.budget} · ${
+                    j.duration
+                }\n   Posted: ${j.postedAt.toLocaleString('en-US', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                })}\n   ${browseJobsUrl.replace(/\/$/, '')}/dashboard/jobs/${
+                    j.job_id
+                }`,
         )
         .join('\n\n');
 
     const text = `Hello ${studentName},
 
-Here are open roles on Ogera right now (${jobs.length} listing${jobs.length === 1 ? '' : 's'}). This digest was prepared on ${whenText}.
+Here are open roles on Ogera right now (${jobs.length} listing${
+        jobs.length === 1 ? '' : 's'
+    }). This digest was prepared on ${whenText}.
 
 ${listText}
 
@@ -462,13 +471,25 @@ Open Ogera App: ${APP_ROOT_URL}`;
                               timeStyle: 'short',
                           }),
                       );
-                      const detailUrl = `${esc(browseJobsUrl.replace(/\/$/, ''))}/dashboard/jobs/${esc(j.job_id)}`;
+                      const detailUrl = `${esc(
+                          browseJobsUrl.replace(/\/$/, ''),
+                      )}/dashboard/jobs/${esc(j.job_id)}`;
                       return `
             <tr>
               <td style="padding:14px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;">
-                <p style="margin:0 0 6px;font-size:16px;font-weight:700;color:#0f172a;">${esc(j.job_title)}</p>
-                <p style="margin:0 0 8px;font-size:13px;line-height:1.5;color:#475569;">${esc(j.location)} · ${esc(j.category)}</p>
-                <p style="margin:0 0 8px;font-size:13px;color:#334155;"><strong>${esc(j.currency)} ${esc(String(j.budget))}</strong> · ${esc(j.duration)} · <span style="color:#059669;">${esc(j.status)}</span></p>
+                <p style="margin:0 0 6px;font-size:16px;font-weight:700;color:#0f172a;">${esc(
+                    j.job_title,
+                )}</p>
+                <p style="margin:0 0 8px;font-size:13px;line-height:1.5;color:#475569;">${esc(
+                    j.location,
+                )} · ${esc(j.category)}</p>
+                <p style="margin:0 0 8px;font-size:13px;color:#334155;"><strong>${esc(
+                    j.currency,
+                )} ${esc(String(j.budget))}</strong> · ${esc(
+                          j.duration,
+                      )} · <span style="color:#059669;">${esc(
+                          j.status,
+                      )}</span></p>
                 <p style="margin:0 0 10px;font-size:12px;color:#64748b;">Posted: ${posted}</p>
                 <a href="${detailUrl}" style="display:inline-block;font-size:13px;font-weight:700;color:#5b21b6;text-decoration:none;">View job →</a>
               </td>
@@ -487,7 +508,9 @@ Open Ogera App: ${APP_ROOT_URL}`;
           <td style="background:linear-gradient(135deg,#0d9488,#059669);padding:26px 24px;">
             <p style="margin:0;font-size:12px;font-weight:700;letter-spacing:.15em;color:rgba(255,255,255,0.85);text-transform:uppercase;">Jobs digest</p>
             <p style="margin:8px 0 0;font-size:22px;font-weight:800;color:#fff;line-height:1.25;">Open roles on Ogera</p>
-            <p style="margin:10px 0 0;font-size:14px;color:rgba(255,255,255,0.92);">${esc(whenText)}</p>
+            <p style="margin:10px 0 0;font-size:14px;color:rgba(255,255,255,0.92);">${esc(
+                whenText,
+            )}</p>
           </td>
         </tr>
         <tr><td style="padding:22px 20px 8px;">
@@ -555,14 +578,22 @@ Open Ogera App: ${APP_ROOT_URL}`;
           <p style="margin:8px 0 0;font-size:21px;font-weight:800;color:#fff;">A task is ready for you</p>
         </td></tr>
         <tr><td style="padding:24px 22px;">
-          <p style="margin:0 0 14px;font-size:16px;color:#0f172a;">Hi <strong>${esc(studentName)}</strong>,</p>
+          <p style="margin:0 0 14px;font-size:16px;color:#0f172a;">Hi <strong>${esc(
+              studentName,
+          )}</strong>,</p>
           <p style="margin:0 0 18px;font-size:14px;line-height:1.65;color:#475569;">Your employer posted a task under a job you're approved for. Review the brief and start when you're ready.</p>
           <div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:12px;padding:18px 16px;margin:0 0 20px;">
             <p style="margin:0 0 8px;font-size:13px;color:#6b21a8;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Job</p>
-            <p style="margin:0 0 14px;font-size:17px;font-weight:700;color:#1e1b4b;">${esc(jobTitle)}</p>
+            <p style="margin:0 0 14px;font-size:17px;font-weight:700;color:#1e1b4b;">${esc(
+                jobTitle,
+            )}</p>
             <p style="margin:0 0 6px;font-size:13px;color:#6b21a8;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Task</p>
-            <p style="margin:0 0 14px;font-size:16px;color:#312e81;">${esc(taskTitle)}</p>
-            <p style="margin:0;font-size:13px;color:#475569;"><strong>Deadline:</strong> ${esc(deadlineText)}</p>
+            <p style="margin:0 0 14px;font-size:16px;color:#312e81;">${esc(
+                taskTitle,
+            )}</p>
+            <p style="margin:0;font-size:13px;color:#475569;"><strong>Deadline:</strong> ${esc(
+                deadlineText,
+            )}</p>
           </div>
           <table role="presentation" cellspacing="0" cellpadding="0"><tr>
             <td style="border-radius:10px;background:#7c3aed;"><a href="${APP_ROOT_URL}" style="display:inline-block;padding:13px 22px;font-size:14px;font-weight:700;color:#fff;text-decoration:none;">Open my tasks</a></td>
@@ -600,7 +631,9 @@ export const JobNotFundedReminderEmailTemplate = (
     const listText = jobs
         .map(
             (j, i) =>
-                `${i + 1}. ${j.job_title} (status: ${j.status}, funding: ${j.funding_status || 'Unfunded'})`,
+                `${i + 1}. ${j.job_title} (status: ${j.status}, funding: ${
+                    j.funding_status || 'Unfunded'
+                })`,
         )
         .join('\n');
 
@@ -625,8 +658,12 @@ Open Ogera App: ${APP_ROOT_URL}`;
                       j => `
         <tr>
           <td style="padding:12px 10px;border-bottom:1px solid #fee2e2;">
-            <p style="margin:0;font-size:15px;font-weight:700;color:#7f1d1d;">${esc(j.job_title)}</p>
-            <p style="margin:6px 0 0;font-size:12px;color:#991b1b;">Status: ${esc(j.status)} · Funding: ${esc(j.funding_status || 'Unfunded')}</p>
+            <p style="margin:0;font-size:15px;font-weight:700;color:#7f1d1d;">${esc(
+                j.job_title,
+            )}</p>
+            <p style="margin:6px 0 0;font-size:12px;color:#991b1b;">Status: ${esc(
+                j.status,
+            )} · Funding: ${esc(j.funding_status || 'Unfunded')}</p>
           </td>
         </tr>`,
                   )
@@ -645,7 +682,9 @@ Open Ogera App: ${APP_ROOT_URL}`;
           <p style="margin:10px 0 0;font-size:14px;color:rgba(255,255,255,0.95);">Students rely on funded escrow so tasks and payouts stay fair and predictable.</p>
         </td></tr>
         <tr><td style="padding:24px 22px;">
-          <p style="margin:0 0 14px;font-size:16px;color:#0f172a;">Hi <strong>${esc(employerName)}</strong>,</p>
+          <p style="margin:0 0 14px;font-size:16px;color:#0f172a;">Hi <strong>${esc(
+              employerName,
+          )}</strong>,</p>
           <p style="margin:0 0 18px;font-size:14px;line-height:1.65;color:#475569;">The following postings are not fully funded via your Ogera wallet (MTN MoMo). Complete funding so approved work can move forward without delays.</p>
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;background:#fff7ed;border-radius:10px;overflow:hidden;">${rows}</table>
           <table role="presentation" cellspacing="0" cellpadding="0" style="margin:22px 0 0;"><tr>
@@ -1410,7 +1449,10 @@ export const AdminBroadcastNotificationTemplate = (
 ): { html: string; text: string } => {
     const { recipientName, title, message, senderLabel } = params;
     const safeTitle = escapeAdminBroadcastHtml(title);
-    const safeMessage = escapeAdminBroadcastHtml(message).replace(/\n/g, '<br />');
+    const safeMessage = escapeAdminBroadcastHtml(message).replace(
+        /\n/g,
+        '<br />',
+    );
     const safeSender = escapeAdminBroadcastHtml(senderLabel);
     const greeting = recipientName?.trim()
         ? `Hello ${escapeAdminBroadcastHtml(recipientName.trim())},`

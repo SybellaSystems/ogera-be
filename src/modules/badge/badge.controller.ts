@@ -12,7 +12,10 @@ import {
 } from './badge.service';
 import { CustomError } from '@/utils/custom-error';
 
-export const getBadgeStatus = async (req: Request, res: Response): Promise<void> => {
+export const getBadgeStatus = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
         const userId = (req as any).user?.user_id;
         const data = await getBadgeStatusService(userId);
@@ -32,16 +35,26 @@ export const getBadgeStatus = async (req: Request, res: Response): Promise<void>
     }
 };
 
-export const subscribePremium = async (req: Request, res: Response): Promise<void> => {
+export const subscribePremium = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
         const userId = (req as any).user?.user_id;
         const { currency, payerPhone } = req.body;
 
         if (!currency || !payerPhone) {
-            throw new CustomError('currency and payerPhone are required', StatusCodes.BAD_REQUEST);
+            throw new CustomError(
+                'currency and payerPhone are required',
+                StatusCodes.BAD_REQUEST,
+            );
         }
 
-        const data = await initiatePremiumSubscription(userId, currency, payerPhone);
+        const data = await initiatePremiumSubscription(
+            userId,
+            currency,
+            payerPhone,
+        );
         res.status(StatusCodes.OK).json({
             success: true,
             status: StatusCodes.OK,
@@ -50,7 +63,8 @@ export const subscribePremium = async (req: Request, res: Response): Promise<voi
                 price: PREMIUM_PRICE,
                 durationDays: PREMIUM_DURATION_DAYS,
             },
-            message: 'Premium subscription payment initiated. Approve on your phone.',
+            message:
+                'Premium subscription payment initiated. Approve on your phone.',
         });
     } catch (error: any) {
         const status = error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR;
@@ -62,7 +76,10 @@ export const subscribePremium = async (req: Request, res: Response): Promise<voi
     }
 };
 
-export const getSubscriptionPaymentStatus = async (req: Request, res: Response): Promise<void> => {
+export const getSubscriptionPaymentStatus = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
         const userId = (req as any).user?.user_id;
         const referenceId = String(req.params.referenceId || '');
@@ -83,7 +100,10 @@ export const getSubscriptionPaymentStatus = async (req: Request, res: Response):
     }
 };
 
-export const getPurchaseHistory = async (req: Request, res: Response): Promise<void> => {
+export const getPurchaseHistory = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
         const userId = (req as any).user?.user_id;
         const data = await getStudentPurchaseHistory(userId);
@@ -103,7 +123,10 @@ export const getPurchaseHistory = async (req: Request, res: Response): Promise<v
     }
 };
 
-export const listAdminBadgePurchases = async (req: Request, res: Response): Promise<void> => {
+export const listAdminBadgePurchases = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
         const page = parseInt(String(req.query.page || '1'), 10);
         const limit = parseInt(String(req.query.limit || '20'), 10);
@@ -124,7 +147,10 @@ export const listAdminBadgePurchases = async (req: Request, res: Response): Prom
     }
 };
 
-export const getBadgeStats = async (req: Request, res: Response): Promise<void> => {
+export const getBadgeStats = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
     try {
         const data = await getAdminBadgeStats();
         res.status(StatusCodes.OK).json({

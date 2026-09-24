@@ -1,9 +1,7 @@
 import { Request, Response } from 'express';
 import jobReferralService from './jobReferral.service';
 
-const getParamString = (
-    value: string | string[] | undefined,
-): string => {
+const getParamString = (value: string | string[] | undefined): string => {
     if (Array.isArray(value)) {
         return value[0] ?? '';
     }
@@ -48,121 +46,102 @@ export class JobReferralController {
         }
     }
 
-/**
- * Get all job referrals
- *
- * Paginated:
- * GET /job-referrals?page=1&limit=8&status=active
- *
- * All:
- * GET /job-referrals?status=active&all=true
- */
-async getAll(req: Request, res: Response) {
-    try {
-        /*
-         * Check whether the request wants
-         * all referrals without pagination.
-         */
-        const getAll =
-            req.query.all === 'true';
+    /**
+     * Get all job referrals
+     *
+     * Paginated:
+     * GET /job-referrals?page=1&limit=8&status=active
+     *
+     * All:
+     * GET /job-referrals?status=active&all=true
+     */
+    async getAll(req: Request, res: Response) {
+        try {
+            /*
+             * Check whether the request wants
+             * all referrals without pagination.
+             */
+            const getAll = req.query.all === 'true';
 
-        /*
-         * Page
-         *
-         * Used only for normal pagination.
-         */
-        const requestedPage =
-            Number(req.query.page);
+            /*
+             * Page
+             *
+             * Used only for normal pagination.
+             */
+            const requestedPage = Number(req.query.page);
 
-        const page =
-            Number.isFinite(requestedPage) &&
-            requestedPage > 0
-                ? Math.floor(requestedPage)
-                : 1;
+            const page =
+                Number.isFinite(requestedPage) && requestedPage > 0
+                    ? Math.floor(requestedPage)
+                    : 1;
 
-        /*
-         * Limit
-         *
-         * Used only for normal pagination.
-         */
-        const requestedLimit =
-            Number(req.query.limit);
+            /*
+             * Limit
+             *
+             * Used only for normal pagination.
+             */
+            const requestedLimit = Number(req.query.limit);
 
-        const limit =
-            Number.isFinite(requestedLimit) &&
-            requestedLimit > 0
-                ? Math.min(
-                      Math.floor(
-                          requestedLimit,
-                      ),
-                      100,
-                  )
-                : 3;
+            const limit =
+                Number.isFinite(requestedLimit) && requestedLimit > 0
+                    ? Math.min(Math.floor(requestedLimit), 100)
+                    : 3;
 
-        /*
-         * Status
-         */
-        const status =
-            typeof req.query.status === 'string'
-                ? req.query.status
-                : 'all';
+            /*
+             * Status
+             */
+            const status =
+                typeof req.query.status === 'string' ? req.query.status : 'all';
 
-        /*
-         * Make sure only valid statuses
-         * reach the service.
-         */
-        const validStatuses = [
-            'all',
-            'pending',
-            'verified',
-            'active',
-            'closed',
-        ] as const;
+            /*
+             * Make sure only valid statuses
+             * reach the service.
+             */
+            const validStatuses = [
+                'all',
+                'pending',
+                'verified',
+                'active',
+                'closed',
+            ] as const;
 
-        const safeStatus =
-            validStatuses.includes(
+            const safeStatus = validStatuses.includes(
                 status as (typeof validStatuses)[number],
             )
                 ? (status as (typeof validStatuses)[number])
                 : 'all';
 
-        /*
-         * Get referrals.
-         *
-         * Existing pagination:
-         *
-         * getAll = false
-         *
-         * New full list:
-         *
-         * getAll = true
-         */
-        const result =
-            await jobReferralService.getAllReferrals(
+            /*
+             * Get referrals.
+             *
+             * Existing pagination:
+             *
+             * getAll = false
+             *
+             * New full list:
+             *
+             * getAll = true
+             */
+            const result = await jobReferralService.getAllReferrals(
                 page,
                 limit,
                 safeStatus,
                 getAll,
             );
 
-        return res.status(200).json({
-            success: true,
-            data: result,
-        });
-    } catch (error: any) {
-        console.error(
-            'Get all job referrals error:',
-            error,
-        );
+            return res.status(200).json({
+                success: true,
+                data: result,
+            });
+        } catch (error: any) {
+            console.error('Get all job referrals error:', error);
 
-        return res.status(500).json({
-            success: false,
-            message:
-                error.message ||
-                'Failed to fetch job referrals',
-        });
+            return res.status(500).json({
+                success: false,
+                message: error.message || 'Failed to fetch job referrals',
+            });
+        }
     }
-}
 
     /**
      * Get one job referral by ID
@@ -674,69 +653,62 @@ async getAll(req: Request, res: Response) {
     }
 
     /**
- * Get active and verified referrals
- *
- * Initial request:
- * GET /job-referrals/active-verified?limit=9
- *
- * View More:
- * GET /job-referrals/active-verified?all=true
- *
- * Only:
- * - Active
- * - Verified
- * - Approved
- *
- * referrals are returned.
- */
-async getActiveVerified(req: Request, res: Response) {
-    try {
-        /**
-         * Check whether the frontend requested
-         * all recommended jobs.
-         */
-        const getAll = req.query.all === 'true';
+     * Get active and verified referrals
+     *
+     * Initial request:
+     * GET /job-referrals/active-verified?limit=9
+     *
+     * View More:
+     * GET /job-referrals/active-verified?all=true
+     *
+     * Only:
+     * - Active
+     * - Verified
+     * - Approved
+     *
+     * referrals are returned.
+     */
+    async getActiveVerified(req: Request, res: Response) {
+        try {
+            /**
+             * Check whether the frontend requested
+             * all recommended jobs.
+             */
+            const getAll = req.query.all === 'true';
 
-        /**
-         * Limit is only relevant when getAll=false.
-         *
-         * Default = 9.
-         */
-        const requestedLimit = Number(req.query.limit);
+            /**
+             * Limit is only relevant when getAll=false.
+             *
+             * Default = 9.
+             */
+            const requestedLimit = Number(req.query.limit);
 
-        const limit =
-            Number.isFinite(requestedLimit) &&
-            requestedLimit > 0
-                ? Math.min(
-                      Math.floor(requestedLimit),
-                      100,
-                  )
-                : 9;
+            const limit =
+                Number.isFinite(requestedLimit) && requestedLimit > 0
+                    ? Math.min(Math.floor(requestedLimit), 100)
+                    : 9;
 
-        const referrals =
-            await jobReferralService.getActiveVerifiedReferrals(
-                limit,
-                getAll,
-            );
+            const referrals =
+                await jobReferralService.getActiveVerifiedReferrals(
+                    limit,
+                    getAll,
+                );
 
-        return res.status(200).json({
-            success: true,
-            data: referrals,
-        });
-    } catch (error: any) {
-        console.error(
-            'Get active verified referrals error:',
-            error,
-        );
+            return res.status(200).json({
+                success: true,
+                data: referrals,
+            });
+        } catch (error: any) {
+            console.error('Get active verified referrals error:', error);
 
-        return res.status(500).json({
-            success: false,
-            message:
-                error.message ||
-                'Failed to fetch active verified referrals',
-        });
+            return res.status(500).json({
+                success: false,
+                message:
+                    error.message ||
+                    'Failed to fetch active verified referrals',
+            });
+        }
     }
-}
 }
 
 export default new JobReferralController();

@@ -3,16 +3,16 @@ import { CourseStep } from '@/interfaces/course.interfaces';
 
 export type CourseStepCreationAttributes = Optional<
     CourseStep,
-    | 'step_id'
-    | 'step_title'
-    | 'created_at'
-    | 'updated_at'
+    'step_id' | 'step_title' | 'created_at' | 'updated_at'
 >;
 
-export class CourseStepModel extends Model<CourseStep, CourseStepCreationAttributes> implements CourseStep {
+export class CourseStepModel
+    extends Model<CourseStep, CourseStepCreationAttributes>
+    implements CourseStep
+{
     public step_id!: string;
     public course_id!: string;
-    public step_type!: "video" | "link" | "pdf" | "image" | "text";
+    public step_type!: 'video' | 'link' | 'pdf' | 'image' | 'text';
     public step_content!: string;
     public step_title?: string;
     public step_order!: number;
@@ -73,5 +73,3 @@ export default function (sequelize: Sequelize): typeof CourseStepModel {
 
     return CourseStepModel;
 }
-
-

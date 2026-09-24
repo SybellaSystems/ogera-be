@@ -26,7 +26,7 @@ import taskRouter from '@/modules/task/task.routes';
 import messagesRouter from '@/modules/messages/messages.routes';
 import badgeRouter from '@/modules/badge/badge.routes';
 
-import jobReactionRouter from "@/modules/jobReaction/jobReaction.routes";
+import jobReactionRouter from '@/modules/jobReaction/jobReaction.routes';
 import communityWorkspaceRouter from '@/modules/communityWorkspace/communityWorkspace.routes';
 import jobReferralRouter from '@/modules/jobReferral/jobReferral.routes';
 
@@ -63,7 +63,7 @@ router.use('/messages', messagesRouter);
 router.use('/badge', badgeRouter);
 router.use('/', taskRouter);
 
-router.use("/", jobReactionRouter);
+router.use('/', jobReactionRouter);
 router.use('/community-workspace', communityWorkspaceRouter);
 router.use('/job-referrals', jobReferralRouter);
 

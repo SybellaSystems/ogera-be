@@ -7,7 +7,10 @@ export type JobQuestionCreationAttributes = Optional<
     'question_id' | 'created_at' | 'updated_at'
 >;
 
-export class JobQuestionModel extends Model<JobQuestion, JobQuestionCreationAttributes> implements JobQuestion {
+export class JobQuestionModel
+    extends Model<JobQuestion, JobQuestionCreationAttributes>
+    implements JobQuestion
+{
     public question_id!: string;
     public job_id!: string;
     public question_text!: string;
@@ -44,7 +47,12 @@ export default function (sequelize: Sequelize): typeof JobQuestionModel {
                 allowNull: false,
             },
             question_type: {
-                type: DataTypes.ENUM('text', 'number', 'yes_no', 'multiple_choice'),
+                type: DataTypes.ENUM(
+                    'text',
+                    'number',
+                    'yes_no',
+                    'multiple_choice',
+                ),
                 allowNull: false,
                 defaultValue: 'text',
             },
@@ -83,4 +91,3 @@ export default function (sequelize: Sequelize): typeof JobQuestionModel {
 
     return JobQuestionModel;
 }
-

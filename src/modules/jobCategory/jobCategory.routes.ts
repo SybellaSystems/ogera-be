@@ -12,37 +12,18 @@ import { PermissionChecker } from '@/middlewares/role.middleware';
 const jobCategoryRouter = express.Router();
 
 // Get all categories - public endpoint (for dropdowns)
-jobCategoryRouter.get(
-    '/',
-    getAllCategories,
-);
+jobCategoryRouter.get('/', getAllCategories);
 
 // Get category by ID
-jobCategoryRouter.get(
-    '/:id',
-    getCategoryById,
-);
+jobCategoryRouter.get('/:id', getCategoryById);
 
 // Create category - only superadmin
-jobCategoryRouter.post(
-    '/',
-    authMiddleware,
-    createCategory,
-);
+jobCategoryRouter.post('/', authMiddleware, createCategory);
 
 // Update category - only superadmin
-jobCategoryRouter.put(
-    '/:id',
-    authMiddleware,
-    updateCategory,
-);
+jobCategoryRouter.put('/:id', authMiddleware, updateCategory);
 
 // Delete category - only superadmin
-jobCategoryRouter.delete(
-    '/:id',
-    authMiddleware,
-    deleteCategory,
-);
+jobCategoryRouter.delete('/:id', authMiddleware, deleteCategory);
 
 export default jobCategoryRouter;
-

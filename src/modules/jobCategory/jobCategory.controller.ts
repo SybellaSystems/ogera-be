@@ -26,10 +26,7 @@ export const createCategory = async (
             );
             return;
         }
-        const category = await createCategoryService(
-            req.body,
-            req.user.role,
-        );
+        const category = await createCategoryService(req.body, req.user.role);
         response.response(
             res,
             true,
@@ -167,4 +164,3 @@ export const deleteCategory = async (
         );
     }
 };
-

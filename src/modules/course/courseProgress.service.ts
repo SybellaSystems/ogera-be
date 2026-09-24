@@ -23,7 +23,10 @@ export const markStepCompleteService = async (
     });
 
     if (!step) {
-        throw new CustomError('Step not found or does not belong to this course', StatusCodes.NOT_FOUND);
+        throw new CustomError(
+            'Step not found or does not belong to this course',
+            StatusCodes.NOT_FOUND,
+        );
     }
 
     return await repo.markStepComplete(user_id, course_id, step_id);
@@ -48,7 +51,10 @@ export const getCourseProgressService = async (
     }
 
     const progress = await repo.getUserCourseProgress(user_id, course_id);
-    const completion = await repo.getCourseCompletionPercentage(user_id, course_id);
+    const completion = await repo.getCourseCompletionPercentage(
+        user_id,
+        course_id,
+    );
 
     return {
         progress,

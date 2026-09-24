@@ -113,4 +113,3 @@ export default function (sequelize: Sequelize): typeof UserProjectModel {
 
     return UserProjectModel;
 }
-

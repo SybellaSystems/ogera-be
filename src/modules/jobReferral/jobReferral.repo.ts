@@ -3,12 +3,7 @@ import { DB } from '@/database';
 import { JobReferralCreationAttributes } from '@/database/models/jobReferral.model';
 const { JobReferrals, sequelize } = DB;
 
- type ReferralTab =
-  | "all"
-  | "pending"
-  | "verified"
-  | "active"
-  | "closed";
+type ReferralTab = 'all' | 'pending' | 'verified' | 'active' | 'closed';
 
 export class JobReferralRepository {
     /**
@@ -61,105 +56,104 @@ export class JobReferralRepository {
      * Returns the newest referrals first.
      */
 
-async findAll(
-    page = 1,
-    limit = 3,
-    status: ReferralTab = 'all',
-    getAll = false,
-) {
-    const offset = (page - 1) * limit;
+    async findAll(
+        page = 1,
+        limit = 3,
+        status: ReferralTab = 'all',
+        getAll = false,
+    ) {
+        const offset = (page - 1) * limit;
 
-    const where: any = {};
+        const where: any = {};
 
-    switch (status) {
-        case 'pending':
-            where.status = 'Pending';
-            break;
+        switch (status) {
+            case 'pending':
+                where.status = 'Pending';
+                break;
 
-        case 'verified':
-            where.status = 'Verified';
-            break;
+            case 'verified':
+                where.status = 'Verified';
+                break;
 
-        case 'active':
-            where.status = 'Active';
-            break;
+            case 'active':
+                where.status = 'Active';
+                break;
 
-        case 'closed':
-            where.status = 'Closed';
-            break;
+            case 'closed':
+                where.status = 'Closed';
+                break;
 
-        case 'all':
-        default:
-            break;
-    }
+            case 'all':
+            default:
+                break;
+        }
 
-     const queryOptions: any = {
-        where,
-        order: [['created_at', 'DESC']],
-    };
+        const queryOptions: any = {
+            where,
+            order: [['created_at', 'DESC']],
+        };
 
-    if (!getAll) {
-        queryOptions.limit = limit;
-        queryOptions.offset = offset;
-    }
+        if (!getAll) {
+            queryOptions.limit = limit;
+            queryOptions.offset = offset;
+        }
 
-    const { rows, count } =
-        await JobReferrals.findAndCountAll(
+        const { rows, count } = await JobReferrals.findAndCountAll(
             queryOptions,
         );
 
-    const [
-        allCount,
-        pendingCount,
-        verifiedCount,
-        activeCount,
-        closedCount,
-    ] = await Promise.all([
-        // All
-        JobReferrals.count(),
+        const [
+            allCount,
+            pendingCount,
+            verifiedCount,
+            activeCount,
+            closedCount,
+        ] = await Promise.all([
+            // All
+            JobReferrals.count(),
 
-        // Pending
-        JobReferrals.count({
-            where: {
-                status: 'Pending',
+            // Pending
+            JobReferrals.count({
+                where: {
+                    status: 'Pending',
+                },
+            }),
+
+            // Verified
+            JobReferrals.count({
+                where: {
+                    status: 'Verified',
+                },
+            }),
+
+            // Active
+            JobReferrals.count({
+                where: {
+                    status: 'Active',
+                },
+            }),
+
+            // Closed
+            JobReferrals.count({
+                where: {
+                    status: 'Closed',
+                },
+            }),
+        ]);
+
+        return {
+            rows,
+            count,
+
+            counts: {
+                all: allCount,
+                pending_verification: pendingCount,
+                verified: verifiedCount,
+                active: activeCount,
+                closed: closedCount,
             },
-        }),
-
-        // Verified
-        JobReferrals.count({
-            where: {
-                status: 'Verified',
-            },
-        }),
-
-        // Active
-        JobReferrals.count({
-            where: {
-                status: 'Active',
-            },
-        }),
-
-        // Closed
-        JobReferrals.count({
-            where: {
-                status: 'Closed',
-            },
-        }),
-    ]);
-
-    return {
-        rows,
-        count,
-
-        counts: {
-            all: allCount,
-            pending_verification: pendingCount,
-            verified: verifiedCount,
-            active: activeCount,
-            closed: closedCount,
-        },
-    };
-}
+        };
+    }
 
     /**
      * Search job referrals
@@ -629,47 +623,44 @@ async findAll(
             order: [['created_at', 'DESC']],
         });
     }
-    
-    /**
- * Get active and verified referrals available to students
- *
- * Initial request:
- * - limit = 9
- *
- * View More request:
- * - getAll = true
- * - returns all available referrals
- */
-async findActiveVerified(
-    limit = 9,
-    getAll = false,
-) {
-    const queryOptions: any = {
-        where: {
-            status: 'Active',
-            verification_status: 'Verified',
-            permission_status: 'Approved',
-        },
-        order: [['created_at', 'DESC']],
-    };
 
     /**
-     * Only apply LIMIT for the initial request.
+     * Get active and verified referrals available to students
      *
-     * When getAll = true, no limit is applied.
+     * Initial request:
+     * - limit = 9
+     *
+     * View More request:
+     * - getAll = true
+     * - returns all available referrals
      */
-    if (!getAll) {
-        queryOptions.limit = limit;
+    async findActiveVerified(limit = 9, getAll = false) {
+        const queryOptions: any = {
+            where: {
+                status: 'Active',
+                verification_status: 'Verified',
+                permission_status: 'Approved',
+            },
+            order: [['created_at', 'DESC']],
+        };
+
+        /**
+         * Only apply LIMIT for the initial request.
+         *
+         * When getAll = true, no limit is applied.
+         */
+        if (!getAll) {
+            queryOptions.limit = limit;
+        }
+
+        console.log('findActiveVerified:', {
+            limit,
+            getAll,
+            queryOptions,
+        });
+
+        return JobReferrals.findAll(queryOptions);
     }
-
-    console.log('findActiveVerified:', {
-        limit,
-        getAll,
-        queryOptions,
-    });
-
-    return JobReferrals.findAll(queryOptions);
-}
 
     /**
      * Get database transaction

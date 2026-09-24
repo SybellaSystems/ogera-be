@@ -7,7 +7,10 @@ import logger from '@/utils/logger';
  * Submit a payment order to Pesapal
  * Returns redirect_url to open in new window for payment
  */
-export async function submitPaymentOrder(req: Request, res: Response): Promise<void> {
+export async function submitPaymentOrder(
+    req: Request,
+    res: Response,
+): Promise<void> {
     try {
         const { amount, currency = 'KES', description } = req.body;
         const user = req.user;
@@ -23,13 +26,19 @@ export async function submitPaymentOrder(req: Request, res: Response): Promise<v
         if (!PESAPAL_CONFIG.consumerKey || !PESAPAL_CONFIG.consumerSecret) {
             res.status(500).json({
                 success: false,
-                message: 'Pesapal is not configured. Please set PESAPAL_CONSUMER_KEY and PESAPAL_CONSUMER_SECRET.',
+                message:
+                    'Pesapal is not configured. Please set PESAPAL_CONSUMER_KEY and PESAPAL_CONSUMER_SECRET.',
             });
             return;
         }
 
-        const ref = `OGERA-${Date.now()}-${(user?.user_id || 'guest').slice(0, 10)}`;
-        const merchantReference = ref.replace(/[^a-zA-Z0-9\-_.:]/g, '').slice(0, 50);
+        const ref = `OGERA-${Date.now()}-${(user?.user_id || 'guest').slice(
+            0,
+            10,
+        )}`;
+        const merchantReference = ref
+            .replace(/[^a-zA-Z0-9\-_.:]/g, '')
+            .slice(0, 50);
         // const notificationId = process.env.PESAPAL_IPN_ID || '';
         const notificationId = await pesapalService.registerIPN();
 
@@ -59,7 +68,7 @@ export async function submitPaymentOrder(req: Request, res: Response): Promise<v
             description || 'Ogera Platform Payment',
             merchantReference,
             billingAddress,
-            notificationId
+            notificationId,
         );
 
         res.json({
@@ -83,9 +92,15 @@ export async function submitPaymentOrder(req: Request, res: Response): Promise<v
 /**
  * Get transaction status from Pesapal
  */
-export async function getPaymentStatus(req: Request, res: Response): Promise<void> {
+export async function getPaymentStatus(
+    req: Request,
+    res: Response,
+): Promise<void> {
     try {
-        const orderTrackingId = typeof req.params.orderTrackingId === 'string' ? req.params.orderTrackingId : req.params.orderTrackingId?.[0];
+        const orderTrackingId =
+            typeof req.params.orderTrackingId === 'string'
+                ? req.params.orderTrackingId
+                : req.params.orderTrackingId?.[0];
 
         if (!orderTrackingId) {
             res.status(400).json({
@@ -95,7 +110,9 @@ export async function getPaymentStatus(req: Request, res: Response): Promise<voi
             return;
         }
 
-        const result = await pesapalService.getTransactionStatus(orderTrackingId);
+        const result = await pesapalService.getTransactionStatus(
+            orderTrackingId,
+        );
 
         res.json({
             success: true,
@@ -141,8 +158,11 @@ export async function registerIPN(req: Request, res: Response): Promise<void> {
  */
 export async function ipnCallback(req: Request, res: Response): Promise<void> {
     try {
-        const { OrderTrackingId, OrderMerchantReference, OrderNotificationType } =
-            req.query;
+        const {
+            OrderTrackingId,
+            OrderMerchantReference,
+            OrderNotificationType,
+        } = req.query;
 
         logger.info('Pesapal IPN received:', {
             OrderTrackingId,
@@ -152,7 +172,7 @@ export async function ipnCallback(req: Request, res: Response): Promise<void> {
 
         if (OrderNotificationType === 'IPNCHANGE' && OrderTrackingId) {
             const status = await pesapalService.getTransactionStatus(
-                OrderTrackingId as string
+                OrderTrackingId as string,
             );
             logger.info('Payment status update:', status);
             // TODO: Update your database with payment status

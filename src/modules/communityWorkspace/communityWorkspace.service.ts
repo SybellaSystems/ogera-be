@@ -350,36 +350,35 @@ class CommunityWorkspaceService {
 */
 
     async getMyReviews(userId: string) {
-    const reviews: any[] = await repo.getMyReviews(userId);
+        const reviews: any[] = await repo.getMyReviews(userId);
 
-    return reviews.map((review: any) => ({
-        id: review.id,
-        reviewer_id: review.reviewer_id,
-        rating: review.rating,
-        review: review.review,
-        created_at: review.created_at,
-        updated_at: review.updated_at,
+        return reviews.map((review: any) => ({
+            id: review.id,
+            reviewer_id: review.reviewer_id,
+            rating: review.rating,
+            review: review.review,
+            created_at: review.created_at,
+            updated_at: review.updated_at,
 
-        student: {
-            user_id: review.studentLink.student.user_id,
-            full_name: review.studentLink.student.full_name,
-            profile_image_url:
-                review.studentLink.student.profile_image_url,
-        },
+            student: {
+                user_id: review.studentLink.student.user_id,
+                full_name: review.studentLink.student.full_name,
+                profile_image_url: review.studentLink.student.profile_image_url,
+            },
 
-        link_type: review.studentLink.link_type,
-        url: review.studentLink.url,
+            link_type: review.studentLink.link_type,
+            url: review.studentLink.url,
 
-        reply: review.reply
-            ? {
-                  id: review.reply.id,
-                  reply: review.reply.reply,
-                  created_at: review.reply.created_at,
-                  updated_at: review.reply.updated_at,
-              }
-            : null,
-    }));
-}
+            reply: review.reply
+                ? {
+                      id: review.reply.id,
+                      reply: review.reply.reply,
+                      created_at: review.reply.created_at,
+                      updated_at: review.reply.updated_at,
+                  }
+                : null,
+        }));
+    }
 }
 
 export default new CommunityWorkspaceService();

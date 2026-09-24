@@ -8,7 +8,7 @@ import {
     TrustScoreHistoryItem,
     LeaderboardStudentRow,
     TrustAdminSummary,
-    AdminDashboardMetrics ,
+    AdminDashboardMetrics,
 } from '@/interfaces/trustScore.interfaces';
 
 const W_I = 0.4;
@@ -33,7 +33,9 @@ const hasDiff = (a: number | null | undefined, b: number): boolean =>
  * - For repeated attempts of the same test, use only the latest attempt.
  * - Across different tests, average all latest test scores.
  */
-const computeCognitiveIntelligence = async (user_id: string): Promise<number> => {
+const computeCognitiveIntelligence = async (
+    user_id: string,
+): Promise<number> => {
     const rows = await DB.UserTests.findAll({
         where: { user_id },
         attributes: [
@@ -80,7 +82,9 @@ const computeCognitiveIntelligence = async (user_id: string): Promise<number> =>
  * Academic component from dedicated academic_records table.
  * If multiple records exist, use average percentage.
  */
-const computeAcademicIntelligence = async (user_id: string): Promise<number> => {
+const computeAcademicIntelligence = async (
+    user_id: string,
+): Promise<number> => {
     const rows = await DB.AcademicRecords.findAll({
         where: { user_id },
         attributes: ['percentage'],
@@ -111,21 +115,25 @@ const PROFICIENCY_SCORE: Record<string, number> = {
 /**
  * Problem-solving component from explicit problem-solving related skills.
  */
-const computeProblemSolvingIntelligence = async (user_id: string): Promise<number> => {
+const computeProblemSolvingIntelligence = async (
+    user_id: string,
+): Promise<number> => {
     const rows = await DB.UserSkills.findAll({
         where: { user_id },
         attributes: ['skill_name', 'proficiency_level', 'years_of_experience'],
     });
     if (!rows.length) return 0;
 
-    const matched = rows.filter((r) =>
+    const matched = rows.filter(r =>
         PROBLEM_SOLVING_SKILL_REGEX.test(String(r.get('skill_name') || '')),
     );
     if (!matched.length) return 0;
 
     let sum = 0;
     for (const r of matched) {
-        const proficiency = String(r.get('proficiency_level') || '').toLowerCase();
+        const proficiency = String(
+            r.get('proficiency_level') || '',
+        ).toLowerCase();
         const proficiencyScore = PROFICIENCY_SCORE[proficiency] ?? 0.5;
         const years = Math.max(0, Number(r.get('years_of_experience')) || 0);
         const experienceScore = clamp01(years / 5);
@@ -141,7 +149,9 @@ const computeProblemSolvingIntelligence = async (user_id: string): Promise<numbe
  * - Every puzzle attempt counts.
  * - Average all attempt percentages for the final problem-metrics contribution.
  */
-const computeProblemMetricIntelligence = async (user_id: string): Promise<number> => {
+const computeProblemMetricIntelligence = async (
+    user_id: string,
+): Promise<number> => {
     const rows = await DB.UserTests.findAll({
         where: {
             user_id,
@@ -204,7 +214,13 @@ const getExperienceYearsBoost = (years: number): number => {
  * Multiple records in the same category do not increase E beyond that category cap.
  */
 const computeExperience = async (user_id: string): Promise<number> => {
-    const [user, extendedProfile, internshipEmploymentCount, projectCount, accomplishments] = await Promise.all([
+    const [
+        user,
+        extendedProfile,
+        internshipEmploymentCount,
+        projectCount,
+        accomplishments,
+    ] = await Promise.all([
         DB.Users.findOne({
             where: { user_id },
             attributes: ['resume_url'],
@@ -220,12 +236,17 @@ const computeExperience = async (user_id: string): Promise<number> => {
         }),
         DB.UserAccomplishments.findAll({
             where: { user_id },
-            attributes: ['title', 'description', 'issuing_organization', 'credential_id'],
+            attributes: [
+                'title',
+                'description',
+                'issuing_organization',
+                'credential_id',
+            ],
         }),
     ]);
 
     let experience = 0;
-    const internshipCertificates = accomplishments.filter((a) => {
+    const internshipCertificates = accomplishments.filter(a => {
         const title = String(a.get('title') || '');
         const description = String(a.get('description') || '');
         const issuingOrg = String(a.get('issuing_organization') || '');
@@ -234,8 +255,10 @@ const computeExperience = async (user_id: string): Promise<number> => {
         return INTERNSHIP_KEYWORD_REGEX.test(searchable);
     });
     const internshipCertificateCount = internshipCertificates.length;
-    const nonInternshipAccomplishmentCount = accomplishments.length - internshipCertificateCount;
-    const internshipCount = internshipEmploymentCount + internshipCertificateCount;
+    const nonInternshipAccomplishmentCount =
+        accomplishments.length - internshipCertificateCount;
+    const internshipCount =
+        internshipEmploymentCount + internshipCertificateCount;
 
     if (user?.resume_url) experience += EXPERIENCE_CATEGORY_WEIGHT;
     if (internshipCount > 0) experience += EXPERIENCE_CATEGORY_WEIGHT;
@@ -245,7 +268,10 @@ const computeExperience = async (user_id: string): Promise<number> => {
         experience += EXPERIENCE_CATEGORY_WEIGHT;
     }
     experience += getExperienceYearsBoost(
-        Math.max(0, Number(extendedProfile?.get('total_experience_years')) || 0),
+        Math.max(
+            0,
+            Number(extendedProfile?.get('total_experience_years')) || 0,
+        ),
     );
 
     return clamp01(experience);
@@ -323,19 +349,13 @@ export const getTrustScoreLevel = (
 const buildSuggestions = (I: number, E: number, C: number): string[] => {
     const out: string[] = [];
     if (E < 0.5) {
-        out.push(
-            '',
-        );
+        out.push('');
     }
     if (C < 0.5) {
-        out.push(
-            '',
-        );
+        out.push('');
     }
     if (I < 0.5) {
-        out.push(
-            '',
-        );
+        out.push('');
     }
     if (!out.length) {
         out.push('Keep maintaining your profile, projects, and collaboration.');
@@ -373,7 +393,14 @@ const toPayload = (
  */
 export const computeTrustComponents = async (
     user_id: string,
-): Promise<{ I: number; E: number; C: number; trust_score: number; level: TrustLevel; description: string }> => {
+): Promise<{
+    I: number;
+    E: number;
+    C: number;
+    trust_score: number;
+    level: TrustLevel;
+    description: string;
+}> => {
     const I = await computeIntelligence(user_id);
     const E = await computeExperience(user_id);
     const C = await computeInteraction(user_id);
@@ -413,7 +440,16 @@ export const getTrustScoreService = async (
         });
     }
 
-    return toPayload(user_id, I, E, C, trust_score, level, description, 'computed');
+    return toPayload(
+        user_id,
+        I,
+        E,
+        C,
+        trust_score,
+        level,
+        description,
+        'computed',
+    );
 };
 
 export const getMyTrustScoreService = async (
@@ -452,7 +488,16 @@ export const calculateTrustScoreService = async (
         computed_at: new Date(),
     });
 
-    return toPayload(user_id, I, E, C, trust_score, level, description, 'cached');
+    return toPayload(
+        user_id,
+        I,
+        E,
+        C,
+        trust_score,
+        level,
+        description,
+        'cached',
+    );
 };
 
 export const getTrustScoreHistoryService = async (
@@ -464,7 +509,7 @@ export const getTrustScoreHistoryService = async (
         order: [['computed_at', 'DESC']],
         limit: Math.min(Math.max(limit, 1), 100),
     });
-    return rows.map((r) => ({
+    return rows.map(r => ({
         history_id: r.history_id,
         user_id: r.user_id,
         intelligence_score: r.intelligence_score,
@@ -485,11 +530,17 @@ export const getStudentLeaderboardService = async (
             role_type: 'student',
             trust_score: { [Op.ne]: null },
         },
-        attributes: ['user_id', 'full_name', 'email', 'trust_score', 'trust_level'],
+        attributes: [
+            'user_id',
+            'full_name',
+            'email',
+            'trust_score',
+            'trust_level',
+        ],
         order: [['trust_score', 'DESC']],
         limit: take,
     });
-    return rows.map((u) => ({
+    return rows.map(u => ({
         user_id: u.user_id,
         full_name: u.full_name,
         email: u.email,
@@ -666,7 +717,7 @@ export const getStudentLeaderboardService = async (
 //         };
 //     };
 
-    export const getAdminTrustSummaryService =
+export const getAdminTrustSummaryService =
     async (): Promise<TrustAdminSummary> => {
         // ============================================================
         // 1. GET STUDENTS FOR TRUST SCORE ANALYTICS
@@ -690,7 +741,7 @@ export const getStudentLeaderboardService = async (
         // ============================================================
 
         const scoredStudents = students
-            .filter((student) => {
+            .filter(student => {
                 if (student.trust_score == null) {
                     return false;
                 }
@@ -699,7 +750,7 @@ export const getStudentLeaderboardService = async (
 
                 return Number.isFinite(score);
             })
-            .map((student) => ({
+            .map(student => ({
                 user_id: student.user_id,
                 full_name: student.full_name,
                 email: student.email,
@@ -712,27 +763,20 @@ export const getStudentLeaderboardService = async (
         // ============================================================
 
         const top_users = [...scoredStudents]
-            .sort(
-                (a, b) =>
-                    b.trust_score - a.trust_score,
-            )
+            .sort((a, b) => b.trust_score - a.trust_score)
             .slice(0, 5);
 
         // ============================================================
         // 4. TRUST SCORE CALCULATIONS BASED ON TOP 5
         // ============================================================
 
-        const topScores = top_users.map(
-            (student) => student.trust_score,
-        );
+        const topScores = top_users.map(student => student.trust_score);
 
         const average_trust_score =
             topScores.length > 0
                 ? round2(
-                      topScores.reduce(
-                          (total, score) => total + score,
-                          0,
-                      ) / topScores.length,
+                      topScores.reduce((total, score) => total + score, 0) /
+                          topScores.length,
                   )
                 : null;
 
@@ -768,14 +812,12 @@ export const getStudentLeaderboardService = async (
             },
         ];
 
-        const distribution = buckets.map((bucket) => ({
+        const distribution = buckets.map(bucket => ({
             label: bucket.label,
             min: bucket.min,
             max: bucket.max,
             count: topScores.filter(
-                (score) =>
-                    score >= bucket.min &&
-                    score <= bucket.max,
+                score => score >= bucket.min && score <= bucket.max,
             ).length,
         }));
 
@@ -825,8 +867,7 @@ export const getStudentLeaderboardService = async (
         //    Admin/superAdmin are NOT included
         // ============================================================
 
-        const total_users =
-            total_students + total_employers;
+        const total_users = total_students + total_employers;
 
         // ============================================================
         // 10. USERS BEFORE CURRENT MONTH
@@ -835,29 +876,26 @@ export const getStudentLeaderboardService = async (
         // the previous month.
         // ============================================================
 
-        const studentsBeforeCurrentMonth =
-            await DB.Users.count({
-                where: {
-                    role_type: 'student',
-                    created_at: {
-                        [Op.lt]: currentMonthStart,
-                    },
+        const studentsBeforeCurrentMonth = await DB.Users.count({
+            where: {
+                role_type: 'student',
+                created_at: {
+                    [Op.lt]: currentMonthStart,
                 },
-            });
+            },
+        });
 
-        const employersBeforeCurrentMonth =
-            await DB.Users.count({
-                where: {
-                    role_type: 'employer',
-                    created_at: {
-                        [Op.lt]: currentMonthStart,
-                    },
+        const employersBeforeCurrentMonth = await DB.Users.count({
+            where: {
+                role_type: 'employer',
+                created_at: {
+                    [Op.lt]: currentMonthStart,
                 },
-            });
+            },
+        });
 
         const previousMonthTotalUsers =
-            studentsBeforeCurrentMonth +
-            employersBeforeCurrentMonth;
+            studentsBeforeCurrentMonth + employersBeforeCurrentMonth;
 
         // ============================================================
         // 11. USER GROWTH %
@@ -873,21 +911,19 @@ export const getStudentLeaderboardService = async (
         const user_growth_percent =
             previousMonthTotalUsers > 0
                 ? round2(
-                      ((total_users -
-                          previousMonthTotalUsers) /
+                      ((total_users - previousMonthTotalUsers) /
                           previousMonthTotalUsers) *
                           100,
                   )
                 : total_users > 0
-                  ? 100
-                  : 0;
+                ? 100
+                : 0;
 
         // ============================================================
         // 12. TOTAL JOBS POSTED
         // ============================================================
 
-        const total_jobs_posted =
-            await DB.Jobs.count();
+        const total_jobs_posted = await DB.Jobs.count();
 
         // ============================================================
         // 13. JOBS BEFORE CURRENT MONTH
@@ -896,14 +932,13 @@ export const getStudentLeaderboardService = async (
         // before the current month.
         // ============================================================
 
-        const previousMonthTotalJobs =
-            await DB.Jobs.count({
-                where: {
-                    created_at: {
-                        [Op.lt]: currentMonthStart,
-                    },
+        const previousMonthTotalJobs = await DB.Jobs.count({
+            where: {
+                created_at: {
+                    [Op.lt]: currentMonthStart,
                 },
-            });
+            },
+        });
 
         // ============================================================
         // 14. JOB GROWTH %
@@ -912,14 +947,13 @@ export const getStudentLeaderboardService = async (
         const job_growth_percent =
             previousMonthTotalJobs > 0
                 ? round2(
-                      ((total_jobs_posted -
-                          previousMonthTotalJobs) /
+                      ((total_jobs_posted - previousMonthTotalJobs) /
                           previousMonthTotalJobs) *
                           100,
                   )
                 : total_jobs_posted > 0
-                  ? 100
-                  : 0;
+                ? 100
+                : 0;
 
         // ============================================================
         // 15. RETURN EVERYTHING
@@ -943,4 +977,3 @@ export const getStudentLeaderboardService = async (
             job_growth_percent,
         };
     };
-    

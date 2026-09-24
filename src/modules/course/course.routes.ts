@@ -21,7 +21,10 @@ import {
     getCourseSpecificStatistics,
 } from './courseProgress.controller';
 import { authMiddleware } from '@/middlewares/auth.middleware';
-import { PermissionChecker, courseAdminOrSuperadminOnly } from '@/middlewares/role.middleware';
+import {
+    PermissionChecker,
+    courseAdminOrSuperadminOnly,
+} from '@/middlewares/role.middleware';
 
 const courseRouter = express.Router();
 
@@ -42,7 +45,11 @@ const upload = multer({
         if (allowedMimes.includes(file.mimetype)) {
             cb(null, true);
         } else {
-            cb(new Error('Invalid file type. Only PDF and image files are allowed.'));
+            cb(
+                new Error(
+                    'Invalid file type. Only PDF and image files are allowed.',
+                ),
+            );
         }
     },
 });
@@ -184,5 +191,3 @@ courseRouter.get(
 );
 
 export default courseRouter;
-
-

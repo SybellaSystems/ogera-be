@@ -17,26 +17,15 @@ export interface JobReferralAttributes {
     source?: string | null;
     original_url?: string | null;
 
-    verification_status:
-        | 'Pending'
-        | 'Verified'
-        | 'Rejected';
+    verification_status: 'Pending' | 'Verified' | 'Rejected';
 
-    permission_status:
-        | 'Pending'
-        | 'Approved'
-        | 'Rejected';
+    permission_status: 'Pending' | 'Approved' | 'Rejected';
 
     verification_notes?: string | null;
 
     expiry_date?: Date | null;
 
-    status:
-        | 'All'
-        | 'Pending'
-        | 'Verified'
-        | 'Active'
-        | 'Closed';
+    status: 'All' | 'Pending' | 'Verified' | 'Active' | 'Closed';
 
     views_count: number;
     apply_clicks: number;
@@ -70,10 +59,7 @@ export type JobReferralCreationAttributes = Optional<
 >;
 
 export class JobReferralModel
-    extends Model<
-        JobReferralAttributes,
-        JobReferralCreationAttributes
-    >
+    extends Model<JobReferralAttributes, JobReferralCreationAttributes>
     implements JobReferralAttributes
 {
     public referral_id!: string;
@@ -92,26 +78,15 @@ export class JobReferralModel
     public source?: string | null;
     public original_url?: string | null;
 
-    public verification_status!:
-        | 'Pending'
-        | 'Verified'
-        | 'Rejected';
+    public verification_status!: 'Pending' | 'Verified' | 'Rejected';
 
-    public permission_status!:
-        | 'Pending'
-        | 'Approved'
-        | 'Rejected';
+    public permission_status!: 'Pending' | 'Approved' | 'Rejected';
 
     public verification_notes?: string | null;
 
     public expiry_date?: Date | null;
 
-    public status!:
-        | 'All'
-        | 'Pending'
-        | 'Verified'
-        | 'Active'
-        | 'Closed';
+    public status!: 'All' | 'Pending' | 'Verified' | 'Active' | 'Closed';
 
     public views_count!: number;
     public apply_clicks!: number;
@@ -123,9 +98,7 @@ export class JobReferralModel
     public readonly updated_at!: Date;
 }
 
-export default function (
-    sequelize: Sequelize,
-): typeof JobReferralModel {
+export default function (sequelize: Sequelize): typeof JobReferralModel {
     JobReferralModel.init(
         {
             referral_id: {
@@ -136,10 +109,10 @@ export default function (
             },
 
             created_referral_id: {
-      type: DataTypes.STRING(50),
-      allowNull: true,
-      unique: true,
-    },
+                type: DataTypes.STRING(50),
+                allowNull: true,
+                unique: true,
+            },
 
             title: {
                 type: DataTypes.STRING(255),
@@ -182,21 +155,13 @@ export default function (
             },
 
             verification_status: {
-                type: DataTypes.ENUM(
-                    'Pending',
-                    'Verified',
-                    'Rejected',
-                ),
+                type: DataTypes.ENUM('Pending', 'Verified', 'Rejected'),
                 allowNull: false,
                 defaultValue: 'Pending',
             },
 
             permission_status: {
-                type: DataTypes.ENUM(
-                    'Pending',
-                    'Approved',
-                    'Rejected',
-                ),
+                type: DataTypes.ENUM('Pending', 'Approved', 'Rejected'),
                 allowNull: false,
                 defaultValue: 'Pending',
             },

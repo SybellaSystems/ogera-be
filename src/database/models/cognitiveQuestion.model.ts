@@ -24,7 +24,10 @@ export type CognitiveQuestionCreationAttributes = Optional<
 >;
 
 export class CognitiveQuestionModel
-    extends Model<CognitiveQuestionAttributes, CognitiveQuestionCreationAttributes>
+    extends Model<
+        CognitiveQuestionAttributes,
+        CognitiveQuestionCreationAttributes
+    >
     implements CognitiveQuestionAttributes
 {
     public question_id!: string;
@@ -52,7 +55,10 @@ export default function (sequelize: Sequelize): typeof CognitiveQuestionModel {
             cognitive_test_id: {
                 type: DataTypes.UUID,
                 allowNull: false,
-                references: { model: 'cognitive_tests', key: 'cognitive_test_id' },
+                references: {
+                    model: 'cognitive_tests',
+                    key: 'cognitive_test_id',
+                },
                 onUpdate: 'CASCADE',
                 onDelete: 'CASCADE',
             },

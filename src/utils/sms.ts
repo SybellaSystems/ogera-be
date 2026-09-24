@@ -29,7 +29,9 @@ class TwilioSMSProvider implements SMSProvider {
             const twilio = require('twilio');
             this.client = twilio(accountSid, authToken);
         } catch (error) {
-            logger.warn('Twilio package not found. Install with: npm install twilio');
+            logger.warn(
+                'Twilio package not found. Install with: npm install twilio',
+            );
             this.client = null;
         }
     }
@@ -43,8 +45,10 @@ class TwilioSMSProvider implements SMSProvider {
 
         try {
             // Normalize phone number (remove spaces, ensure + prefix)
-            const normalizedPhone = options.to.replace(/\s+/g, '').replace(/^\+?/, '+');
-            
+            const normalizedPhone = options.to
+                .replace(/\s+/g, '')
+                .replace(/^\+?/, '+');
+
             const message = await this.client.messages.create({
                 body: options.message,
                 to: normalizedPhone,
@@ -101,7 +105,11 @@ export const initializeSMSProvider = (
     if (provider === 'twilio' && config) {
         const { accountSid, authToken, fromNumber } = config;
         if (accountSid && authToken && fromNumber) {
-            smsProvider = new TwilioSMSProvider(accountSid, authToken, fromNumber);
+            smsProvider = new TwilioSMSProvider(
+                accountSid,
+                authToken,
+                fromNumber,
+            );
             logger.info('SMS Provider initialized: Twilio');
         } else {
             logger.warn(
@@ -133,7 +141,7 @@ export const sendSMS = async (options: SMSOptions): Promise<void> => {
 
     // Normalize phone number (remove spaces, ensure + prefix)
     const normalizedPhone = options.to.replace(/\s+/g, '').replace(/^\+?/, '+');
-    
+
     // Validate phone number format (E.164 format: + followed by 1-15 digits)
     const phoneRegex = /^\+[1-9]\d{1,14}$/;
     if (!phoneRegex.test(normalizedPhone)) {
@@ -164,4 +172,3 @@ export const sendOTPSMS = async (
         message,
     });
 };
-

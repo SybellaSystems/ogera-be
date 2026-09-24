@@ -13,12 +13,18 @@
             "@modules/*": ["./src/modules/*"]
         },
         "esModuleInterop": true,
-        "typeRoots": ["node_modules/@types","./src/types"],
+        "typeRoots": ["node_modules/@types", "./src/types"],
+        "types": ["node", "jest"],
         "strict": true,
         "resolveJsonModule": true,
         "skipLibCheck": true,
         "lib": ["esnext", "dom"]
     },
-    "include": ["src/**/*.ts", "src/**/*.d.ts", "src/database/models/index.ts", "src/database/migrations/202607010001-add-job-reactions.js"],
+    "include": [
+        "src/**/*.ts",
+        "src/**/*.d.ts",
+        "src/database/models/index.ts",
+        "src/database/migrations/202607010001-add-job-reactions.js"
+    ],
     "exclude": ["node_modules"]
 }

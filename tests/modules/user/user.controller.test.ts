@@ -1,75 +1,81 @@
-import { Request, Response, NextFunction } from 'express';
-import { getUserProfileController } from '../../../src/modules/user/user.controller';
-import { getUserProfileService } from '../../../src/modules/user/user.service';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { Request, Response } from 'express';
+import { getUserProfile } from '../../../src/modules/auth/auth.controller';
+import { getUserProfileService } from '../../../src/modules/auth/auth.service';
 import { CustomError } from '../../../src/utils/custom-error';
 
-jest.mock('../../../src/modules/user/user.service', () => ({
+jest.mock('../../../src/modules/auth/auth.service', () => ({
     getUserProfileService: jest.fn(),
 }));
 
-beforeEach(() => {
-    jest.clearAllMocks(); 
-});
-
-describe('getUserProfileController', () => {
-    let req: Partial<Request>;
-    let res: Partial<Response>;
-    let next: NextFunction;
+describe('getUserProfile', () => {
+    let req: Partial<Request> & { user?: { user_id: string; role: string } };
+    let res: Partial<Response> & {
+        status: jest.Mock;
+        send: jest.Mock;
+    };
 
     beforeEach(() => {
         req = {
-            headers: {
-                authorization: 'Bearer mockAccessToken',
-            },
+            user: { user_id: 'user-123', role: 'student' },
         };
 
         res = {
             status: jest.fn().mockReturnThis(),
-            json: jest.fn(),
-        };
-
-        next = jest.fn();
+            send: jest.fn(),
+        } as any;
 
         jest.clearAllMocks();
     });
 
-    it('should return user profile when accessToken is valid', async () => {
+    it('should return the authenticated user profile', async () => {
         const mockUser = {
-            id: 'user123',
+            user_id: 'user-123',
             email: 'user@example.com',
-            username: 'user',
+            full_name: 'Test User',
         };
-        (getUserProfileService as jest.Mock).mockResolvedValue(mockUser);
 
-        await getUserProfileController(req as Request, res as Response, next);
+        (getUserProfileService as any).mockResolvedValue(mockUser);
 
-        expect(getUserProfileService).toHaveBeenCalledWith('mockAccessToken');
+        await getUserProfile(req as Request, res as Response);
+
+        expect(getUserProfileService).toHaveBeenCalledWith('user-123');
         expect(res.status).toHaveBeenCalledWith(200);
-        expect(res.json).toHaveBeenCalledWith({
-            message: 'User data fetched',
+        expect(res.send).toHaveBeenCalledWith({
+            errorCode: null,
+            status: 200,
+            message: 'User profile retrieved successfully',
+            success: true,
             data: mockUser,
         });
     });
 
-    it('should return 404 if authorization header is missing', async () => {
-        req.headers!.authorization = undefined;
+    it('should return 401 when the user is not authenticated', async () => {
+        req = {};
 
-        await getUserProfileController(req as Request, res as Response, next);
+        await getUserProfile(req as Request, res as Response);
 
-        expect(res.status).toHaveBeenCalledWith(404);
-        expect(res.json).toHaveBeenCalledWith({ message: 'User not found' });
         expect(getUserProfileService).not.toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(401);
+        expect(res.send).toHaveBeenCalledWith({
+            errorCode: 401,
+            success: false,
+            message: 'User not authenticated',
+        });
     });
 
-    it('should call next with error if getUserProfileService throws an error', async () => {
-        const error = new CustomError('Invalid token', 401);
-        (getUserProfileService as jest.Mock).mockRejectedValue(error);
+    it('should pass through service errors with their status code', async () => {
+        const error = new CustomError('User not found', 404);
+        (getUserProfileService as any).mockRejectedValue(error);
 
-        await getUserProfileController(req as Request, res as Response, next);
+        await getUserProfile(req as Request, res as Response);
 
-        expect(getUserProfileService).toHaveBeenCalledWith('mockAccessToken');
-        expect(next).toHaveBeenCalledWith(error);
-        expect(res.status).not.toHaveBeenCalled();
-        expect(res.json).not.toHaveBeenCalled();
+        expect(getUserProfileService).toHaveBeenCalledWith('user-123');
+        expect(res.status).toHaveBeenCalledWith(404);
+        expect(res.send).toHaveBeenCalledWith({
+            errorCode: 404,
+            success: false,
+            message: 'User not found',
+        });
     });
 });

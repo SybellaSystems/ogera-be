@@ -21,7 +21,15 @@ export interface BadgePurchaseAttributes {
 
 export type BadgePurchaseCreationAttributes = Optional<
     BadgePurchaseAttributes,
-    'id' | 'usd_amount' | 'exchange_rate' | 'momo_reference_id' | 'payment_status' | 'subscription_start_date' | 'subscription_end_date' | 'created_at' | 'updated_at'
+    | 'id'
+    | 'usd_amount'
+    | 'exchange_rate'
+    | 'momo_reference_id'
+    | 'payment_status'
+    | 'subscription_start_date'
+    | 'subscription_end_date'
+    | 'created_at'
+    | 'updated_at'
 >;
 
 export class BadgePurchaseModel

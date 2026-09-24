@@ -49,7 +49,9 @@ const upload = multer({
     limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (_req, file, cb) => {
         const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        allowed.includes(file.mimetype) ? cb(null, true) : cb(new Error('Only image files allowed'));
+        allowed.includes(file.mimetype)
+            ? cb(null, true)
+            : cb(new Error('Only image files allowed'));
     },
 });
 
@@ -64,7 +66,11 @@ router.get('/full/:userId', superadminOnly, getOtherUserFullProfile);
 router.get('/completion', getProfileCompletion);
 
 // ====================== PROFILE IMAGE ======================
-router.post('/upload-image', upload.single('profile_image'), uploadProfileImage);
+router.post(
+    '/upload-image',
+    upload.single('profile_image'),
+    uploadProfileImage,
+);
 router.put('/image', updateProfileImageUrl);
 // ====================== EXTENDED PROFILE ======================
 router.get('/extended', getExtendedProfile);
@@ -104,4 +110,3 @@ router.put('/accomplishments/:id', updateAccomplishment);
 router.delete('/accomplishments/:id', deleteAccomplishment);
 
 export default router;
-

@@ -117,7 +117,9 @@ export const getAcademicRecordsByUser = async (
 ): Promise<void> => {
     try {
         const { user_id } = req.params;
-        const records = await getAcademicRecordsByUserService(user_id as string);
+        const records = await getAcademicRecordsByUserService(
+            user_id as string,
+        );
         response.response(
             res,
             true,
@@ -218,7 +220,9 @@ export const viewAcademicRecordCertificate = async (
             return;
         }
 
-        const record = (await getAcademicRecordByIdService(id as string)) as any;
+        const record = (await getAcademicRecordByIdService(
+            id as string,
+        )) as any;
         if (role !== 'superadmin' && record.user_id !== user_id) {
             response.errorResponse(
                 res,

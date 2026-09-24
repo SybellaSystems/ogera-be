@@ -37,7 +37,9 @@ export const getFxQuote = async (
         return { base, target, rate: 1 };
     }
 
-    const { data } = await axios.get(`${FX_API_BASE_URL}/${base}/${target}.json`);
+    const { data } = await axios.get(
+        `${FX_API_BASE_URL}/${base}/${target}.json`,
+    );
     const rate = Number(data?.rate);
     if (!Number.isFinite(rate) || rate <= 0) {
         throw new Error(`Invalid FX rate returned for ${base}/${target}`);

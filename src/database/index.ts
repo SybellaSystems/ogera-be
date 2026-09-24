@@ -44,7 +44,7 @@ import jobReactionModel from './models/jobReaction.model';
 import badgePurchaseModel from './models/badgePurchase.model';
 import studentLinkModel from './models/studentLink.model';
 import peerReviewModel from './models/peerReview.model';
-import peerReviewReplyModel from "./models/peerReviewReply.model";
+import peerReviewReplyModel from './models/peerReviewReply.model';
 import jobReferralModel from './models/jobReferral.model';
 
 import { setupAssociations } from '@/association/index';
@@ -60,7 +60,7 @@ import {
 
 // Fix IPv6 timeout issues by forcing IPv4 DNS resolution
 const originalLookup = dns.lookup;
-dns.lookup = function(hostname: any, options: any, callback: any) {
+dns.lookup = function (hostname: any, options: any, callback: any) {
     if (typeof options === 'function') {
         callback = options;
         options = {};
@@ -75,8 +75,11 @@ const endpointId = DB_HOST?.split('.')[0] || '';
 
 // Determine if SSL should be used
 // SSL is required for cloud databases (Neon, AWS RDS, etc.) but not for local databases
-const useSSL = process.env.DB_USE_SSL === 'true' || 
-               (DB_HOST && !DB_HOST.includes('localhost') && !DB_HOST.includes('127.0.0.1'));
+const useSSL =
+    process.env.DB_USE_SSL === 'true' ||
+    (DB_HOST &&
+        !DB_HOST.includes('localhost') &&
+        !DB_HOST.includes('127.0.0.1'));
 
 // Build dialect options conditionally
 const dialectOptions: any = {};
@@ -136,7 +139,9 @@ sequelize
             logger.error('Parent error code:', err.parent.code);
         }
         logger.error('Full error:', err);
-        logger.error('Please check your database configuration and ensure the database server is running');
+        logger.error(
+            'Please check your database configuration and ensure the database server is running',
+        );
         // Don't exit process - let the app continue and handle errors gracefully
     });
 
@@ -490,7 +495,9 @@ const ensureJobCategoriesTableColumns = async () => {
         await queryInterface.describeTable('job_categories');
     } catch (err) {
         // Table doesn't exist, sync will create it
-        logger.info('Job categories table does not exist, will be created by sync');
+        logger.info(
+            'Job categories table does not exist, will be created by sync',
+        );
         return;
     }
 
@@ -951,14 +958,18 @@ const ensureUserTableColumns = async () => {
                             retryErr.message,
                         );
                         // Continue anyway - ensure columns
-                        await ensureUserTableColumns().catch(() => {});
+                        await ensureUserTableColumns().catch(() => {
+                            // Intentionally ignore errors here; the process should continue.
+                        });
                     }
                 } else {
                     logger.error(
                         '❌ Could not fix NULL role_type values, sync may fail',
                     );
                     // Try to continue anyway
-                    await ensureUserTableColumns().catch(() => {});
+                    await ensureUserTableColumns().catch(() => {
+                        // Intentionally ignore errors here; the process should continue.
+                    });
                 }
             } else {
                 // Other sync errors
@@ -976,7 +987,9 @@ const ensureUserTableColumns = async () => {
                     logger.warn(
                         '⚠️  Sync warning (table may already exist) - continuing anyway',
                     );
-                    await ensureUserTableColumns().catch(() => {});
+                    await ensureUserTableColumns().catch(() => {
+                        // Intentionally ignore errors here; the process should continue.
+                    });
                 }
             }
         }

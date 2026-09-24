@@ -132,7 +132,8 @@ export default function (sequelize: Sequelize): typeof UserModel {
                 type: DataTypes.STRING(255),
                 allowNull: false,
                 defaultValue: '',
-                comment: 'Legacy name column (kept for compatibility with older DB schemas)',
+                comment:
+                    'Legacy name column (kept for compatibility with older DB schemas)',
                 field: 'name',
             },
 
@@ -141,15 +142,15 @@ export default function (sequelize: Sequelize): typeof UserModel {
                 allowNull: false,
             },
 
-           country_code: {
-  type: DataTypes.STRING(10),
-  allowNull: true,
-},
+            country_code: {
+                type: DataTypes.STRING(10),
+                allowNull: true,
+            },
 
-mobile_number: {
-  type: DataTypes.STRING(20),
-  allowNull: true,
-},
+            mobile_number: {
+                type: DataTypes.STRING(20),
+                allowNull: true,
+            },
 
             password_hash: {
                 type: DataTypes.TEXT,
@@ -225,10 +226,10 @@ mobile_number: {
                 comment: 'URL to user profile image',
             },
             profile_image_public_id: {
-    type: DataTypes.STRING(255),
-    allowNull: true,
-    comment: 'Cloudinary public_id of profile image',
-},
+                type: DataTypes.STRING(255),
+                allowNull: true,
+                comment: 'Cloudinary public_id of profile image',
+            },
 
             /* ⭐ LEGAL FIELDS */
             terms_accepted: {
@@ -374,7 +375,10 @@ mobile_number: {
                 beforeCreate: (instance: any) => {
                     // Populate legacy `name` column from `full_name` if available
                     try {
-                        const fullName = instance.getDataValue('full_name') || instance.getDataValue('fullName') || instance.getDataValue('full_name');
+                        const fullName =
+                            instance.getDataValue('full_name') ||
+                            instance.getDataValue('fullName') ||
+                            instance.getDataValue('full_name');
                         if (fullName) {
                             instance.setDataValue('name', fullName);
                         }
@@ -384,7 +388,9 @@ mobile_number: {
                 },
                 beforeUpdate: (instance: any) => {
                     try {
-                        const fullName = instance.getDataValue('full_name') || instance.getDataValue('fullName');
+                        const fullName =
+                            instance.getDataValue('full_name') ||
+                            instance.getDataValue('fullName');
                         if (fullName) {
                             instance.setDataValue('name', fullName);
                         }

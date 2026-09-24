@@ -46,15 +46,22 @@ export const EMAIL_CONFIG = {
     provider: process.env.EMAIL_PROVIDER || 'smtp',
     // SMTP Configuration
     smtp: {
-        host: process.env.SMTP_HOST || process.env.EMAIL_HOST || 'smtp.gmail.com',
-        port: parseInt(process.env.SMTP_PORT || process.env.EMAIL_PORT || '587', 10),
-        secure: process.env.SMTP_SECURE === 'true' || process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
+        host:
+            process.env.SMTP_HOST || process.env.EMAIL_HOST || 'smtp.gmail.com',
+        port: parseInt(
+            process.env.SMTP_PORT || process.env.EMAIL_PORT || '587',
+            10,
+        ),
+        secure:
+            process.env.SMTP_SECURE === 'true' ||
+            process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
         auth: {
             user: process.env.SMTP_USER || process.env.EMAIL_USER || '',
             pass: process.env.SMTP_PASS || process.env.EMAIL_PASS || '',
         },
         // Optional: Service name (gmail, outlook, etc.) - if provided, nodemailer will use default settings
-        service: process.env.SMTP_SERVICE || process.env.EMAIL_SERVICE || undefined,
+        service:
+            process.env.SMTP_SERVICE || process.env.EMAIL_SERVICE || undefined,
     },
     brevo: {
         apiKey:
@@ -62,9 +69,17 @@ export const EMAIL_CONFIG = {
             process.env.REVO_API_KEY ||
             process.env.SENDINBLUE_API_KEY ||
             '',
-        apiUrl: process.env.BREVO_API_URL || 'https://api.brevo.com/v3/smtp/email',
-        senderEmail: process.env.BREVO_SENDER_EMAIL || process.env.EMAIL_FROM || process.env.EMAIL_USER || '',
-        senderName: process.env.BREVO_SENDER_NAME || process.env.EMAIL_FROM_NAME || 'Ogera Support',
+        apiUrl:
+            process.env.BREVO_API_URL || 'https://api.brevo.com/v3/smtp/email',
+        senderEmail:
+            process.env.BREVO_SENDER_EMAIL ||
+            process.env.EMAIL_FROM ||
+            process.env.EMAIL_USER ||
+            '',
+        senderName:
+            process.env.BREVO_SENDER_NAME ||
+            process.env.EMAIL_FROM_NAME ||
+            'Ogera Support',
     },
     // Email sender information
     from: {
@@ -102,7 +117,8 @@ export const PESAPAL_CONFIG = {
 
 // MTN MoMo API Configuration (Ogera_Get_Paid / Collection)
 export const MOMO_CONFIG = {
-    baseUrl: process.env.MOMO_BASE_URL || 'https://sandbox.momodeveloper.mtn.com',
+    baseUrl:
+        process.env.MOMO_BASE_URL || 'https://sandbox.momodeveloper.mtn.com',
     subscriptionKey: process.env.MOMO_SUBSCRIPTION_KEY || '',
     apiUserId: process.env.MOMO_USER_ID || '',
     apiKey: process.env.MOMO_API_KEY || '',
@@ -114,7 +130,8 @@ export const MOMO_CONFIG = {
 
 // MTN MoMo Disbursement API (pay students from Ogera wallet)
 export const MOMO_DISBURSEMENT_CONFIG = {
-    baseUrl: process.env.MOMO_BASE_URL || 'https://sandbox.momodeveloper.mtn.com',
+    baseUrl:
+        process.env.MOMO_BASE_URL || 'https://sandbox.momodeveloper.mtn.com',
     subscriptionKey: process.env.MOMO_DISBURSEMENT_SUBSCRIPTION_KEY || '',
     apiUserId: process.env.MOMO_DISBURSEMENT_USER_ID || '',
     apiKey: process.env.MOMO_DISBURSEMENT_API_KEY || '',
@@ -127,7 +144,11 @@ export const SMS_CONFIG = {
     // If SMS_PROVIDER isn't explicitly set, auto-enable Twilio when credentials exist.
     // Otherwise fall back to console mode (development/testing).
     provider: (() => {
-        const providerEnv = process.env.SMS_PROVIDER as 'twilio' | 'console' | 'none' | undefined;
+        const providerEnv = process.env.SMS_PROVIDER as
+            | 'twilio'
+            | 'console'
+            | 'none'
+            | undefined;
         if (providerEnv) return providerEnv;
 
         const hasTwilioCreds =
@@ -135,7 +156,10 @@ export const SMS_CONFIG = {
             !!process.env.TWILIO_AUTH_TOKEN &&
             !!process.env.TWILIO_FROM_NUMBER;
 
-        return (hasTwilioCreds ? 'twilio' : 'console') as 'twilio' | 'console' | 'none';
+        return (hasTwilioCreds ? 'twilio' : 'console') as
+            | 'twilio'
+            | 'console'
+            | 'none';
     })(),
     twilio: {
         accountSid: process.env.TWILIO_ACCOUNT_SID || '',

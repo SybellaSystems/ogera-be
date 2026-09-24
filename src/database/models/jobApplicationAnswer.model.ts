@@ -8,7 +8,10 @@ export type JobApplicationAnswerCreationAttributes = Optional<
     'answer_id' | 'created_at' | 'updated_at'
 >;
 
-export class JobApplicationAnswerModel extends Model<JobApplicationAnswer, JobApplicationAnswerCreationAttributes> implements JobApplicationAnswer {
+export class JobApplicationAnswerModel
+    extends Model<JobApplicationAnswer, JobApplicationAnswerCreationAttributes>
+    implements JobApplicationAnswer
+{
     public answer_id!: string;
     public application_id!: string;
     public question_id!: string;
@@ -21,7 +24,9 @@ export class JobApplicationAnswerModel extends Model<JobApplicationAnswer, JobAp
     public question?: JobQuestionModel;
 }
 
-export default function (sequelize: Sequelize): typeof JobApplicationAnswerModel {
+export default function (
+    sequelize: Sequelize,
+): typeof JobApplicationAnswerModel {
     JobApplicationAnswerModel.init(
         {
             answer_id: {
@@ -71,4 +76,3 @@ export default function (sequelize: Sequelize): typeof JobApplicationAnswerModel
 
     return JobApplicationAnswerModel;
 }
-

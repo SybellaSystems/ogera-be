@@ -8,16 +8,137 @@ import { DB } from '@/database';
 
 // Maps landing page category slugs to skill keywords for filtering
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
-    development: ['Development', 'JavaScript', 'TypeScript', 'React', 'Node', 'Vue', 'Angular', 'Python', 'Java', 'PHP', 'Laravel', 'Django', 'Ruby', 'Swift', 'Flutter', 'Mobile', 'Web', 'Backend', 'Frontend', 'Software', 'Developer', 'Programming'],
-    design: ['Figma', 'UI', 'UX', 'Design', 'Illustrator', 'Photoshop', 'Adobe', 'Sketch', 'Creative', 'Graphic', 'Motion', 'Branding'],
-    finance: ['Finance', 'Accounting', 'Excel', 'QuickBooks', 'SAP', 'Financial', 'Budget', 'Bookkeeping', 'Audit', 'Tax', 'IFRS'],
-    sales: ['Sales', 'Marketing', 'CRM', 'Salesforce', 'Digital Marketing', 'SEO', 'Social Media', 'Growth', 'Content', 'Advertising', 'Branding'],
-    'ai-services': ['AI', 'Machine Learning', 'TensorFlow', 'PyTorch', 'Data Science', 'NLP', 'Deep Learning', 'Data Analysis', 'Computer Vision', 'LLM'],
-    law: ['Legal', 'Law', 'Contract', 'Compliance', 'Corporate', 'Litigation', 'Attorney', 'Intellectual Property', 'Paralegal'],
-    hr: ['HR', 'Human Resources', 'Recruitment', 'Training', 'Talent', 'HRIS', 'Payroll', 'Employee Relations', 'Onboarding'],
-    engineering: ['Engineering', 'Architecture', 'AutoCAD', 'Civil', 'Mechanical', 'Electrical', 'Structural', 'CAD', '3D Modeling', 'Construction'],
-    writing: ['Writing', 'Content', 'Translation', 'Copywriting', 'Technical Writing', 'Editing', 'Proofreading', 'Blogging', 'Journalism'],
-    admin: ['Admin', 'Support', 'Virtual Assistant', 'Data Entry', 'Customer Service', 'Reception', 'Office Management', 'Scheduling'],
+    development: [
+        'Development',
+        'JavaScript',
+        'TypeScript',
+        'React',
+        'Node',
+        'Vue',
+        'Angular',
+        'Python',
+        'Java',
+        'PHP',
+        'Laravel',
+        'Django',
+        'Ruby',
+        'Swift',
+        'Flutter',
+        'Mobile',
+        'Web',
+        'Backend',
+        'Frontend',
+        'Software',
+        'Developer',
+        'Programming',
+    ],
+    design: [
+        'Figma',
+        'UI',
+        'UX',
+        'Design',
+        'Illustrator',
+        'Photoshop',
+        'Adobe',
+        'Sketch',
+        'Creative',
+        'Graphic',
+        'Motion',
+        'Branding',
+    ],
+    finance: [
+        'Finance',
+        'Accounting',
+        'Excel',
+        'QuickBooks',
+        'SAP',
+        'Financial',
+        'Budget',
+        'Bookkeeping',
+        'Audit',
+        'Tax',
+        'IFRS',
+    ],
+    sales: [
+        'Sales',
+        'Marketing',
+        'CRM',
+        'Salesforce',
+        'Digital Marketing',
+        'SEO',
+        'Social Media',
+        'Growth',
+        'Content',
+        'Advertising',
+        'Branding',
+    ],
+    'ai-services': [
+        'AI',
+        'Machine Learning',
+        'TensorFlow',
+        'PyTorch',
+        'Data Science',
+        'NLP',
+        'Deep Learning',
+        'Data Analysis',
+        'Computer Vision',
+        'LLM',
+    ],
+    law: [
+        'Legal',
+        'Law',
+        'Contract',
+        'Compliance',
+        'Corporate',
+        'Litigation',
+        'Attorney',
+        'Intellectual Property',
+        'Paralegal',
+    ],
+    hr: [
+        'HR',
+        'Human Resources',
+        'Recruitment',
+        'Training',
+        'Talent',
+        'HRIS',
+        'Payroll',
+        'Employee Relations',
+        'Onboarding',
+    ],
+    engineering: [
+        'Engineering',
+        'Architecture',
+        'AutoCAD',
+        'Civil',
+        'Mechanical',
+        'Electrical',
+        'Structural',
+        'CAD',
+        '3D Modeling',
+        'Construction',
+    ],
+    writing: [
+        'Writing',
+        'Content',
+        'Translation',
+        'Copywriting',
+        'Technical Writing',
+        'Editing',
+        'Proofreading',
+        'Blogging',
+        'Journalism',
+    ],
+    admin: [
+        'Admin',
+        'Support',
+        'Virtual Assistant',
+        'Data Entry',
+        'Customer Service',
+        'Reception',
+        'Office Management',
+        'Scheduling',
+    ],
 };
 
 const response = new ResponseFormat();
@@ -86,7 +207,11 @@ export const getAllStudents = async (req: Request, res: Response) => {
 };
 
 // Helper: fetch students with optional skill filter
-const fetchStudents = async (keywords: string[], limit: number, offset: number) => {
+const fetchStudents = async (
+    keywords: string[],
+    limit: number,
+    offset: number,
+) => {
     const skillInclude: any = {
         model: DB.UserSkills,
         as: 'skills',
@@ -95,7 +220,7 @@ const fetchStudents = async (keywords: string[], limit: number, offset: number) 
     };
     if (keywords.length > 0) {
         skillInclude.where = {
-            [Op.or]: keywords.map((k) => ({
+            [Op.or]: keywords.map(k => ({
                 skill_name: { [Op.iLike]: `%${k}%` },
             })),
         };
@@ -103,13 +228,23 @@ const fetchStudents = async (keywords: string[], limit: number, offset: number) 
 
     return DB.Users.findAndCountAll({
         where: { role_type: 'student' },
-        attributes: ['user_id', 'full_name', 'preferred_location', 'profile_image_url', 'created_at'],
+        attributes: [
+            'user_id',
+            'full_name',
+            'preferred_location',
+            'profile_image_url',
+            'created_at',
+        ],
         include: [
             skillInclude,
             {
                 model: DB.UserExtendedProfiles,
                 as: 'extendedProfile',
-                attributes: ['resume_headline', 'profile_summary', 'total_experience_years'],
+                attributes: [
+                    'resume_headline',
+                    'profile_summary',
+                    'total_experience_years',
+                ],
                 required: false,
             },
         ],
@@ -137,12 +272,13 @@ export const getPublicWorkers = async (req: Request, res: Response) => {
 
         // Fetch all skills for returned workers (not just the filter-matched ones)
         const workerIds = workers.map((w: any) => w.user_id);
-        const allSkills = workerIds.length > 0
-            ? await DB.UserSkills.findAll({
-                where: { user_id: { [Op.in]: workerIds } },
-                attributes: ['user_id', 'skill_name'],
-            })
-            : [];
+        const allSkills =
+            workerIds.length > 0
+                ? await DB.UserSkills.findAll({
+                      where: { user_id: { [Op.in]: workerIds } },
+                      attributes: ['user_id', 'skill_name'],
+                  })
+                : [];
 
         const skillsByUser: Record<string, string[]> = {};
         allSkills.forEach((s: any) => {
@@ -159,7 +295,8 @@ export const getPublicWorkers = async (req: Request, res: Response) => {
                 profile_image_url: plain.profile_image_url || null,
                 title: plain.extendedProfile?.resume_headline || '',
                 description: plain.extendedProfile?.profile_summary || '',
-                experience_years: plain.extendedProfile?.total_experience_years || 0,
+                experience_years:
+                    plain.extendedProfile?.total_experience_years || 0,
                 skills: skillsByUser[plain.user_id] || [],
             };
         });
@@ -194,7 +331,12 @@ export const getPublicWorkerById = async (req: Request, res: Response) => {
 
         const worker = await DB.Users.findOne({
             where: { user_id: id, role_type: 'student' },
-            attributes: ['user_id', 'full_name', 'preferred_location', 'profile_image_url'],
+            attributes: [
+                'user_id',
+                'full_name',
+                'preferred_location',
+                'profile_image_url',
+            ],
             include: [
                 {
                     model: DB.UserSkills,
@@ -205,7 +347,11 @@ export const getPublicWorkerById = async (req: Request, res: Response) => {
                 {
                     model: DB.UserExtendedProfiles,
                     as: 'extendedProfile',
-                    attributes: ['resume_headline', 'profile_summary', 'total_experience_years'],
+                    attributes: [
+                        'resume_headline',
+                        'profile_summary',
+                        'total_experience_years',
+                    ],
                     required: false,
                 },
             ],
@@ -227,7 +373,8 @@ export const getPublicWorkerById = async (req: Request, res: Response) => {
             profile_image_url: plain.profile_image_url || null,
             title: plain.extendedProfile?.resume_headline || '',
             description: plain.extendedProfile?.profile_summary || '',
-            experience_years: plain.extendedProfile?.total_experience_years || 0,
+            experience_years:
+                plain.extendedProfile?.total_experience_years || 0,
             skills: (plain.skills || []).map((s: any) => s.skill_name),
         };
 
@@ -274,4 +421,3 @@ export const getAllEmployers = async (req: Request, res: Response) => {
         );
     }
 };
-

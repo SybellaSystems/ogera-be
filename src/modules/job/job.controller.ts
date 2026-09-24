@@ -55,57 +55,49 @@ export const createJob = async (
 };
 
 export const getAllJobs = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
+    req: Request,
+    res: Response,
+    next: NextFunction,
 ) => {
-  try {
-    const page = Math.max(
-      Number(req.query.page) || 1,
-      1,
-    );
+    try {
+        const page = Math.max(Number(req.query.page) || 1, 1);
 
-    const limit = Math.max(
-      Number(req.query.limit) || 10,
-      1,
-    );
+        const limit = Math.max(Number(req.query.limit) || 10, 1);
 
-    const jobs = await getAllJobsService(
-      {
-        status: req.query.status as string | undefined,
-        funded: req.query.funded as string | undefined,
-        search: req.query.search as string | undefined,
-        location: req.query.location as string | undefined,
-        category: req.query.category as string | undefined,
-        currency: req.query.currency as string | undefined,
-        payment_range: req.query.payment_range as
-          | string
-          | undefined,
-      },
-      req.user,
-      {
-        page,
-        limit,
-      },
-    );
+        const jobs = await getAllJobsService(
+            {
+                status: req.query.status as string | undefined,
+                funded: req.query.funded as string | undefined,
+                search: req.query.search as string | undefined,
+                location: req.query.location as string | undefined,
+                category: req.query.category as string | undefined,
+                currency: req.query.currency as string | undefined,
+                payment_range: req.query.payment_range as string | undefined,
+            },
+            req.user,
+            {
+                page,
+                limit,
+            },
+        );
 
-    return res.status(StatusCodes.OK).json({
-    status: StatusCodes.OK,
-    message: Messages.Job.GET_ALL_JOBS,
-    success: true,
-    pagination: jobs.pagination,
-    data: jobs.data,
-});
-  } catch (error: any) {
-    console.error("Error in getAllJobs:", error);
+        return res.status(StatusCodes.OK).json({
+            status: StatusCodes.OK,
+            message: Messages.Job.GET_ALL_JOBS,
+            success: true,
+            pagination: jobs.pagination,
+            data: jobs.data,
+        });
+    } catch (error: any) {
+        console.error('Error in getAllJobs:', error);
 
-    response.errorResponse(
-      res,
-      error.status || StatusCodes.INTERNAL_SERVER_ERROR,
-      false,
-      error.message || "Failed to fetch jobs",
-    );
-  }
+        response.errorResponse(
+            res,
+            error.status || StatusCodes.INTERNAL_SERVER_ERROR,
+            false,
+            error.message || 'Failed to fetch jobs',
+        );
+    }
 };
 
 // Public jobs list for landing page (no auth required)
@@ -217,9 +209,14 @@ export const getJobById = async (
 ) => {
     try {
         const job = await getJobByIdService(req.params.id as string);
-        const rawJob = job && typeof job.get === 'function' ? job.get({ plain: true }) : job;
+        const rawJob =
+            job && typeof job.get === 'function'
+                ? job.get({ plain: true })
+                : job;
         const jobData = rawJob as unknown as Record<string, unknown>;
-        const userRole = req.user?.role ? String(req.user.role).toLowerCase().trim() : '';
+        const userRole = req.user?.role
+            ? String(req.user.role).toLowerCase().trim()
+            : '';
         const jobStatus = String(jobData?.status || '');
         if (userRole === 'student' && jobStatus !== 'Active') {
             response.errorResponse(
@@ -241,7 +238,9 @@ export const getJobById = async (
                 const budget = Number(jobData.budget) || 0;
                 const feePct = MOMO_CONFIG?.serviceFeePercent ?? 10;
                 (jobData as Record<string, unknown>).amount_received_by_you =
-                    paid != null ? Number(paid) : Math.round(budget * (1 + feePct / 100) * 0.9);
+                    paid != null
+                        ? Number(paid)
+                        : Math.round(budget * (1 + feePct / 100) * 0.9);
             }
         }
         response.response(

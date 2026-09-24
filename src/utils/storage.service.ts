@@ -27,9 +27,7 @@ const ensureLocalStorageDir = (): void => {
     const absPath = path.resolve(STORAGE_CONFIG.localStoragePath);
     if (!fs.existsSync(absPath)) {
         fs.mkdirSync(absPath, { recursive: true });
-        logger.info(
-            `Created local storage directory: ${absPath}`,
-        );
+        logger.info(`Created local storage directory: ${absPath}`);
     }
 };
 
@@ -38,7 +36,7 @@ const ensureLocalStorageDir = (): void => {
  */
 const saveToLocalStorage = async (
     file: Express.Multer.File,
-    folder: string = 'academic-proofs',
+    folder = 'academic-proofs',
 ): Promise<{ path: string; storageType: string }> => {
     ensureLocalStorageDir();
 
@@ -66,7 +64,7 @@ const saveToLocalStorage = async (
  */
 const saveToS3 = async (
     file: Express.Multer.File,
-    folder: string = 'academic-proofs',
+    folder = 'academic-proofs',
 ): Promise<{ path: string; storageType: string }> => {
     if (!s3Client) {
         throw new Error(
@@ -121,16 +119,20 @@ const getS3FileUrl = async (key: string): Promise<string> => {
  */
 const resolveFilePath = (filePath: string): string => {
     const isAbsolute = path.isAbsolute(filePath);
-    console.log(`[STORAGE] resolveFilePath input: ${filePath}, isAbsolute: ${isAbsolute}`);
-    
+    console.log(
+        `[STORAGE] resolveFilePath input: ${filePath}, isAbsolute: ${isAbsolute}`,
+    );
+
     if (isAbsolute) {
         console.log(`[STORAGE] Path is already absolute, returning as-is`);
         return filePath;
     }
-    
+
     // If relative, resolve against project root
     const resolved = path.resolve(process.cwd(), filePath);
-    console.log(`[STORAGE] Resolved relative path. CWD: ${process.cwd()}, Result: ${resolved}`);
+    console.log(
+        `[STORAGE] Resolved relative path. CWD: ${process.cwd()}, Result: ${resolved}`,
+    );
     return resolved;
 };
 
@@ -140,19 +142,25 @@ const resolveFilePath = (filePath: string): string => {
 export const getLocalFile = (filePath: string): Buffer | null => {
     const resolvedPath = resolveFilePath(filePath);
     console.log(`[STORAGE] getLocalFile: checking ${resolvedPath}`);
-    
+
     const exists = fs.existsSync(resolvedPath);
     console.log(`[STORAGE] File exists at ${resolvedPath}: ${exists}`);
-    
+
     if (!exists) {
-        logger.warn(`File not found at: ${resolvedPath} (original: ${filePath})`);
-        console.error(`[STORAGE] ERROR: File does not exist at ${resolvedPath}`);
+        logger.warn(
+            `File not found at: ${resolvedPath} (original: ${filePath})`,
+        );
+        console.error(
+            `[STORAGE] ERROR: File does not exist at ${resolvedPath}`,
+        );
         return null;
     }
-    
+
     try {
         const buffer = fs.readFileSync(resolvedPath);
-        console.log(`[STORAGE] Successfully read file. Size: ${buffer.length} bytes`);
+        console.log(
+            `[STORAGE] Successfully read file. Size: ${buffer.length} bytes`,
+        );
         return buffer;
     } catch (err: any) {
         console.error(`[STORAGE] Error reading file: ${err.message}`);
@@ -166,7 +174,7 @@ export const getLocalFile = (filePath: string): Buffer | null => {
  */
 export const saveFile = async (
     file: Express.Multer.File,
-    folder: string = 'academic-proofs',
+    folder = 'academic-proofs',
 ): Promise<{ path: string; storageType: string }> => {
     if (STORAGE_CONFIG.useLocalStorage) {
         return await saveToLocalStorage(file, folder);
@@ -211,4 +219,3 @@ export const deleteFile = async (
         }
     }
 };
-

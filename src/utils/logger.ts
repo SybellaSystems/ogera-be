@@ -59,7 +59,12 @@ const logger = winston.createLogger({
             return `[${timestamp}] ${level.toUpperCase()}: ${message}`;
         }),
     ),
-    transports: [consoleTransport, debugTransport, errorTransport, apiTransport],
+    transports: [
+        consoleTransport,
+        debugTransport,
+        errorTransport,
+        apiTransport,
+    ],
 });
 
 // Extended logger interface for API logging
@@ -133,7 +138,12 @@ interface ApiLogger extends winston.Logger {
     userId?: string | number;
     timestamp?: string;
 }) => {
-    const logLevel = data.statusCode >= 500 ? 'error' : data.statusCode >= 400 ? 'warn' : 'info';
+    const logLevel =
+        data.statusCode >= 500
+            ? 'error'
+            : data.statusCode >= 400
+            ? 'warn'
+            : 'info';
     logger[logLevel]('API Response', {
         type: 'RESPONSE',
         ...data,

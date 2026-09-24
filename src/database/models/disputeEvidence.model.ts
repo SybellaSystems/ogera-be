@@ -89,9 +89,3 @@ export default function (sequelize: Sequelize): typeof DisputeEvidenceModel {
 
     return DisputeEvidenceModel;
 }
-
-
-
-
-
-

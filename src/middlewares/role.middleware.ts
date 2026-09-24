@@ -35,34 +35,28 @@ export const PermissionChecker = (route: string, action: string) => {
                 return next();
             }
 
-           // Students can VIEW job referrals.
-//
-// Students can also increment referral activity counters
-// through the dedicated /:referral_id/counter endpoint.
-//
-// They still CANNOT create, edit, delete, approve, reject,
-// verify, or change the status of a job referral.
-if (
-    normalizedRole === 'student' &&
-    route === '/job-referrals'
-) {
-    // Normal referral viewing
-    if (action === 'view') {
-        return next();
-    }
+            // Students can VIEW job referrals.
+            //
+            // Students can also increment referral activity counters
+            // through the dedicated /:referral_id/counter endpoint.
+            //
+            // They still CANNOT create, edit, delete, approve, reject,
+            // verify, or change the status of a job referral.
+            if (normalizedRole === 'student' && route === '/job-referrals') {
+                // Normal referral viewing
+                if (action === 'view') {
+                    return next();
+                }
 
-    // Referral activity tracking only.
-    //
-    // The router uses PermissionChecker('/job-referrals', 'create')
-    // for the counter endpoint, so specifically allow that endpoint
-    // without granting students general "create" permission.
-    if (
-        action === 'create' &&
-        req.path?.endsWith('/counter')
-    ) {
-        return next();
-    }
-}
+                // Referral activity tracking only.
+                //
+                // The router uses PermissionChecker('/job-referrals', 'create')
+                // for the counter endpoint, so specifically allow that endpoint
+                // without granting students general "create" permission.
+                if (action === 'create' && req.path?.endsWith('/counter')) {
+                    return next();
+                }
+            }
 
             // Verification admins retain default academic verification access.
             if (

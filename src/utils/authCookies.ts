@@ -37,6 +37,12 @@ const clearCookieOptions = (options: CookieOptions): CookieOptions => {
 };
 
 export const clearAuthCookies = (res: Response): void => {
-    res.clearCookie('refreshToken', clearCookieOptions(refreshTokenCookieOptions()));
-    res.clearCookie('isLoggedIn', clearCookieOptions(isLoggedInCookieOptions()));
+    res.clearCookie(
+        'refreshToken',
+        clearCookieOptions(refreshTokenCookieOptions()),
+    );
+    res.clearCookie(
+        'isLoggedIn',
+        clearCookieOptions(isLoggedInCookieOptions()),
+    );
 };

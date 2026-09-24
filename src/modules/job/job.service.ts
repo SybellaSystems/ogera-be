@@ -32,7 +32,7 @@ export const createJobService = async (
         throw new CustomError('User not found', StatusCodes.NOT_FOUND);
     }
 
-        const roleType = user.role.roleType;
+    const roleType = user.role.roleType;
     const roleName = user.role.roleName.toLowerCase();
 
     // Only employer and superadmin can create jobs
@@ -59,16 +59,18 @@ export const createJobService = async (
     if (!jobData.category) {
         throw new CustomError('Category is required', StatusCodes.BAD_REQUEST);
     }
-    
+
     // Validate that the category exists in the database
-    const categoryExists = await jobCategoryRepo.findCategoryByName(jobData.category.trim());
+    const categoryExists = await jobCategoryRepo.findCategoryByName(
+        jobData.category.trim(),
+    );
     if (!categoryExists) {
         throw new CustomError(
             'Invalid category. Please select a valid category from the list.',
             StatusCodes.BAD_REQUEST,
         );
     }
-    
+
     if (!jobData.budget) {
         throw new CustomError('Budget is required', StatusCodes.BAD_REQUEST);
     }
@@ -98,13 +100,16 @@ export const createJobService = async (
     }
 
     const { questions, ...jobPayloadData } = jobData;
-    
+
     const jobPayload = {
         employer_id,
         ...jobPayloadData,
         // Employers must be approved by admin/superadmin before publication.
         // Superadmins can still choose an explicit status when creating.
-        status: roleType === 'employer' ? 'Pending' : jobPayloadData.status || 'Pending',
+        status:
+            roleType === 'employer'
+                ? 'Pending'
+                : jobPayloadData.status || 'Pending',
     };
 
     const job = await repo.createJob(jobPayload);
@@ -122,217 +127,218 @@ export const createJobService = async (
             StatusCodes.INTERNAL_SERVER_ERROR,
         );
     }
-        try {
-            await DB.ActivityLogs.create({
-                user_id: user_id || null,
-                action: 'CREATE',
-                entity_type: 'Job',
-                entity_id: createdJob.job_id,
-                description: `Job created: ${createdJob.job_title || createdJob.job_id}`,
-            } as any);
-        } catch (e) {
-            // swallow logging errors
-        }
-        return createdJob;
+    try {
+        await DB.ActivityLogs.create({
+            user_id: user_id || null,
+            action: 'CREATE',
+            entity_type: 'Job',
+            entity_id: createdJob.job_id,
+            description: `Job created: ${
+                createdJob.job_title || createdJob.job_id
+            }`,
+        } as any);
+    } catch (e) {
+        // swallow logging errors
+    }
+    return createdJob;
 };
 
 export const getAllJobsService = async (
-  filters?: {
-    status?: string;
-    funded?: string;
-    search?: string;
-    location?: string;
-    category?: string;
-    currency?: string;
-    payment_range?: string;
-  },
-  user?: {
-    user_id: string;
-    role: string;
-  },
-  pagination?: {
-    page?: number;
-    limit?: number;
-  },
+    filters?: {
+        status?: string;
+        funded?: string;
+        search?: string;
+        location?: string;
+        category?: string;
+        currency?: string;
+        payment_range?: string;
+    },
+    user?: {
+        user_id: string;
+        role: string;
+    },
+    pagination?: {
+        page?: number;
+        limit?: number;
+    },
 ) => {
-  try {
-    const normalizedRole = user?.role
-      ? String(user.role).toLowerCase().trim()
-      : "";
+    try {
+        const normalizedRole = user?.role
+            ? String(user.role).toLowerCase().trim()
+            : '';
 
-    // -----------------------------
-    // Pagination
-    // -----------------------------
+        // -----------------------------
+        // Pagination
+        // -----------------------------
 
-    const page = Math.max(Number(pagination?.page) || 1, 1);
-    const limit = Math.max(Number(pagination?.limit) || 10, 1);
+        const page = Math.max(Number(pagination?.page) || 1, 1);
+        const limit = Math.max(Number(pagination?.limit) || 10, 1);
 
-    // -----------------------------
-    // Funding filter
-    // -----------------------------
+        // -----------------------------
+        // Funding filter
+        // -----------------------------
 
-    const fundedFilter =
-      filters?.funded === "true"
-        ? true
-        : filters?.funded === "false"
-          ? false
-          : undefined;
+        const fundedFilter =
+            filters?.funded === 'true'
+                ? true
+                : filters?.funded === 'false'
+                ? false
+                : undefined;
 
-    // -----------------------------
-    // Payment range
-    // -----------------------------
+        // -----------------------------
+        // Payment range
+        // -----------------------------
 
-    let budget_min: number | undefined;
-    let budget_max: number | undefined;
+        let budget_min: number | undefined;
+        let budget_max: number | undefined;
 
-    if (filters?.payment_range === "under-500") {
-      budget_max = 499.99;
-    } else if (filters?.payment_range === "500-2000") {
-      budget_min = 500;
-      budget_max = 2000;
-    } else if (filters?.payment_range === "2000-5000") {
-      budget_min = 2000.01;
-      budget_max = 5000;
-    } else if (filters?.payment_range === "5000-plus") {
-      budget_min = 5000.01;
+        if (filters?.payment_range === 'under-500') {
+            budget_max = 499.99;
+        } else if (filters?.payment_range === '500-2000') {
+            budget_min = 500;
+            budget_max = 2000;
+        } else if (filters?.payment_range === '2000-5000') {
+            budget_min = 2000.01;
+            budget_max = 5000;
+        } else if (filters?.payment_range === '5000-plus') {
+            budget_min = 5000.01;
+        }
+
+        // -----------------------------
+        // Repository filters
+        // -----------------------------
+
+        const repoFilters = {
+            status: filters?.status,
+            funded: fundedFilter,
+            search: filters?.search,
+            location: filters?.location,
+            category: filters?.category,
+            currency: filters?.currency,
+            budget_min,
+            budget_max,
+        };
+
+        // =========================================================
+        // STUDENT
+        // =========================================================
+
+        if (normalizedRole === 'student') {
+            const student = await DB.Users.findOne({
+                where: {
+                    user_id: user?.user_id,
+                },
+                attributes: ['badge', 'subscription_end_date'],
+            });
+
+            const badge = getEffectiveBadge(
+                student || {
+                    badge: 'FREE',
+                },
+            );
+
+            /*
+             * Preserve existing behavior:
+             * - If the student does not select a status,
+             *   show Active jobs by default.
+             *
+             * - If the student explicitly selects a status,
+             *   respect that status.
+             */
+            const studentStatus = filters?.status || 'Active';
+
+            const jobsResult = await repo.findAllJobs(
+                {
+                    ...repoFilters,
+                    status: studentStatus,
+                },
+                {
+                    page,
+                    limit,
+                },
+            );
+
+            /*
+             * Keep existing badge filtering.
+             */
+            const filteredJobs = filterJobsForStudentBadge(
+                jobsResult.rows,
+                badge,
+            );
+
+            return {
+                data: filteredJobs,
+                pagination: {
+                    total: jobsResult.count,
+                    page: jobsResult.page,
+                    limit: jobsResult.limit,
+                    totalPages: jobsResult.totalPages,
+                },
+            };
+        }
+
+        // =========================================================
+        // EMPLOYER
+        // =========================================================
+
+        if (normalizedRole === 'employer') {
+            /*
+             * Keep existing behavior:
+             * Employer only sees their own jobs.
+             */
+            const jobsResult = await repo.findAllJobs(
+                {
+                    ...repoFilters,
+                    employer_id: user?.user_id,
+                },
+                {
+                    page,
+                    limit,
+                },
+            );
+
+            return {
+                data: jobsResult.rows,
+                pagination: {
+                    total: jobsResult.count,
+                    page: jobsResult.page,
+                    limit: jobsResult.limit,
+                    totalPages: jobsResult.totalPages,
+                },
+            };
+        }
+
+        // =========================================================
+        // ADMIN / OTHER ROLES
+        // =========================================================
+
+        const jobsResult = await repo.findAllJobs(repoFilters, {
+            page,
+            limit,
+        });
+
+        return {
+            data: jobsResult.rows,
+            pagination: {
+                total: jobsResult.count,
+                page: jobsResult.page,
+                limit: jobsResult.limit,
+                totalPages: jobsResult.totalPages,
+            },
+        };
+    } catch (error: any) {
+        console.error('Error in getAllJobsService:', error);
+        throw error;
     }
-
-    // -----------------------------
-    // Repository filters
-    // -----------------------------
-
-    const repoFilters = {
-      status: filters?.status,
-      funded: fundedFilter,
-      search: filters?.search,
-      location: filters?.location,
-      category: filters?.category,
-      currency: filters?.currency,
-      budget_min,
-      budget_max,
-    };
-
-    // =========================================================
-// STUDENT
-// =========================================================
-
-if (normalizedRole === "student") {
-  const student = await DB.Users.findOne({
-    where: {
-      user_id: user?.user_id,
-    },
-    attributes: ["badge", "subscription_end_date"],
-  });
-
-  const badge = getEffectiveBadge(
-    student || {
-      badge: "FREE",
-    },
-  );
-
-  /*
-   * Preserve existing behavior:
-   * - If the student does not select a status,
-   *   show Active jobs by default.
-   *
-   * - If the student explicitly selects a status,
-   *   respect that status.
-   */
-  const studentStatus = filters?.status || "Active";
-
-  const jobsResult = await repo.findAllJobs(
-    {
-      ...repoFilters,
-      status: studentStatus,
-    },
-    {
-      page,
-      limit,
-    },
-  );
-
-  /*
-   * Keep existing badge filtering.
-   */
-  const filteredJobs = filterJobsForStudentBadge(
-    jobsResult.rows,
-    badge,
-  );
-
-  return {
-    data: filteredJobs,
-    pagination: {
-      total: jobsResult.count,
-      page: jobsResult.page,
-      limit: jobsResult.limit,
-      totalPages: jobsResult.totalPages,
-    },
-  };
-}
-
-    // =========================================================
-    // EMPLOYER
-    // =========================================================
-
-    if (normalizedRole === "employer") {
-      /*
-       * Keep existing behavior:
-       * Employer only sees their own jobs.
-       */
-      const jobsResult = await repo.findAllJobs(
-        {
-          ...repoFilters,
-          employer_id: user?.user_id,
-        },
-        {
-          page,
-          limit,
-        },
-      );
-
-      return {
-        data: jobsResult.rows,
-        pagination: {
-          total: jobsResult.count,
-          page: jobsResult.page,
-          limit: jobsResult.limit,
-          totalPages: jobsResult.totalPages,
-        },
-      };
-    }
-
-    // =========================================================
-    // ADMIN / OTHER ROLES
-    // =========================================================
-
-    const jobsResult = await repo.findAllJobs(
-      repoFilters,
-      {
-        page,
-        limit,
-      },
-    );
-
-    return {
-      data: jobsResult.rows,
-      pagination: {
-        total: jobsResult.count,
-        page: jobsResult.page,
-        limit: jobsResult.limit,
-        totalPages: jobsResult.totalPages,
-      },
-    };
-  } catch (error: any) {
-    console.error("Error in getAllJobsService:", error);
-    throw error;
-  }
 };
 
 export const getJobsByStatusService = async (
     status: 'Pending' | 'Active' | 'Inactive' | 'Completed',
     user?: { user_id: string; role: string },
 ) => {
-    const normalizedRole = user?.role ? String(user.role).toLowerCase().trim() : '';
+    const normalizedRole = user?.role
+        ? String(user.role).toLowerCase().trim()
+        : '';
 
     // Public/unauthenticated views should only get funded jobs.
     if (!user) {
@@ -374,7 +380,9 @@ export const updateJobService = async (
 
     // Validate category if it's being updated
     if (updates.category) {
-        const categoryExists = await jobCategoryRepo.findCategoryByName(updates.category.trim());
+        const categoryExists = await jobCategoryRepo.findCategoryByName(
+            updates.category.trim(),
+        );
         if (!categoryExists) {
             throw new CustomError(
                 'Invalid category. Please select a valid category from the list.',
@@ -413,34 +421,36 @@ export const updateJobService = async (
                 'Failed to retrieve updated job',
                 StatusCodes.INTERNAL_SERVER_ERROR,
             );
-                }
-                try {
-                    await DB.ActivityLogs.create({
-                        user_id: null,
-                        action: 'UPDATE',
-                        entity_type: 'Job',
-                        entity_id: updatedJob.job_id,
-                        description: `Job updated: ${updatedJob.job_title || updatedJob.job_id}`,
-                    } as any);
-                } catch (e) {
-                    // swallow logging errors
-                }
-                return updatedJob;
-    }
-
+        }
         try {
             await DB.ActivityLogs.create({
                 user_id: null,
                 action: 'UPDATE',
                 entity_type: 'Job',
-                entity_id: job_id,
-                description: `Job updated: ${job_id}`,
+                entity_id: updatedJob.job_id,
+                description: `Job updated: ${
+                    updatedJob.job_title || updatedJob.job_id
+                }`,
             } as any);
         } catch (e) {
             // swallow logging errors
         }
+        return updatedJob;
+    }
 
-        return updated;
+    try {
+        await DB.ActivityLogs.create({
+            user_id: null,
+            action: 'UPDATE',
+            entity_type: 'Job',
+            entity_id: job_id,
+            description: `Job updated: ${job_id}`,
+        } as any);
+    } catch (e) {
+        // swallow logging errors
+    }
+
+    return updated;
 };
 
 export const reviewJobService = async (
@@ -449,7 +459,9 @@ export const reviewJobService = async (
     reviewerRole: string,
     nextStatus: 'Active' | 'Inactive',
 ) => {
-    const role = String(reviewerRole || '').toLowerCase().trim();
+    const role = String(reviewerRole || '')
+        .toLowerCase()
+        .trim();
     const reviewer = await DB.Users.findOne({ where: { user_id: reviewerId } });
     if (!reviewer) {
         throw new CustomError('Reviewer not found', StatusCodes.NOT_FOUND);
@@ -551,12 +563,20 @@ export const toggleJobStatusService = async (
     const roleType = user.role.roleType;
     const roleName = user.role.roleName.toLowerCase();
 
-    const normalizedRole = String(userRole || '').toLowerCase().trim();
-    const isAdmin = normalizedRole === 'admin' || normalizedRole === 'superadmin';
+    const normalizedRole = String(userRole || '')
+        .toLowerCase()
+        .trim();
+    const isAdmin =
+        normalizedRole === 'admin' || normalizedRole === 'superadmin';
     const isEmployer = roleType === 'employer';
 
     // Only employer/admin/superadmin can toggle job status.
-    if (!isEmployer && !isAdmin && roleType !== 'superAdmin' && roleName !== 'superadmin') {
+    if (
+        !isEmployer &&
+        !isAdmin &&
+        roleType !== 'superAdmin' &&
+        roleName !== 'superadmin'
+    ) {
         throw new CustomError(
             'Only employer, admin, and superadmin users can toggle job status',
             StatusCodes.FORBIDDEN,
@@ -590,7 +610,11 @@ export const toggleJobStatusService = async (
     }
 
     // Check if job status can be toggled
-    if (job.status !== 'Active' && job.status !== 'Inactive' && job.status !== 'Pending') {
+    if (
+        job.status !== 'Active' &&
+        job.status !== 'Inactive' &&
+        job.status !== 'Pending'
+    ) {
         throw new CustomError(
             'Only Active, Inactive, or Pending jobs can have their status toggled',
             StatusCodes.BAD_REQUEST,

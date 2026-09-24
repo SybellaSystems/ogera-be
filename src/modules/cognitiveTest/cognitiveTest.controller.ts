@@ -25,11 +25,25 @@ export const createCognitiveTest = async (
 ): Promise<void> => {
     try {
         if (!req.user) {
-            response.errorResponse(res, StatusCodes.UNAUTHORIZED, false, 'Unauthorized');
+            response.errorResponse(
+                res,
+                StatusCodes.UNAUTHORIZED,
+                false,
+                'Unauthorized',
+            );
             return;
         }
-        const data = await createCognitiveTestService(req.body, req.user.user_id);
-        response.response(res, true, StatusCodes.CREATED, data as any, 'Cognitive test created');
+        const data = await createCognitiveTestService(
+            req.body,
+            req.user.user_id,
+        );
+        response.response(
+            res,
+            true,
+            StatusCodes.CREATED,
+            data as any,
+            'Cognitive test created',
+        );
     } catch (error: any) {
         response.errorResponse(
             res,
@@ -78,7 +92,9 @@ export const getCognitiveTestAdmin = async (
     next: NextFunction,
 ): Promise<void> => {
     try {
-        const data = await getCognitiveTestAdminService(req.params.id as string);
+        const data = await getCognitiveTestAdminService(
+            req.params.id as string,
+        );
         response.response(res, true, StatusCodes.OK, data as any, 'OK');
     } catch (error: any) {
         response.errorResponse(
@@ -96,7 +112,10 @@ export const updateCognitiveTest = async (
     next: NextFunction,
 ): Promise<void> => {
     try {
-        const data = await updateCognitiveTestService(req.params.id as string, req.body);
+        const data = await updateCognitiveTestService(
+            req.params.id as string,
+            req.body,
+        );
         response.response(res, true, StatusCodes.OK, data as any, 'Updated');
     } catch (error: any) {
         response.errorResponse(
@@ -132,8 +151,17 @@ export const addQuestion = async (
     next: NextFunction,
 ): Promise<void> => {
     try {
-        const data = await addQuestionService(req.params.id as string, req.body);
-        response.response(res, true, StatusCodes.OK, data as any, 'Question added');
+        const data = await addQuestionService(
+            req.params.id as string,
+            req.body,
+        );
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            data as any,
+            'Question added',
+        );
     } catch (error: any) {
         response.errorResponse(
             res,
@@ -155,7 +183,13 @@ export const updateQuestion = async (
             req.params.questionId as string,
             req.body,
         );
-        response.response(res, true, StatusCodes.OK, data as any, 'Question updated');
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            data as any,
+            'Question updated',
+        );
     } catch (error: any) {
         response.errorResponse(
             res,
@@ -172,8 +206,17 @@ export const deleteQuestion = async (
     next: NextFunction,
 ): Promise<void> => {
     try {
-        const data = await deleteQuestionService(req.params.id as string, req.params.questionId as string);
-        response.response(res, true, StatusCodes.OK, data as any, 'Question deleted');
+        const data = await deleteQuestionService(
+            req.params.id as string,
+            req.params.questionId as string,
+        );
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            data as any,
+            'Question deleted',
+        );
     } catch (error: any) {
         response.errorResponse(
             res,
@@ -208,7 +251,9 @@ export const getPublishedTestForAttempt = async (
     next: NextFunction,
 ): Promise<void> => {
     try {
-        const data = await getPublishedTestForAttemptService(req.params.id as string);
+        const data = await getPublishedTestForAttemptService(
+            req.params.id as string,
+        );
         response.response(res, true, StatusCodes.OK, data as any, 'OK');
     } catch (error: any) {
         response.errorResponse(
@@ -227,12 +272,22 @@ export const submitCognitiveAttempt = async (
 ): Promise<void> => {
     try {
         if (!req.user) {
-            response.errorResponse(res, StatusCodes.UNAUTHORIZED, false, 'Unauthorized');
+            response.errorResponse(
+                res,
+                StatusCodes.UNAUTHORIZED,
+                false,
+                'Unauthorized',
+            );
             return;
         }
         const { answers } = req.body as { answers?: Record<string, number> };
         if (!answers || typeof answers !== 'object') {
-            response.errorResponse(res, StatusCodes.BAD_REQUEST, false, 'answers object required');
+            response.errorResponse(
+                res,
+                StatusCodes.BAD_REQUEST,
+                false,
+                'answers object required',
+            );
             return;
         }
         const data = await submitCognitiveAttemptService(
@@ -240,7 +295,13 @@ export const submitCognitiveAttempt = async (
             req.params.id as string,
             answers,
         );
-        response.response(res, true, StatusCodes.OK, data as any, 'Attempt recorded');
+        response.response(
+            res,
+            true,
+            StatusCodes.OK,
+            data as any,
+            'Attempt recorded',
+        );
     } catch (error: any) {
         response.errorResponse(
             res,
@@ -258,10 +319,17 @@ export const getMyCognitiveAttemptHistory = async (
 ): Promise<void> => {
     try {
         if (!req.user) {
-            response.errorResponse(res, StatusCodes.UNAUTHORIZED, false, 'Unauthorized');
+            response.errorResponse(
+                res,
+                StatusCodes.UNAUTHORIZED,
+                false,
+                'Unauthorized',
+            );
             return;
         }
-        const data = await getMyCognitiveAttemptHistoryService(req.user.user_id);
+        const data = await getMyCognitiveAttemptHistoryService(
+            req.user.user_id,
+        );
         response.response(res, true, StatusCodes.OK, data as any, 'OK');
     } catch (error: any) {
         response.errorResponse(

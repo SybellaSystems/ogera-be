@@ -53,13 +53,28 @@ router.post('/', authMiddleware, adminOrSuperadminOnly, createCognitiveTest);
 
 router.get('/', authMiddleware, adminOrSuperadminOnly, listCognitiveTestsAdmin);
 
-router.get('/:id', authMiddleware, adminOrSuperadminOnly, getCognitiveTestAdmin);
+router.get(
+    '/:id',
+    authMiddleware,
+    adminOrSuperadminOnly,
+    getCognitiveTestAdmin,
+);
 
 router.put('/:id', authMiddleware, adminOrSuperadminOnly, updateCognitiveTest);
 
-router.delete('/:id', authMiddleware, adminOrSuperadminOnly, deleteCognitiveTest);
+router.delete(
+    '/:id',
+    authMiddleware,
+    adminOrSuperadminOnly,
+    deleteCognitiveTest,
+);
 
-router.post('/:id/questions', authMiddleware, adminOrSuperadminOnly, addQuestion);
+router.post(
+    '/:id/questions',
+    authMiddleware,
+    adminOrSuperadminOnly,
+    addQuestion,
+);
 
 router.put(
     '/:id/questions/:questionId',
