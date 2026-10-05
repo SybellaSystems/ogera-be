@@ -343,7 +343,16 @@ const repo = {
 
     // Get statistics
     getDisputeStats: async () => {
-        const [open, underReview, resolved, highPriority] = await Promise.all([
+        const inProgressStatuses = ['Under Review', 'Mediation'];
+        const [
+            open,
+            underReview,
+            resolved,
+            highPriority,
+            inProgressHighPriority,
+            inProgressMediumPriority,
+            inProgressLowPriority,
+        ] = await Promise.all([
             DB.Disputes.count({ where: { status: 'Open' } }),
             DB.Disputes.count({ where: { status: 'Under Review' } }),
             DB.Disputes.count({
@@ -359,9 +368,37 @@ const repo = {
                 },
             }),
             DB.Disputes.count({ where: { priority: 'High' } }),
+            DB.Disputes.count({
+                where: {
+                    status: { [Op.in]: inProgressStatuses },
+                    priority: 'High',
+                },
+            }),
+            DB.Disputes.count({
+                where: {
+                    status: { [Op.in]: inProgressStatuses },
+                    priority: 'Medium',
+                },
+            }),
+            DB.Disputes.count({
+                where: {
+                    status: { [Op.in]: inProgressStatuses },
+                    priority: 'Low',
+                },
+            }),
         ]);
 
-        return { open, underReview, resolved, highPriority };
+        return {
+            open,
+            underReview,
+            resolved,
+            highPriority,
+            inProgressPriorityCounts: {
+                high: inProgressHighPriority,
+                medium: inProgressMediumPriority,
+                low: inProgressLowPriority,
+            },
+        };
     },
 
     // Find available moderators (admins with roleType 'admin', not superadmin)
